@@ -3,7 +3,7 @@ ssh multiple servers over multiple tmux panes
 
 # Features
 * Split tmux's window into multiple panels and each one has ssh connection.
-* It works even if the current shell is already in the tmux session.
+* **It works even if the current shell is already in the tmux session.**
 * Off course, it works if the current shell is NOT in the tmux session.
 
 # Dependencies
@@ -17,7 +17,7 @@ Other versions may work, but author have not confirmed that.
 ## 1. Put executable file in your local path.
 
 ```sh
-$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh /usr/local/bin/tmssh
+$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh -O /usr/local/bin/tmssh
 $ chmod +x /usr/local/bin/tmssh
 ```
 
