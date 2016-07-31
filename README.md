@@ -16,9 +16,9 @@ Other versions may work, but author have not confirmed that.
 
 ## 1. Put executable file in your local path.
 
-```
-wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh /usr/local/bin/tmssh
-chmod +x /usr/local/bin/tmssh
+```sh
+$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh /usr/local/bin/tmssh
+$ chmod +x /usr/local/bin/tmssh
 ```
 
 ## 2. Install `tmux` if you have not done yet.
