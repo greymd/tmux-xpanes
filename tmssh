@@ -1,0 +1,72 @@
+#!/bin/bash
+# yasuhiro.yamada
+set -e
+
+readonly THIS_FILE_NAME="${0##*/}"
+readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
+readonly TMP_WIN_NAME="tmp-$$"
+readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
+readonly TMP_FILE="/tmp/mssh-tmp"
+trap "rm -f $TMP_FILE" ERR
+
+function usage() {
+    echo "Usage: tmssh <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+}
+
+function split_window()
+{
+    local _arr=($*)
+    local _last_num=$(($# - 1))
+    local _this_window_name=${_arr[$_last_num]}
+
+    tmux select-pane -t ${_this_window_name}.0
+
+    for i in $(seq 1 $_last_num)
+    do
+        tmux split-window -t ${_this_window_name} -h -d
+        tmux select-layout even-horizontal
+        if [ $i -gt 2 ]; then
+            tmux select-layout -t ${_this_window_name} tiled
+        fi
+    done
+
+    # Delete the first window
+    tmux kill-pane -t ${_this_window_name}.0
+    tmux select-pane -t ${_this_window_name}.0
+
+    for i in $(seq 0 $(($_last_num-1)))
+    do
+        tmux send-keys -t $_this_window_name.$i "ssh ${_arr[i]}" C-m
+    done
+
+    if [ $_last_num -gt 2 ]; then
+        tmux select-layout -t ${_this_window_name} tiled
+    fi
+
+    tmux set-window-option -t ${_this_window_name} synchronize-panes on
+}
+
+# If there is no argument, usage is shown.
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+# If current shell is in tmux session
+if [ -n "$TMUX" ]; then
+    tmux new-window -n "$WIN_NAME"
+    split_window $* "$WIN_NAME"
+    if [ -e $TMP_FILE ]; then
+        tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
+    fi
+else
+    rm -f $TMP_FILE
+    mkfifo $TMP_FILE
+    echo -n "$TMP_FULL_SESSION_NAME" > $TMP_FILE &
+    tmux new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+    tmux send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$THIS_FILE_NAME $*" C-m
+    tmux attach-session -t $SESSION_NAME:$TMP_WIN_NAME
+fi
+
+exit 0
