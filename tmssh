@@ -1,50 +1,80 @@
 #!/bin/bash
-# yasuhiro.yamada
+
+# @Author yasuhiro.yamada
+# @Filename tmssh
+
 set -e
 
+# THIS_FILE_NAME is supposed to be "tmssh".
 readonly THIS_FILE_NAME="${0##*/}"
+
+# This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+
+# Extract first field separated by dot '.'
+# ex, $1       =  aaa.bbb.ccc
+#     WIN_NAME => aaa
 readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
+
+# Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
+
 readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
 readonly TMP_FILE="/tmp/mssh-tmp"
+
+# In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
 
 function usage() {
     echo "Usage: tmssh <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
 }
 
+#
+# Split a new window which was created by tmux into multiple panels.
+# Usage:
+#        split_window <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
+#
 function split_window()
 {
-    local _arr=($*)
-    local _last_num=$(($# - 1))
-    local _this_window_name=${_arr[$_last_num]}
+    local _hosts=($*)
+    local _last_host_idx=$(($# - 1))
+    local _window_name=${_hosts[$_last_host_idx]}
 
-    tmux select-pane -t ${_this_window_name}.0
+    # ".0" points the panel which has most youngest number of index.
+    tmux select-pane -t ${_window_name}.0
 
-    for i in $(seq 1 $_last_num)
+    for i in $(seq 1 $_last_host_idx)
     do
-        tmux split-window -t ${_this_window_name} -h -d
+        tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
+
+        # Restraining that size of panel's width becomes
+        # less than the minimum size which is defined by tmux.
         if [ $i -gt 2 ]; then
-            tmux select-layout -t ${_this_window_name} tiled
+            tmux select-layout -t ${_window_name} tiled
         fi
     done
 
     # Delete the first window
-    tmux kill-pane -t ${_this_window_name}.0
-    tmux select-pane -t ${_this_window_name}.0
+    tmux kill-pane -t ${_window_name}.0
 
-    for i in $(seq 0 $(($_last_num-1)))
+    # Select second window
+    tmux select-pane -t ${_window_name}.0
+
+    # Sending ssh opearations for each panel.
+    for i in $(seq 0 $(($_last_host_idx-1)))
     do
-        tmux send-keys -t $_this_window_name.$i "ssh ${_arr[i]}" C-m
+        tmux send-keys -t $_window_name.$i "ssh ${_hosts[i]}" C-m
     done
 
-    if [ $_last_num -gt 2 ]; then
-        tmux select-layout -t ${_this_window_name} tiled
+    # Panels are serarated vertically, when the number of panel is 1 or 2.
+    # This is just the author's liking. (You can remove next three lines.)
+    if [ $_last_host_idx -gt 2 ]; then
+        tmux select-layout -t ${_window_name} tiled
     fi
 
-    tmux set-window-option -t ${_this_window_name} synchronize-panes on
+    # Enable broadcasting
+    tmux set-window-option -t ${_window_name} synchronize-panes on
 }
 
 # If there is no argument, usage is shown.
@@ -53,19 +83,39 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-# If current shell is in tmux session
+#
+# If current shell is already in tmux session.
+#
 if [ -n "$TMUX" ]; then
+    # Create new window.
     tmux new-window -n "$WIN_NAME"
+
+    # Spilit the window.
     split_window $* "$WIN_NAME"
+
+    # Remove original window.
     if [ -e $TMP_FILE ]; then
         tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
     fi
 else
+
+#
+# If current shell is NOT in tmux session.
+#
+    # Safely create tmp file (named pipe)
     rm -f $TMP_FILE
     mkfifo $TMP_FILE
+
+    # Store the sessionname to the tmp file.
     echo -n "$TMP_FULL_SESSION_NAME" > $TMP_FILE &
+
+    # Create new session.
     tmux new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+
+    # Store this session name to the tmp file so that this session will able to be killed.
     tmux send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$THIS_FILE_NAME $*" C-m
+
+    # Go to another condition of this if statement.
     tmux attach-session -t $SESSION_NAME:$TMP_WIN_NAME
 fi
 
