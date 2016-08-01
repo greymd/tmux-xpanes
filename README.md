@@ -1,5 +1,5 @@
 # tmssh
-ssh multiple servers over multiple tmux panes
+SSH multiple servers over multiple tmux panes
 
 <p align="center">
 <img src="./img/tmssh_movie_720.gif" />
@@ -14,7 +14,7 @@ ssh multiple servers over multiple tmux panes
 * `bash` 4.x
 * `tmux` 2.1
 
-Other versions may work, but author have not confirmed that.
+The author has not confirmed other versions, but they may work.
 
 # Install
 
@@ -30,13 +30,13 @@ Please refer to [here](http://linoxide.com/how-tos/install-tmux-manage-multiple-
 
 # Usage
 
-```
+```sh
 $ tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
 ```
 
 Example
 
-```
+```sh
 $ tmssh root@192.168.1.2 user@example.com
 ```
 
