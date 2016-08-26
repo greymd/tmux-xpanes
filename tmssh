@@ -20,7 +20,7 @@ readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
 readonly TMP_WIN_NAME="tmp-$$"
 
 readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
-readonly TMP_FILE="/tmp/mssh-tmp"
+readonly TMP_FILE="/tmp/tmssh-tmp"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
