@@ -13,7 +13,7 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
-#     WIN_NAME => aaa
+#     WIN_NAME => aaa-12345(PID)
 readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
 
 # Temporary window name is tmp-12345(PID)
