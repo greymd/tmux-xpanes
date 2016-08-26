@@ -26,7 +26,7 @@ readonly TMP_FILE="/tmp/mssh-tmp"
 trap "rm -f $TMP_FILE" ERR
 
 function usage() {
-    echo "Usage: tmssh <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo "Usage: $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
 }
 
 #
