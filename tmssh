@@ -69,7 +69,9 @@ function split_window()
 
     # Panels are serarated vertically, when the number of panel is 1 or 2.
     # This is just the author's liking. (You can remove next three lines.)
-    if [ $_last_host_idx -gt 2 ]; then
+    if [ $_last_host_idx -eq 2 ]; then
+        tmux select-layout -t ${_window_name} even-horizontal
+    elif [ $_last_host_idx -gt 2 ]; then
         tmux select-layout -t ${_window_name} tiled
     fi
 
