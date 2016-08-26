@@ -13,20 +13,20 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
-#     WIN_NAME => aaa
+#     WIN_NAME => aaa-12345(PID)
 readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
 
 readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
-readonly TMP_FILE="/tmp/mssh-tmp"
+readonly TMP_FILE="/tmp/tmssh-tmp"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
 
 function usage() {
-    echo "Usage: tmssh <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo "Usage: $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
 }
 
 #
