@@ -12,7 +12,7 @@ SSH multiple servers over multiple tmux panes
 
 # Dependencies
 * `bash` 4.x
-* `tmux` 2.1
+* `tmux` 1.6 and more
 
 The author has not confirmed other versions, but they may work.
 
