@@ -40,6 +40,14 @@ Example
 $ tmssh root@192.168.1.2 user@example.com
 ```
 
+## Use without messing up $PATH
+
+```sh
+$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh
+$ chmod +x ./tmssh
+$ ./tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
+```
+
 # References
 * http://linuxpixies.blogspot.jp/2011/06/tmux-copy-mode-and-how-to-control.html
 * https://gist.github.com/dmytro/3984680
