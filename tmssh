@@ -20,7 +20,6 @@ readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
 
-readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
 readonly TMP_FILE="$HOME/.tmssh-tmp"
 readonly TMP_SOCKET="$HOME/.tmssh-socket"
 
