@@ -1,5 +1,5 @@
 # tmssh
-SSH multiple servers over multiple tmux panes
+SSH multiple servers over multiple tmux panes.
 
 <p align="center">
 <img src="./img/tmssh_movie_720.gif" />
@@ -18,7 +18,7 @@ The author has not confirmed other versions, but they may work.
 
 # Install
 
-## 1. Put executable file in your local path.
+## 1. Put the executable file in your local path.
 
 ```sh
 $ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh -O /usr/local/bin/tmssh
