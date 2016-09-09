@@ -7,6 +7,7 @@ set -e
 
 # THIS_FILE_NAME is supposed to be "tmssh".
 readonly THIS_FILE_NAME="${0##*/}"
+readonly ABS_THIS_FILE_NAME="$(cd $(dirname $0) && pwd)/$THIS_FILE_NAME"
 
 # This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
@@ -18,12 +19,12 @@ readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-
-readonly TMP_FULL_SESSION_NAME=$SESSION_NAME:$TMP_WIN_NAME
-readonly TMP_FILE="/tmp/tmssh-tmp"
+readonly TMP_FILE="$HOME/.tmssh-tmp"
+readonly TMP_SOCKET="$HOME/.tmssh-socket"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
+trap "rm -f $TMP_SOCKET" ERR
 
 function usage() {
     echo "Usage: $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
@@ -108,17 +109,17 @@ else
     rm -f $TMP_FILE
     mkfifo $TMP_FILE
 
-    # Store the sessionname to the tmp file.
-    echo -n "$TMP_FULL_SESSION_NAME" > $TMP_FILE &
+    # Store the windowname to the tmp file.
+    echo -n "$TMP_WIN_NAME" > $TMP_FILE &
 
     # Create new session.
-    tmux new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+    tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
     # Store this session name to the tmp file so that this session will able to be killed.
-    tmux send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$THIS_FILE_NAME $*" C-m
+    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $*" C-m
 
     # Go to another condition of this if statement.
-    tmux attach-session -t $SESSION_NAME:$TMP_WIN_NAME
+    tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
 fi
 
 exit 0
