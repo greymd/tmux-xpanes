@@ -40,6 +40,26 @@ Example
 $ tmssh root@192.168.1.2 user@example.com
 ```
 
+## Share terminal sessions with multiple different users.
+
+ `~/.tmux-socket` file will automatically be created when `tmssh` is used.
+Importing this socket file, different users can share their screens each other.
+
+* user1
+
+```sh
+[user1@host] $ tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
+```
+
+* user2
+
+```sh
+[user2@host] $ tmux -S /home/user1/.tmux-socket attach
+```
+
+... then, user1 and user2 can share their screen each other.
+
+
 ## Use without messing up $PATH
 
 ```sh
