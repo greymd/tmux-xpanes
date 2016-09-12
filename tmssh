@@ -41,7 +41,7 @@ function split_window()
     local _last_host_idx=$(($# - 1))
     local _window_name=${_hosts[$_last_host_idx]}
 
-    # ".0" means a pane which has most youngest number of index.
+    # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.0
 
     for i in $(seq 1 $_last_host_idx)
