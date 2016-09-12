@@ -6,7 +6,7 @@ SSH multiple servers over multiple tmux panes.
 </p>
 
 # Features
-* Split tmux's window into multiple panels and each one has ssh connection.
+* Split tmux's window into multiple panes and each one has ssh connection.
 * **It works even if the current shell is already in the tmux session.**
 * Off course, it works if the current shell is NOT in the tmux session.
 
@@ -42,7 +42,7 @@ $ tmssh root@192.168.1.2 user@example.com
 
 ## Share terminal sessions with multiple different users.
 
- `~/.tmux-socket` file will automatically be created when `tmssh` is used.
+ `~/.tmssh-socket` file will automatically be created when `tmssh` is used.
 Importing this socket file, different users can share their screens each other.
 
 * user1
@@ -54,7 +54,7 @@ Importing this socket file, different users can share their screens each other.
 * user2
 
 ```sh
-[user2@host] $ tmux -S /home/user1/.tmux-socket attach
+[user2@host] $ tmux -S /home/user1/.tmssh-socket attach
 ```
 
 ... then, user1 and user2 can share their screen each other.

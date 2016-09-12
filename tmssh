@@ -31,7 +31,7 @@ function usage() {
 }
 
 #
-# Split a new window which was created by tmux into multiple panels.
+# Split a new window which was created by tmux into multiple panes.
 # Usage:
 #        split_window <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
 #
@@ -41,7 +41,7 @@ function split_window()
     local _last_host_idx=$(($# - 1))
     local _window_name=${_hosts[$_last_host_idx]}
 
-    # ".0" points the panel which has most youngest number of index.
+    # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.0
 
     for i in $(seq 1 $_last_host_idx)
@@ -49,7 +49,7 @@ function split_window()
         tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
 
-        # Restraining that size of panel's width becomes
+        # Restraining that size of pane's width becomes
         # less than the minimum size which is defined by tmux.
         if [ $i -gt 2 ]; then
             tmux select-layout -t ${_window_name} tiled
@@ -62,14 +62,14 @@ function split_window()
     # Select second window
     tmux select-pane -t ${_window_name}.0
 
-    # Sending ssh opearations for each panel.
+    # Sending ssh opearations for each pane.
     for i in $(seq 0 $(($_last_host_idx-1)))
     do
         tmux send-keys -t $_window_name.$i "ssh ${_hosts[i]}" C-m
     done
 
-    # Panels are serarated vertically, when the number of panel is 1 or 2.
-    # This is just the author's liking. (You can remove next three lines.)
+    # Window is serarated vertically, when the number of panes is 1 or 2.
+    # This is just the author's preference (You can remove next five lines.)
     if [ $_last_host_idx -eq 2 ]; then
         tmux select-layout -t ${_window_name} even-horizontal
     elif [ $_last_host_idx -gt 2 ]; then
@@ -80,7 +80,7 @@ function split_window()
     tmux set-window-option -t ${_window_name} synchronize-panes on
 }
 
-# If there is no argument, usage is shown.
+# If there is no argument, usage will be shown.
 if [ $# -lt 1 ]; then
     usage
     exit 1
