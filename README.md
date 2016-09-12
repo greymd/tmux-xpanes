@@ -6,7 +6,7 @@ SSH multiple servers over multiple tmux panes.
 </p>
 
 # Features
-* Split tmux's window into multiple panels and each one has ssh connection.
+* Split tmux's window into multiple panes and each one has ssh connection.
 * **It works even if the current shell is already in the tmux session.**
 * Off course, it works if the current shell is NOT in the tmux session.
 
