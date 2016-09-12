@@ -54,7 +54,7 @@ Importing this socket file, different users can share their screens each other.
 * user2
 
 ```sh
-[user2@host] $ tmux -S /home/user1/.tmux-socket attach
+[user2@host] $ tmux -S /home/user1/.tmssh-socket attach
 ```
 
 ... then, user1 and user2 can share their screen each other.
