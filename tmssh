@@ -62,7 +62,7 @@ function log_filenames () {
 #
 function split_window()
 {
-    local _hosts=($*)
+    local _hosts=($@)
     local _last_host_idx=$(($# - 1))
     local _window_name=${_hosts[$_last_host_idx]}
 
