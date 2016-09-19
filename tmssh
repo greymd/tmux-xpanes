@@ -87,6 +87,22 @@ function split_window()
     # Select second window
     tmux select-pane -t ${_window_name}.0
 
+    : "Log file operations" && {
+        # Generate log files from host list.
+        local _logfile=($(
+            for i in $(seq 1 $_last_host_idx)
+            do
+                echo "${_hosts[i]}"
+            done | log_filenames
+        ))
+
+        for i in $(seq 0 $(($_last_host_idx-1)))
+        do
+            # Start logging
+            tmux pipe-pane -t $_window_name.$i "cat >> $HOME/.tmux/${_logfile[i]}"
+        done
+    }
+
     # Sending ssh opearations for each pane.
     for i in $(seq 0 $(($_last_host_idx-1)))
     do
