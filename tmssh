@@ -31,6 +31,31 @@ function usage() {
 }
 
 #
+# Generate log file names from given arguments.
+# Usage:
+#        echo <host1> <host2> ... | log_filenames <format>
+# Return:
+#        File names.
+# Example:
+#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:HOST:]_[:PID:]_%Y%m%d.log'
+#        aaa-1_1234_20160101.log
+#        bbb-1_1234_20160101.log
+#        ccc-1_1234_20160101.log
+#        aaa-2_1234_20160101.log
+#        ccc-2_1234_20160101.log
+#        ccc-3_1234_20160101.log
+#
+function log_filenames () {
+    local _arg_fmt=${1:-[:HOST:]_[:PID:]_%Y%m%d.log}
+    local _full_fmt=$(date '+'$_arg_fmt)
+    cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
+        echo $_full_fmt | \
+        sed "s/\[:HOST:\]/$host/g" | \
+        sed "s/\[:PID:\]/$$/g"
+    done
+}
+
+#
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
 #        split_window <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
