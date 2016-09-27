@@ -8,7 +8,7 @@ set -e
 # THIS_FILE_NAME is supposed to be "tmssh".
 readonly THIS_FILE_NAME="${0##*/}"
 readonly ABS_THIS_FILE_NAME="$(cd $(dirname $0) && pwd)/$THIS_FILE_NAME"
-readonly TMUX_PANE_BASE_INDEX=$(tmux show-window-options -g | grep pane-base-index | perl -anle 'print $F[1]')
+readonly TMUX_PANE_BASE_INDEX=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
 
 # This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
