@@ -12,6 +12,8 @@ readonly ABS_THIS_FILE_NAME="$(cd $(dirname $0) && pwd)/$THIS_FILE_NAME"
 # This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
+readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
+
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
 #     WIN_NAME => aaa-12345(PID)
@@ -66,7 +68,7 @@ function split_window()
     # Sending ssh opearations for each pane.
     for i in $(seq 0 $(($_last_host_idx-1)))
     do
-        tmux send-keys -t $_window_name.$(($i + ${_pane_base_index})) "ssh ${_hosts[i]}" C-m
+        tmux send-keys -t $_window_name.$(($i + ${_pane_base_index})) "${SSH_CMD} ${_hosts[i]}" C-m
     done
 
     # Window is serarated vertically, when the number of panes is 1 or 2.
