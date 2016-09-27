@@ -8,6 +8,7 @@ set -e
 # THIS_FILE_NAME is supposed to be "tmssh".
 readonly THIS_FILE_NAME="${0##*/}"
 readonly ABS_THIS_FILE_NAME="$(cd $(dirname $0) && pwd)/$THIS_FILE_NAME"
+readonly TMUX_PANE_BASE_INDEX=$(tmux show-window-options -g | grep pane-base-index | perl -anle 'print $F[1]')
 
 # This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
@@ -42,7 +43,7 @@ function split_window()
     local _window_name=${_hosts[$_last_host_idx]}
 
     # ".0" means a pane which has the youngest number of index.
-    tmux select-pane -t ${_window_name}.0
+    tmux select-pane -t ${_window_name}.${TMUX_PANE_BASE_INDEX}
 
     for i in $(seq 1 $_last_host_idx)
     do
@@ -57,10 +58,10 @@ function split_window()
     done
 
     # Delete the first window
-    tmux kill-pane -t ${_window_name}.0
+    tmux kill-pane -t ${_window_name}.${TMUX_PANE_BASE_INDEX}
 
     # Select second window
-    tmux select-pane -t ${_window_name}.0
+    tmux select-pane -t ${_window_name}.${TMUX_PANE_BASE_INDEX}
 
     # Sending ssh opearations for each pane.
     for i in $(seq 0 $(($_last_host_idx-1)))
