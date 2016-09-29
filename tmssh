@@ -65,7 +65,7 @@ function log_filenames () {
 function split_window()
 {
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
-    local _hosts=($*)
+    local _hosts=($@)
     local _last_host_idx=$(($# - 1))
     local _window_name=${_hosts[$_last_host_idx]}
 
