@@ -60,9 +60,9 @@ function log_filenames () {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#        split_window <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
+#        run_split <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
 #
-function split_window()
+function run_split()
 {
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
     local _hosts=($@)
@@ -137,7 +137,7 @@ if [ -n "$TMUX" ]; then
     tmux new-window -n "$WIN_NAME"
 
     # Spilit the window.
-    split_window $* "$WIN_NAME"
+    run_split $* "$WIN_NAME"
 
     # Remove original window.
     if [ -e $TMP_FILE ]; then
