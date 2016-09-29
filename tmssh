@@ -92,17 +92,16 @@ function split_window()
 
     : "Log file operations" && {
         # Generate log files from host list.
-        local _logfile=($(
+        local _logfiles=($(
             for i in $(seq 1 $_last_host_idx)
             do
                 echo "${_hosts[i]}"
             done | log_filenames
         ))
-
         for i in $(seq 0 $(($_last_host_idx-1)))
         do
             # Start logging
-            tmux pipe-pane -t $_window_name.$i "cat >> $HOME/.tmux/${_logfile[i]}"
+            tmux pipe-pane -t $_window_name.$i "cat >> $HOME/.tmux/${_logfiles[i]}"
         done
     }
 
