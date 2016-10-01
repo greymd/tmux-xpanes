@@ -153,18 +153,15 @@ do
             usage
             exit 0
             ;;
-
         --version)
             version
             exit 0
             ;;
-
         --log=*)
             LOG_FLG=1
             LOG_DIR="${1#--log=}"
             shift
             ;;
-
 #        --session=*)
 #            SESSION_FLG=1
 #            SESSION_FILE="${1#--session=}"
@@ -217,11 +214,12 @@ if [ -n "$TMUX" ]; then
     if [ -e $TMP_FILE ]; then
         tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
     fi
-else
+
 
 #
 # If current shell is NOT in tmux session.
 #
+else
     # Safely create tmp file (named pipe)
     rm -f $TMP_FILE
     mkfifo $TMP_FILE
