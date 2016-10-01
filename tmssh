@@ -39,6 +39,11 @@ function usage() {
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
+readonly VERSION="1.3"
+function version() {
+    echo "$THIS_FILE_NAME $VERSION"
+}
+
 #
 # Generate log file names from given arguments.
 # Usage:
@@ -149,6 +154,7 @@ do
                 exit 0
             fi
             if [[ "$1" =~ 'v' ]]; then
+                version
                 exit 0
             fi
             if [[ "$1" =~ 'l' ]]; then
@@ -172,6 +178,7 @@ do
             ;;
 
         --version)
+            version
             exit 0
             ;;
 
