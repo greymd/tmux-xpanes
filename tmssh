@@ -147,29 +147,6 @@ argv=()
 while (( $# > 0 ))
 do
     case "$1" in
-        # Short options
-        -*)
-            if [[ "$1" =~ 'h' ]]; then
-                usage
-                exit 0
-            fi
-            if [[ "$1" =~ 'v' ]]; then
-                version
-                exit 0
-            fi
-            if [[ "$1" =~ 'l' ]]; then
-                LOG_FLG=1
-                shift
-                LOG_DIR="$1"
-            fi
-            if [[ "$1" =~ 'S' ]]; then
-                SESSION_FLG=1
-                shift
-                SESSION_FILE="$1"
-            fi
-            shift
-            ;;
-
 
         # Long options
         --help)
@@ -188,9 +165,32 @@ do
             shift
             ;;
 
-        --session=*)
-            SESSION_FLG=1
-            SESSION_FILE="${1#--session=}"
+#        --session=*)
+#            SESSION_FLG=1
+#            SESSION_FILE="${1#--session=}"
+#            shift
+#            ;;
+
+        # Short options
+        -*)
+            if [[ "$1" =~ 'h' ]]; then
+                usage
+                exit 0
+            fi
+            if [[ "$1" =~ 'v' ]]; then
+                version
+                exit 0
+            fi
+            if [[ "$1" =~ 'l' ]]; then
+                LOG_FLG=1
+                shift
+                LOG_DIR="$1"
+            fi
+#            if [[ "$1" =~ 'S' ]]; then
+#                SESSION_FLG=1
+#                shift
+#                SESSION_FILE="$1"
+#            fi
             shift
             ;;
 
