@@ -136,6 +136,66 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+argc=0
+argv=()
+
+while (( $# > 0 ))
+do
+    case "$1" in
+        # Short options
+        -*)
+            if [[ "$1" =~ 'h' ]]; then
+                usage
+                exit 0
+            fi
+            if [[ "$1" =~ 'v' ]]; then
+                exit 0
+            fi
+            if [[ "$1" =~ 'l' ]]; then
+                LOG_FLG=1
+                shift
+                LOG_DIR="$1"
+            fi
+            if [[ "$1" =~ 'S' ]]; then
+                SESSION_FLG=1
+                shift
+                SESSION_FILE="$1"
+            fi
+            shift
+            ;;
+
+
+        # Long options
+        --help)
+            usage
+            exit 0
+            ;;
+
+        --version)
+            exit 0
+            ;;
+
+        --log=*)
+            LOG_FLG=1
+            LOG_DIR="${1#--log=}"
+            shift
+            ;;
+
+        --session=*)
+            SESSION_FLG=1
+            SESSION_FILE="${1#--session=}"
+            shift
+            ;;
+
+        # Hosts
+        *)
+            ((++argc))
+            argv=("${argv[@]}" "$1")
+            shift
+            ;;
+    esac
+done
+
 #
 # If current shell is already in tmux session.
 #
