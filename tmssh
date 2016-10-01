@@ -29,7 +29,14 @@ trap "rm -f $TMP_FILE" ERR
 trap "rm -f $TMP_SOCKET" ERR
 
 function usage() {
-    echo "Usage: $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo "Usage:"
+    echo "  $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo "Options:"
+    echo "  -h --help                    Show this screen."
+    echo "  -v --version                 Show version."
+    echo "  -l --log=<directory>         Enable logging and store log files to <directory>."
+    echo "  -f --format-log=<format>     Format of log file names."
+    # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
 #
