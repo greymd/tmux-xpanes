@@ -113,7 +113,7 @@ function run_split()
         for i in $(seq 0 $(($_last_host_idx-1)))
         do
             # Start logging
-            tmux pipe-pane -t $_window_name.$i "cat >> $HOME/.tmux/${_logfiles[i]}"
+            tmux pipe-pane -t $_window_name.$(($i + ${_pane_base_index})) "cat >> $HOME/.tmux/${_logfiles[i]}"
         done
     }
 
