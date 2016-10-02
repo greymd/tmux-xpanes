@@ -15,36 +15,33 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
-# Extract first field separated by dot '.'
-# ex, $1       =  aaa.bbb.ccc
-#     WIN_NAME => aaa-12345(PID)
-readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
-
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
 readonly TMP_FILE="$HOME/.tmssh-tmp"
 readonly TMP_SOCKET="$HOME/.tmssh-socket"
 
 # Initialize parameters
+hosts=()
 LOG_STORE_FLG=0
-LOG_DIR=""
+LOG_DIR="$HOME/.tmssh-logs"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
 trap "rm -f $TMP_SOCKET" ERR
 
-function usage() {
+usage() {
     echo "Usage:"
     echo "  $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
     echo "Options:"
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
-    echo "  -l --log=<directory>         Enable logging and store log files to <directory>."
-    echo "  -f --format-log=<format>     Format of log file names."
+    echo "  -l                           Enable logging and store log files to $LOG_DIR"
+    echo "  -L --log=<directory>         Enable logging and store log files to <directory>."
+    echo "     --log-format=<format>     Format of log file names."
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
-function version() {
+version() {
     echo "$THIS_FILE_NAME $VERSION"
 }
 
@@ -63,7 +60,7 @@ function version() {
 #        ccc-2_1234_20160101.log
 #        ccc-3_1234_20160101.log
 #
-function log_filenames () {
+log_filenames () {
     local _arg_fmt=${1:-[:HOST:]_[:PID:]_%Y%m%d.log}
     local _full_fmt=$(date '+'$_arg_fmt)
     cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
@@ -76,10 +73,6 @@ function log_filenames () {
 dircheck() {
     local _dir="$1"
     # Check directory.
-    if [ ! -d "${_dir}" ]; then
-        echo "${_dir} is not directory." >&2
-        exit 1
-    fi
     if [ ! -e "${_dir}" ]; then
         if mkdir "${_dir}"; then
             echo "${_dir} is created." >&2
@@ -87,6 +80,10 @@ dircheck() {
             echo "Failed to create ${_dir}" >&2
             exit 1
         fi
+    fi
+    if [ ! -d "${_dir}" ]; then
+        echo "${_dir} is not directory." >&2
+        exit 1
     fi
     if [ ! -w "${_dir}" ]; then
         echo "${_dir} is not writable." >&2
@@ -99,7 +96,7 @@ dircheck() {
 # Usage:
 #        run_split <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
 #
-function run_split()
+run_split()
 {
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
     local _hosts=($@)
@@ -133,6 +130,7 @@ function run_split()
         local _logfiles=($(
         for i in $(seq 1 $_last_host_idx)
         do
+            echo "debug: ${_hosts[i]}" >> ~/work/tmssh.debug
             echo "${_hosts[i]}"
         done | log_filenames
         ))
@@ -168,7 +166,6 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-hosts=()
 
 while (( $# > 0 ))
 do
@@ -206,7 +203,9 @@ do
             fi
             if [[ "$1" =~ 'l' ]]; then
                 LOG_STORE_FLG=1
-                shift
+            fi
+            if [[ "$1" =~ 'L' ]]; then
+                LOG_STORE_FLG=1
                 LOG_DIR="$1"
             fi
 #            if [[ "$1" =~ 'S' ]]; then
@@ -220,26 +219,44 @@ do
         # Hosts
         *)
             # ${1//\'/\\\'} -- If $1 contains single quote ('), escape it (\').
-            hosts=("${hosts[@]}" "'${1//\'/\\\'}'")
+            # hosts=("${hosts[@]}" "'${1//\'/\\\'}'")
+            hosts=("${hosts[@]}" "$1")
             shift
             ;;
     esac
 done
 
-# Remove end of slash '/'
-LOG_DIR=${LOG_DIR%/}
-dircheck "$LOG_DIR"
+# Validate log directory.
+if [ $LOG_STORE_FLG -eq 1 ]; then
+    # Remove end of slash '/'
+    LOG_DIR=${LOG_DIR%/}
+    dircheck "$LOG_DIR"
+fi
 
+if [ ${#hosts[@]} -le 0 ]; then
+    echo 'Specify hosts.'  >&2
+    exit 1
+fi
 
 #
 # If current shell is already in tmux session.
 #
 if [ -n "$TMUX" ]; then
+
+    # Extract first field separated by dot '.'
+    # ex, $1       =  aaa.bbb.ccc
+    #     WIN_NAME => aaa-12345(PID)
+    win_name=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
+
+    echo "${hosts[0]}" > ~/work/tmssh.debug
+    echo "$win_name" >> ~/work/tmssh.debug
+
     # Create new window.
-    tmux new-window -n "$WIN_NAME"
+    tmux new-window -n "$win_name"
 
     # Spilit the window.
-    run_split $* "$WIN_NAME"
+    echo run_split ${hosts[@]} "$win_name" >> ~/work/tmssh.debug
+    run_split ${hosts[@]} "$win_name"
 
     # Remove original window.
     if [ -e $TMP_FILE ]; then
