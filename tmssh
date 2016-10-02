@@ -22,6 +22,7 @@ readonly TMP_SOCKET="$HOME/.tmssh-socket"
 
 # Initialize parameters
 hosts=()
+WIN_NAME="$TMP_WIN_NAME"
 LOG_STORE_FLG=0
 LOG_DIR="$HOME/.tmssh-logs"
 
@@ -246,17 +247,17 @@ if [ -n "$TMUX" ]; then
     # Extract first field separated by dot '.'
     # ex, $1       =  aaa.bbb.ccc
     #     WIN_NAME => aaa-12345(PID)
-    win_name=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
+    WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
 
     echo "${hosts[0]}" > ~/work/tmssh.debug
-    echo "$win_name" >> ~/work/tmssh.debug
+    echo "$WIN_NAME" >> ~/work/tmssh.debug
 
     # Create new window.
-    tmux new-window -n "$win_name"
+    tmux new-window -n "$WIN_NAME"
 
     # Spilit the window.
-    echo run_split ${hosts[@]} "$win_name" >> ~/work/tmssh.debug
-    run_split ${hosts[@]} "$win_name"
+    echo run_split ${hosts[@]} "$WIN_NAME" >> ~/work/tmssh.debug
+    run_split ${hosts[@]} "$WIN_NAME"
 
     # Remove original window.
     if [ -e $TMP_FILE ]; then
