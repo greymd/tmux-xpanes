@@ -2,6 +2,7 @@
 
 # @Author yasuhiro.yamada
 # @Filename tmssh
+readonly VERSION="1.3"
 
 set -e
 
@@ -39,7 +40,6 @@ function usage() {
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
-readonly VERSION="1.3"
 function version() {
     echo "$THIS_FILE_NAME $VERSION"
 }
@@ -141,8 +141,8 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-argc=0
-argv=()
+host_num=0
+hosts=()
 
 while (( $# > 0 ))
 do
@@ -193,8 +193,9 @@ do
 
         # Hosts
         *)
-            ((++argc))
-            argv=("${argv[@]}" "$1")
+            ((++host_num))
+            # ${1//\'/\\\'} -- If $1 contains single quote ('), escape it (\').
+            hosts=("${hosts[@]}" "'${1//\'/\\\'}'")
             shift
             ;;
     esac
@@ -231,7 +232,7 @@ else
     tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
     # Store this session name to the tmp file so that this session will able to be killed.
-    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $*" C-m
+    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME ${hosts[@]}" C-m
 
     # Go to another condition of this if statement.
     tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
