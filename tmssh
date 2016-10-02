@@ -38,7 +38,7 @@ usage() {
     echo "  -v --version                 Show version."
     echo "  -l                           Enable logging and store log files to $LOG_DIR"
     echo "  -L --log=<directory>         Enable logging and store log files to <directory>."
-    echo "     --log-format=<format>     Format of log file names."
+    # echo "     --log-format=<format>     Format of log file names."
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
@@ -92,6 +92,13 @@ dircheck() {
     fi
 }
 
+DEBUG_FILE="~/work/tmssh.debug"
+DEBUG_FILE="/dev/null"
+echo > "$DEBUG_FILE"
+debug() {
+    echo "[Debug] $1" | tee >> $DEBUG_FILE
+}
+
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -102,19 +109,21 @@ run_split()
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
     local _hosts=($@)
     local _last_host_idx=$(($# - 1))
-    local _window_name=${_hosts[$_last_host_idx]}
+    local _window_name="$WIN_NAME"
 
     # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
-    for i in $(seq 1 $_last_host_idx)
+    for i in $(seq 0 $_last_host_idx)
     do
+        debug "i=$i: tmux split-window -t ${_window_name} -h -d"
         tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
 
         # Restraining that size of pane's width becomes
         # less than the minimum size which is defined by tmux.
-        if [ $i -gt 2 ]; then
+        if [ $i -ge 2 ]; then
+            debug "i=$i: tmux select-layout -t ${_window_name} tiled"
             tmux select-layout -t ${_window_name} tiled
         fi
     done
@@ -126,34 +135,33 @@ run_split()
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
     : "Log file operations" && {
-    if [ $LOG_STORE_FLG -eq 1 ]; then
-        # Generate log files from host list.
-        local _logfiles=($(
-        for i in $(seq 1 $_last_host_idx)
-        do
-            echo "debug: ${_hosts[i]}" >> ~/work/tmssh.debug
-            echo "${_hosts[i]}"
-        done | log_filenames
-        ))
-        for i in $(seq 0 $(($_last_host_idx-1)))
-        do
-            # Start logging
-            tmux pipe-pane -t $_window_name.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
-        done
-    fi
+        if [ $LOG_STORE_FLG -eq 1 ]; then
+            # Generate log files from host list.
+            local _logfiles=($(
+            for i in $(seq 0 $_last_host_idx)
+            do
+                echo "${_hosts[i]}"
+            done | log_filenames
+            ))
+            for i in $(seq 0 $_last_host_idx)
+            do
+                # Start logging
+                tmux pipe-pane -t ${_window_name}.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
+            done
+        fi
     }
 
     # Sending ssh opearations for each pane.
-    for i in $(seq 0 $(($_last_host_idx-1)))
+    for i in $(seq 0 $_last_host_idx)
     do
         tmux send-keys -t $_window_name.$(($i + ${_pane_base_index})) "${SSH_CMD} ${_hosts[i]}" C-m
     done
 
     # Window is serarated vertically, when the number of panes is 1 or 2.
     # This is just the author's preference (You can remove next five lines.)
-    if [ $_last_host_idx -eq 2 ]; then
+    if [ $_last_host_idx -eq 1 ]; then
         tmux select-layout -t ${_window_name} even-horizontal
-    elif [ $_last_host_idx -gt 2 ]; then
+    elif [ $_last_host_idx -gt 1 ]; then
         tmux select-layout -t ${_window_name} tiled
     fi
 
@@ -227,17 +235,19 @@ do
     esac
 done
 
-# Validate log directory.
-if [ $LOG_STORE_FLG -eq 1 ]; then
-    # Remove end of slash '/'
-    LOG_DIR=${LOG_DIR%/}
-    dircheck "$LOG_DIR"
-fi
 
-if [ ${#hosts[@]} -le 0 ]; then
-    echo 'Specify hosts.'  >&2
-    exit 1
-fi
+: "Argument Validations" && {
+    # Validate log directory.
+    if [ $LOG_STORE_FLG -eq 1 ]; then
+        # Remove end of slash '/'
+        LOG_DIR=${LOG_DIR%/}
+        dircheck "$LOG_DIR"
+    fi
+    if [ ${#hosts[@]} -le 0 ]; then
+        echo 'Specify hosts.'  >&2
+        exit 1
+    fi
+}
 
 #
 # If current shell is already in tmux session.
@@ -249,15 +259,12 @@ if [ -n "$TMUX" ]; then
     #     WIN_NAME => aaa-12345(PID)
     WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
 
-    echo "${hosts[0]}" > ~/work/tmssh.debug
-    echo "$WIN_NAME" >> ~/work/tmssh.debug
-
     # Create new window.
     tmux new-window -n "$WIN_NAME"
 
     # Spilit the window.
-    echo run_split ${hosts[@]} "$WIN_NAME" >> ~/work/tmssh.debug
-    run_split ${hosts[@]} "$WIN_NAME"
+    debug "run_split ${hosts[@]}"
+    run_split ${hosts[@]}
 
     # Remove original window.
     if [ -e $TMP_FILE ]; then
@@ -280,6 +287,7 @@ else
     tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
     # Store this session name to the tmp file so that this session will able to be killed.
+    debug "tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME ${hosts[@]}" C-m"
     tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME ${hosts[@]}" C-m
 
     # Go to another condition of this if statement.
