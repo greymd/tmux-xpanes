@@ -25,6 +25,10 @@ readonly TMP_WIN_NAME="tmp-$$"
 readonly TMP_FILE="$HOME/.tmssh-tmp"
 readonly TMP_SOCKET="$HOME/.tmssh-socket"
 
+# Initialize parameters
+LOG_STORE_FLG=0
+LOG_DIR=""
+
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
 trap "rm -f $TMP_SOCKET" ERR
@@ -69,6 +73,27 @@ function log_filenames () {
     done
 }
 
+dircheck() {
+    local _dir="$1"
+    # Check directory.
+    if [ ! -d "${_dir}" ]; then
+        echo "${_dir} is not directory." >&2
+        exit 1
+    fi
+    if [ ! -e "${_dir}" ]; then
+        if mkdir "${_dir}"; then
+            echo "${_dir} is created." >&2
+        else
+            echo "Failed to create ${_dir}" >&2
+            exit 1
+        fi
+    fi
+    if [ ! -w "${_dir}" ]; then
+        echo "${_dir} is not writable." >&2
+        exit 1
+    fi
+}
+
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -103,18 +128,20 @@ function run_split()
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
     : "Log file operations" && {
+    if [ $LOG_STORE_FLG -eq 1 ]; then
         # Generate log files from host list.
         local _logfiles=($(
-            for i in $(seq 1 $_last_host_idx)
-            do
-                echo "${_hosts[i]}"
-            done | log_filenames
+        for i in $(seq 1 $_last_host_idx)
+        do
+            echo "${_hosts[i]}"
+        done | log_filenames
         ))
         for i in $(seq 0 $(($_last_host_idx-1)))
         do
             # Start logging
-            tmux pipe-pane -t $_window_name.$(($i + ${_pane_base_index})) "cat >> $HOME/.tmux/${_logfiles[i]}"
+            tmux pipe-pane -t $_window_name.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
         done
+    fi
     }
 
     # Sending ssh opearations for each pane.
@@ -141,7 +168,6 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-host_num=0
 hosts=()
 
 while (( $# > 0 ))
@@ -158,7 +184,7 @@ do
             exit 0
             ;;
         --log=*)
-            LOG_FLG=1
+            LOG_STORE_FLG=1
             LOG_DIR="${1#--log=}"
             shift
             ;;
@@ -179,7 +205,7 @@ do
                 exit 0
             fi
             if [[ "$1" =~ 'l' ]]; then
-                LOG_FLG=1
+                LOG_STORE_FLG=1
                 shift
                 LOG_DIR="$1"
             fi
@@ -193,13 +219,17 @@ do
 
         # Hosts
         *)
-            ((++host_num))
             # ${1//\'/\\\'} -- If $1 contains single quote ('), escape it (\').
             hosts=("${hosts[@]}" "'${1//\'/\\\'}'")
             shift
             ;;
     esac
 done
+
+# Remove end of slash '/'
+LOG_DIR=${LOG_DIR%/}
+dircheck "$LOG_DIR"
+
 
 #
 # If current shell is already in tmux session.
