@@ -17,15 +17,15 @@ readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-readonly TMP_FILE="$HOME/.tmssh-tmp"
-readonly TMP_SOCKET="$HOME/.tmssh-socket"
+readonly TMP_FILE="$HOME/.$THIS_FILE_NAME-tmp"
+readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
 
 # Initialize parameters
 hosts=()
 options=()
 WIN_NAME="$TMP_WIN_NAME"
 LOG_STORE_FLG=0
-LOG_DIR="$HOME/.tmssh-logs"
+LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
