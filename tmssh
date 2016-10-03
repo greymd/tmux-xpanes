@@ -278,7 +278,8 @@ done
     # Validate log directory.
     if [ $LOG_STORE_FLG -eq 1 ]; then
         # Remove end of slash '/'
-        LOG_DIR=${LOG_DIR%/}
+        LOG_DIR="${LOG_DIR%/}"
+        LOG_DIR="${LOG_DIR/#~/$HOME}"
         dircheck "$LOG_DIR"
     fi
     if [ ${#hosts[@]} -le 0 ]; then
