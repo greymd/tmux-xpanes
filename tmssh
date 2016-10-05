@@ -289,8 +289,14 @@ done
     if [ $LOG_STORE_FLG -eq 1 ]; then
         # Remove end of slash '/'
         LOG_DIR="${LOG_DIR%/}"
+
+        # tilda expansion
         LOG_DIR="${LOG_DIR/#~/$HOME}"
+
+        # Ensure its existance
         dircheck "$LOG_DIR"
+
+        # absolute path
         LOG_DIR="$(cd "$LOG_DIR" && pwd)"
     fi
     if [ ${#hosts[@]} -le 0 ]; then
