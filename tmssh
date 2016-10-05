@@ -129,8 +129,8 @@ arr2args() {
     done
 }
 
-# DEBUG_FILE=~/work/tmssh.debug
-DEBUG_FILE=/dev/null
+DEBUG_FILE=~/work/tmssh.debug
+# DEBUG_FILE=/dev/null
 debug() {
     echo "[Debug] $1" | tee >> $DEBUG_FILE
 }
@@ -147,6 +147,7 @@ run_split()
     local _last_host_idx=$(($# - 1))
     local _window_name="$WIN_NAME"
 
+    debug "LOGDIR run_split: $LOG_DIR"
     # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
@@ -182,6 +183,7 @@ run_split()
             for i in $(seq 0 $_last_host_idx)
             do
                 # Start logging
+                debug "LIGDIR print: cat >> '${LOG_DIR}/${_logfiles[i]}'"
                 tmux pipe-pane -t ${_window_name}.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
             done
         fi
@@ -229,6 +231,7 @@ do
             options=("${options[@]}" "$1")
             LOG_STORE_FLG=1
             LOG_DIR="${1#--log=}"
+            debug "LOGDIR arg: $LOG_DIR"
             shift
             ;;
         --log-format=*)
@@ -288,11 +291,13 @@ done
         LOG_DIR="${LOG_DIR%/}"
         LOG_DIR="${LOG_DIR/#~/$HOME}"
         dircheck "$LOG_DIR"
+        LOG_DIR="$(cd "$LOG_DIR" && pwd)"
     fi
     if [ ${#hosts[@]} -le 0 ]; then
         echo 'Specify hosts.'  >&2
         exit 1
     fi
+    debug "LOGDIR validation: $LOG_DIR"
 }
 
 #
@@ -334,6 +339,7 @@ else
 
     _hosts4args=$(arr2args "${hosts[@]}")
     _opts4args=$(arr2args "${options[@]}")
+    debug "tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME \"$ABS_THIS_FILE_NAME $_opts4args $_hosts4args\" C-m"
     tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
 
     # Go to another condition of this if statement.
