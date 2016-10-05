@@ -26,6 +26,7 @@ options=()
 WIN_NAME="$TMP_WIN_NAME"
 LOG_STORE_FLG=0
 LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
+LOG_FORMAT="[:HOST:].log.%Y-%m-%d_%H-%M-%S"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
@@ -39,7 +40,7 @@ usage() {
     echo "  -v --version                 Show version."
     echo "  -l                           Enable logging and store log files to $LOG_DIR"
     echo "  -L --log=<directory>         Enable logging and store log files to <directory>."
-    # echo "     --log-format=<format>     Format of log file names."
+    echo "     --log-format=<format>     Format of log file names."
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
 }
 
@@ -77,7 +78,7 @@ version() {
 #        ccc-3_1234_20160101.log
 #
 log_filenames () {
-    local _arg_fmt=${1:-[:HOST:].log.%Y-%m-%d_%H-%M-%S}
+    local _arg_fmt="$1"
     local _full_fmt=$(date '+'$_arg_fmt)
     cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
         echo $_full_fmt | \
@@ -176,7 +177,7 @@ run_split()
             for i in $(seq 0 $_last_host_idx)
             do
                 echo "${_hosts[i]}"
-            done | log_filenames
+            done | log_filenames "$LOG_FORMAT"
             ))
             for i in $(seq 0 $_last_host_idx)
             do
@@ -228,6 +229,12 @@ do
             options=("${options[@]}" "$1")
             LOG_STORE_FLG=1
             LOG_DIR="${1#--log=}"
+            shift
+            ;;
+        --log-format=*)
+            options=("${options[@]}" "$1")
+            LOG_STORE_FLG=1
+            LOG_FORMAT="${1#--log-format=}"
             shift
             ;;
 #        --session=*)
