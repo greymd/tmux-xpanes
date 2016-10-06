@@ -18,29 +18,75 @@ The author has not confirmed other versions, but they may work.
 
 # Install
 
-## 1. Put the executable file in your local path.
-
 ```sh
 $ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh -O /usr/local/bin/tmssh
 $ chmod +x /usr/local/bin/tmssh
 ```
 
-## 2. Install `tmux` if you have not done yet.
-Please refer to [here](http://linoxide.com/how-tos/install-tmux-manage-multiple-linux-terminals/).
-
 # Usage
 
 ```sh
-$ tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
+$ tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
 ```
 
-Example
+### Use without messing up $PATH
 
 ```sh
+$ ./tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
+```
+
+
+## Options
+
+```
+$ tmssh --help
+Usage:
+  tmssh [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]
+
+OPTIONS:
+  -h --help                    Show this screen.
+  -v --version                 Show version.
+  -l --log[=<directory>]       Enable logging and store log files to ~/.tmssh-logs or given <directory>.
+     --log-format=<FORMAT>     File names of log files follow given <FORMAT>.
+```
+
+### Examples
+
+* Create new window and separate it into two panes.
+
+```
 $ tmssh root@192.168.1.2 user@example.com
 ```
 
-## Share terminal sessions with multiple different users.
+* Four panes.
+
+```
+$ tmssh host{1..4}
+```
+
+
+* Logging
+
+```
+$ tmssh -l user1@host1 user1@host1
+```
+
+With `-l` option, start to saving logs.
+For example, following files will be created and each one is corresponding to each pane.
+
+`~/.tmssh-logs/user1@host1-1.log.2016-01-31_23-59-59.log`
+`~/.tmssh-logs/user1@host1-2.log.2016-01-31_23-59-59.log`
+
+* Save log files to another directory.
+
+```
+$ tmssh -l --log=/tmp/logs user1@host1 user2@host2
+/tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log
+/tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log
+will be created as their log files.
+```
+
+## Share terminal sessions with others.
 
  `~/.tmssh-socket` file will automatically be created when `tmssh` is used.
 Importing this socket file, different users can share their screens each other.
@@ -48,7 +94,7 @@ Importing this socket file, different users can share their screens each other.
 * user1
 
 ```sh
-[user1@host] $ tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
+[user1@host] $ tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
 ```
 
 * user2
@@ -59,14 +105,6 @@ Importing this socket file, different users can share their screens each other.
 
 ... then, user1 and user2 can share their screen each other.
 
-
-## Use without messing up $PATH
-
-```sh
-$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh
-$ chmod +x ./tmssh
-$ ./tmssh USER1@SERVER1 USER2@SERVER2 USER3@SERVER3 ...
-```
 
 # References
 * http://linuxpixies.blogspot.jp/2011/06/tmux-copy-mode-and-how-to-control.html
