@@ -34,7 +34,7 @@ trap "rm -f $TMP_SOCKET" ERR
 
 usage() {
     echo "Usage:"
-    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
     echo
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
