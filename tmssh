@@ -26,7 +26,7 @@ options=()
 WIN_NAME="$TMP_WIN_NAME"
 LOG_STORE_FLG=0
 LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
-LOG_FORMAT="[:HOST:].log.%Y-%m-%d_%H-%M-%S"
+LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
@@ -46,7 +46,7 @@ usage() {
     echo "     Default value is \"$LOG_FORMAT\""
     echo "     Interpreted sequences are:"
     echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
-    echo "     [:HOST:]  Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo "     [:ARG:]   Host name to which the pane is logging in. (e.g, userA@serverA)"
     echo
     echo '     In addition, sequences same as `date` command are available.'
     echo
@@ -91,7 +91,7 @@ version() {
 # Return:
 #        File names.
 # Example:
-#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:HOST:]_[:PID:]_%Y%m%d.log'
+#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:ARG:]_[:PID:]_%Y%m%d.log'
 #        aaa-1_1234_20160101.log
 #        bbb-1_1234_20160101.log
 #        ccc-1_1234_20160101.log
@@ -104,7 +104,7 @@ log_filenames () {
     local _full_fmt=$(date '+'$_arg_fmt)
     cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
         echo $_full_fmt | \
-        sed "s/\[:HOST:\]/$host/g" | \
+        sed "s/\[:ARG:\]/$host/g" | \
         sed "s/\[:PID:\]/$$/g"
     done
 }
@@ -238,6 +238,12 @@ do
             version
             exit 0
             ;;
+        --log-format=*)
+            options=("${options[@]}" "$1")
+            LOG_STORE_FLG=1
+            LOG_FORMAT="${1#--log-format=}"
+            shift
+            ;;
         --log*)
             options=("${options[@]}" "$1")
             LOG_STORE_FLG=1
@@ -246,17 +252,6 @@ do
             fi
             shift
             ;;
-        --log-format=*)
-            options=("${options[@]}" "$1")
-            LOG_STORE_FLG=1
-            LOG_FORMAT="${1#--log-format=}"
-            shift
-            ;;
-#        --session=*)
-#            SESSION_FLG=1
-#            SESSION_FILE="${1#--session=}"
-#            shift
-#            ;;
 
         # Short options
         -*)
@@ -272,11 +267,6 @@ do
                 options=("${options[@]}" "$1")
                 LOG_STORE_FLG=1
             fi
-#            if [[ "$1" =~ 'S' ]]; then
-#                SESSION_FLG=1
-#                shift
-#                SESSION_FILE="$1"
-#            fi
             shift
             ;;
 
