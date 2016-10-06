@@ -40,7 +40,7 @@ usage() {
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
-    echo "     --log-format=<FORMAT>     File names of log files follow given <FORMAT>."
+    echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo
     echo " FORMAT:"
     echo "     Default value is \"$LOG_FORMAT\""

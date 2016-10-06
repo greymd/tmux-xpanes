@@ -47,7 +47,7 @@ OPTIONS:
   -h --help                    Show this screen.
   -v --version                 Show version.
   -l --log[=<directory>]       Enable logging and store log files to ~/.tmssh-logs or given <directory>.
-     --log-format=<FORMAT>     File names of log files follow given <FORMAT>.
+     --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
 ```
 
 ### Examples
@@ -67,15 +67,18 @@ $ tmssh host{1..4}
 
 * Logging
 
+With `-l` option, start to saving logs.
+
 ```
 $ tmssh -l user1@host1 user1@host1
 ```
 
-With `-l` option, start to saving logs.
 For example, following files will be created and each one is corresponding to each pane.
 
-`~/.tmssh-logs/user1@host1-1.log.2016-01-31_23-59-59.log`
-`~/.tmssh-logs/user1@host1-2.log.2016-01-31_23-59-59.log`
+```
+~/.tmssh-logs/user1@host1-1.log.2016-01-31_23-59-59.log
+~/.tmssh-logs/user1@host1-2.log.2016-01-31_23-59-59.log
+```
 
 * Save log files to another directory.
 
