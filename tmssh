@@ -39,9 +39,8 @@ usage() {
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
-    echo "  -l                           Enable logging and store log files to $LOG_DIR"
-    echo "  -L --log=<directory>         Enable logging and store log files to <directory>."
-    echo "     --log-format=<FORMAT>     Format of log file names."
+    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "     --log-format=<FORMAT>     File names of log files follow given <FORMAT>."
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
     echo
     echo " FORMAT:"
@@ -265,10 +264,12 @@ do
             version
             exit 0
             ;;
-        --log=*)
+        --log*)
             options=("${options[@]}" "$1")
             LOG_STORE_FLG=1
-            LOG_DIR="${1#--log=}"
+            if [[ "$1" =~ ^--log=  ]]; then
+                LOG_DIR="${1#--log=}"
+            fi
             debug "LOGDIR arg: $LOG_DIR"
             shift
             ;;
@@ -297,13 +298,6 @@ do
             if [[ "$1" =~ 'l' ]]; then
                 options=("${options[@]}" "$1")
                 LOG_STORE_FLG=1
-            fi
-            if [[ "$1" =~ 'L' ]]; then
-                options=("${options[@]}" "$1")
-                LOG_STORE_FLG=1
-                shift
-                options=("${options[@]}" "$1")
-                LOG_DIR="$1"
             fi
 #            if [[ "$1" =~ 'S' ]]; then
 #                SESSION_FLG=1
