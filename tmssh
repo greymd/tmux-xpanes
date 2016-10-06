@@ -34,14 +34,52 @@ trap "rm -f $TMP_SOCKET" ERR
 
 usage() {
     echo "Usage:"
-    echo "  $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
-    echo "Options:"
+    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+    echo
+    echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
     echo "  -l                           Enable logging and store log files to $LOG_DIR"
     echo "  -L --log=<directory>         Enable logging and store log files to <directory>."
-    echo "     --log-format=<format>     Format of log file names."
+    echo "     --log-format=<FORMAT>     Format of log file names."
     # echo "  -S --session=<file>          Specify tmux session file to be generated."
+    echo
+    echo " FORMAT:"
+    echo "     Default value is \"$LOG_FORMAT\""
+    echo "     Interpreted sequences are:"
+    echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
+    echo "     [:HOST:]  Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo
+    echo '     In addition, sequences same as `date` command are available.'
+    echo
+    echo "     For example:"
+    echo "     %Y   year  (e.g, 1960)"
+    echo "     %m   month (e.g, 01)"
+    echo "     %d   date  (e.g, 31)"
+    echo "     And etc."
+    echo "     Other sequences are available. Please refer to date(1) manual."
+    echo
+    echo " Examples:"
+    echo "     $ $THIS_FILE_NAME host1 host2 host3 host4"
+    echo "     New window is created and then, it will be separated into four panes."
+    echo
+    echo "     $ $THIS_FILE_NAME host{1..4}"
+    echo "     Four panes will be created."
+    echo "     Brace expansion is useful."
+    echo
+    echo "     $ $THIS_FILE_NAME -l user1@host1 user1@host1"
+    echo "     New window is created and it will be separated into two panes."
+    echo "     And also $LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     and      $LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs user1@host1 user2@host2"
+    echo "     Following files will be created."
+    echo "     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+
 }
 
 version() {
