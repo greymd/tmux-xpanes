@@ -2,6 +2,7 @@
 
 # @Author yasuhiro.yamada
 # @Filename tmssh
+readonly VERSION="1.3"
 
 set -e
 
@@ -14,47 +15,164 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
-# Extract first field separated by dot '.'
-# ex, $1       =  aaa.bbb.ccc
-#     WIN_NAME => aaa-12345(PID)
-readonly WIN_NAME="$(echo "$1" | perl -F'\.' -pae '$_="$F[0]\n"')-$$"
-
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-readonly TMP_FILE="$HOME/.tmssh-tmp"
-readonly TMP_SOCKET="$HOME/.tmssh-socket"
+readonly TMP_FILE="$HOME/.$THIS_FILE_NAME-tmp"
+readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
+
+# Initialize parameters
+hosts=()
+options=()
+WIN_NAME="$TMP_WIN_NAME"
+LOG_STORE_FLG=0
+LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
+LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 
 # In case of error, remove tmp file.
 trap "rm -f $TMP_FILE" ERR
 trap "rm -f $TMP_SOCKET" ERR
 
-function usage() {
-    echo "Usage: $THIS_FILE_NAME <USER NAME>@<SERVER NAME> [<USER NAME>@<SERVER NAME> ...]"
+usage() {
+    echo "Usage:"
+    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
+    echo
+    echo "OPTIONS:"
+    echo "  -h --help                    Show this screen."
+    echo "  -v --version                 Show version."
+    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
+    echo
+    echo " FORMAT:"
+    echo "     Default value is \"$LOG_FORMAT\""
+    echo "     Interpreted sequences are:"
+    echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
+    echo "     [:ARG:]   Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo
+    echo '     In addition, sequences same as `date` command are available.'
+    echo
+    echo "     For example:"
+    echo "     %Y   year  (e.g, 1960)"
+    echo "     %m   month (e.g, 01)"
+    echo "     %d   date  (e.g, 31)"
+    echo "     And etc."
+    echo "     Other sequences are available. Please refer to date(1) manual."
+    echo
+    echo " Examples:"
+    echo "     $ $THIS_FILE_NAME host1 host2 host3 host4"
+    echo "     New window is created and then, it will be separated into four panes."
+    echo
+    echo "     $ $THIS_FILE_NAME host{1..4}"
+    echo "     Four panes will be created."
+    echo "     Brace expansion is useful."
+    echo
+    echo "     $ $THIS_FILE_NAME -l user1@host1 user1@host1"
+    echo "     New window is created and it will be separated into two panes."
+    echo "     And also $LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     and      $LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs user1@host1 user2@host2"
+    echo "     Following files will be created."
+    echo "     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+}
+
+version() {
+    echo "$THIS_FILE_NAME $VERSION"
+}
+
+#
+# Generate log file names from given arguments.
+# Usage:
+#        echo <host1> <host2> ... | log_filenames <FORMAT>
+# Return:
+#        File names.
+# Example:
+#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:ARG:]_[:PID:]_%Y%m%d.log'
+#        aaa-1_1234_20160101.log
+#        bbb-1_1234_20160101.log
+#        ccc-1_1234_20160101.log
+#        aaa-2_1234_20160101.log
+#        ccc-2_1234_20160101.log
+#        ccc-3_1234_20160101.log
+#
+log_filenames () {
+    local _arg_fmt="$1"
+    local _full_fmt=$(date '+'$_arg_fmt)
+    cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
+        echo $_full_fmt | \
+        sed "s/\[:ARG:\]/$host/g" | \
+        sed "s/\[:PID:\]/$$/g"
+    done
+}
+
+dircheck() {
+    local _dir="$1"
+    # Check directory.
+    if [ ! -e "${_dir}" ]; then
+        if mkdir "${_dir}"; then
+            echo "${_dir} is created." >&2
+        else
+            echo "Failed to create ${_dir}" >&2
+            exit 1
+        fi
+    fi
+    if [ ! -d "${_dir}" ]; then
+        echo "${_dir} is not directory." >&2
+        exit 1
+    fi
+    if [ ! -w "${_dir}" ]; then
+        echo "${_dir} is not writable." >&2
+        exit 1
+    fi
+}
+
+# Convert array to string which is can be used as command line argument.
+# Usage:
+#       arr2args <array object>
+# Example:
+#       array=(aaa bbb "ccc ddd" eee "f'f")
+#       arr2args "${array[@]}"
+#       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
+# Result:
+arr2args() {
+    local _arr=($@)
+    local _arg=""
+    # If there is no argument, usage will be shown.
+    if [ $# -lt 1 ]; then
+        return 0
+    fi
+    for i in $( seq 0 $(( $# - 1)) ) ;do
+        _arg=${_arr[i]}
+        printf "'${_arg//\'/\\\'}' "
+    done
 }
 
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#        split_window <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
+#        run_split <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
 #
-function split_window()
+run_split()
 {
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
-    local _hosts=($*)
+    local _hosts=($@)
     local _last_host_idx=$(($# - 1))
-    local _window_name=${_hosts[$_last_host_idx]}
+    local _window_name="$WIN_NAME"
 
     # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
-    for i in $(seq 1 $_last_host_idx)
+    for i in $(seq 0 $_last_host_idx)
     do
         tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
 
         # Restraining that size of pane's width becomes
         # less than the minimum size which is defined by tmux.
-        if [ $i -gt 2 ]; then
+        if [ $i -ge 2 ]; then
             tmux select-layout -t ${_window_name} tiled
         fi
     done
@@ -65,17 +183,34 @@ function split_window()
     # Select second window
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
+    : "Log file operations" && {
+        if [ $LOG_STORE_FLG -eq 1 ]; then
+            # Generate log files from host list.
+            local _logfiles=($(
+            for i in $(seq 0 $_last_host_idx)
+            do
+                echo "${_hosts[i]}"
+            done | log_filenames "$LOG_FORMAT"
+            ))
+            for i in $(seq 0 $_last_host_idx)
+            do
+                # Start logging
+                tmux pipe-pane -t ${_window_name}.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
+            done
+        fi
+    }
+
     # Sending ssh opearations for each pane.
-    for i in $(seq 0 $(($_last_host_idx-1)))
+    for i in $(seq 0 $_last_host_idx)
     do
         tmux send-keys -t $_window_name.$(($i + ${_pane_base_index})) "${SSH_CMD} ${_hosts[i]}" C-m
     done
 
     # Window is serarated vertically, when the number of panes is 1 or 2.
     # This is just the author's preference (You can remove next five lines.)
-    if [ $_last_host_idx -eq 2 ]; then
+    if [ $_last_host_idx -eq 1 ]; then
         tmux select-layout -t ${_window_name} even-horizontal
-    elif [ $_last_host_idx -gt 2 ]; then
+    elif [ $_last_host_idx -gt 1 ]; then
         tmux select-layout -t ${_window_name} tiled
     fi
 
@@ -89,25 +224,106 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
+while (( $# > 0 ))
+do
+    case "$1" in
+
+        # Long options
+        --help)
+            usage
+            exit 0
+            ;;
+        --version)
+            version
+            exit 0
+            ;;
+        --log-format=*)
+            options=("${options[@]}" "$1")
+            LOG_STORE_FLG=1
+            LOG_FORMAT="${1#--log-format=}"
+            shift
+            ;;
+        --log*)
+            options=("${options[@]}" "$1")
+            LOG_STORE_FLG=1
+            if [[ "$1" =~ ^--log=  ]]; then
+                LOG_DIR="${1#--log=}"
+            fi
+            shift
+            ;;
+
+        # Short options
+        -*)
+            if [[ "$1" =~ 'h' ]]; then
+                usage
+                exit 0
+            fi
+            if [[ "$1" =~ 'v' ]]; then
+                version
+                exit 0
+            fi
+            if [[ "$1" =~ 'l' ]]; then
+                options=("${options[@]}" "$1")
+                LOG_STORE_FLG=1
+            fi
+            shift
+            ;;
+
+        # Hosts
+        *)
+            hosts=("${hosts[@]}" "$1")
+            shift
+            ;;
+    esac
+done
+
+: "Argument Validations" && {
+    # Validate log directory.
+    if [ $LOG_STORE_FLG -eq 1 ]; then
+        # Remove end of slash '/'
+        LOG_DIR="${LOG_DIR%/}"
+
+        # tilda expansion
+        LOG_DIR="${LOG_DIR/#~/$HOME}"
+
+        # Ensure its existance
+        dircheck "$LOG_DIR"
+
+        # absolute path
+        LOG_DIR="$(cd "$LOG_DIR" && pwd)"
+    fi
+    if [ ${#hosts[@]} -le 0 ]; then
+        echo 'Specify hosts.'  >&2
+        exit 1
+    fi
+}
+
 #
 # If current shell is already in tmux session.
 #
 if [ -n "$TMUX" ]; then
+
+    # Extract first field separated by dot '.'
+    # ex, $1       =  aaa.bbb.ccc
+    #     WIN_NAME => aaa-12345(PID)
+    WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
+
     # Create new window.
     tmux new-window -n "$WIN_NAME"
 
     # Spilit the window.
-    split_window $* "$WIN_NAME"
+    run_split "${hosts[@]}"
 
     # Remove original window.
     if [ -e $TMP_FILE ]; then
         tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
     fi
-else
+
 
 #
 # If current shell is NOT in tmux session.
 #
+else
     # Safely create tmp file (named pipe)
     rm -f $TMP_FILE
     mkfifo $TMP_FILE
@@ -118,8 +334,9 @@ else
     # Create new session.
     tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
-    # Store this session name to the tmp file so that this session will able to be killed.
-    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $*" C-m
+    _hosts4args=$(arr2args "${hosts[@]}")
+    _opts4args=$(arr2args "${options[@]}")
+    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
 
     # Go to another condition of this if statement.
     tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
