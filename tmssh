@@ -77,7 +77,6 @@ usage() {
     echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
     echo "     will be created as their log files."
     echo
-
 }
 
 version() {
