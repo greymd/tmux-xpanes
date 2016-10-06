@@ -41,7 +41,6 @@ usage() {
     echo "  -v --version                 Show version."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File names of log files follow given <FORMAT>."
-    # echo "  -S --session=<file>          Specify tmux session file to be generated."
     echo
     echo " FORMAT:"
     echo "     Default value is \"$LOG_FORMAT\""
@@ -91,20 +90,6 @@ version() {
 #        echo <host1> <host2> ... | log_filenames <FORMAT>
 # Return:
 #        File names.
-# FORMAT:
-#        Interpreted sequences are:
-#        [:PID:]   Process id of the tmux session. (e.g, 41531)
-#        [:HOST:]  Host name to which the pane is logging in. (e.g, userA@serverA)
-#
-#        In addition, sequences same as `date` command are available.
-#
-#        For example:
-#        %Y   year  (e.g, 1960)
-#        %m   month (e.g, 01)
-#        %d   date  (e.g, 31)
-#        And etc.
-#        Basically, please refer to date(1) manual.
-#
 # Example:
 #        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:HOST:]_[:PID:]_%Y%m%d.log'
 #        aaa-1_1234_20160101.log
@@ -166,12 +151,6 @@ arr2args() {
     done
 }
 
-DEBUG_FILE=~/work/tmssh.debug
-# DEBUG_FILE=/dev/null
-debug() {
-    echo "[Debug] $1" | tee >> $DEBUG_FILE
-}
-
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -184,20 +163,17 @@ run_split()
     local _last_host_idx=$(($# - 1))
     local _window_name="$WIN_NAME"
 
-    debug "LOGDIR run_split: $LOG_DIR"
     # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
     for i in $(seq 0 $_last_host_idx)
     do
-        debug "i=$i: tmux split-window -t ${_window_name} -h -d"
         tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
 
         # Restraining that size of pane's width becomes
         # less than the minimum size which is defined by tmux.
         if [ $i -ge 2 ]; then
-            debug "i=$i: tmux select-layout -t ${_window_name} tiled"
             tmux select-layout -t ${_window_name} tiled
         fi
     done
@@ -220,7 +196,6 @@ run_split()
             for i in $(seq 0 $_last_host_idx)
             do
                 # Start logging
-                debug "LIGDIR print: cat >> '${LOG_DIR}/${_logfiles[i]}'"
                 tmux pipe-pane -t ${_window_name}.$(($i + ${_pane_base_index})) "cat >> '${LOG_DIR}/${_logfiles[i]}'"
             done
         fi
@@ -250,7 +225,6 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-
 while (( $# > 0 ))
 do
     case "$1" in
@@ -270,7 +244,6 @@ do
             if [[ "$1" =~ ^--log=  ]]; then
                 LOG_DIR="${1#--log=}"
             fi
-            debug "LOGDIR arg: $LOG_DIR"
             shift
             ;;
         --log-format=*)
@@ -315,7 +288,6 @@ do
     esac
 done
 
-
 : "Argument Validations" && {
     # Validate log directory.
     if [ $LOG_STORE_FLG -eq 1 ]; then
@@ -335,7 +307,6 @@ done
         echo 'Specify hosts.'  >&2
         exit 1
     fi
-    debug "LOGDIR validation: $LOG_DIR"
 }
 
 #
@@ -352,7 +323,6 @@ if [ -n "$TMUX" ]; then
     tmux new-window -n "$WIN_NAME"
 
     # Spilit the window.
-    debug "run_split ${hosts[@]}"
     run_split "${hosts[@]}"
 
     # Remove original window.
@@ -377,7 +347,6 @@ else
 
     _hosts4args=$(arr2args "${hosts[@]}")
     _opts4args=$(arr2args "${options[@]}")
-    debug "tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME \"$ABS_THIS_FILE_NAME $_opts4args $_hosts4args\" C-m"
     tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
 
     # Go to another condition of this if statement.
