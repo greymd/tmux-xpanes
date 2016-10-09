@@ -25,6 +25,7 @@ hosts=()
 options=()
 WIN_NAME="$TMP_WIN_NAME"
 LOG_STORE_FLG=0
+DRY_RUN=0
 LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
 LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 
@@ -218,6 +219,73 @@ run_split()
     tmux set-window-option -t ${_window_name} synchronize-panes on
 }
 
+run_script() {
+    : "Argument Validations" && {
+        # Validate log directory.
+        if [ $LOG_STORE_FLG -eq 1 ]; then
+            # Remove end of slash '/'
+            LOG_DIR="${LOG_DIR%/}"
+
+            # tilda expansion
+            LOG_DIR="${LOG_DIR/#~/$HOME}"
+
+            # Ensure its existance
+            dircheck "$LOG_DIR"
+
+            # absolute path
+            LOG_DIR="$(cd "$LOG_DIR" && pwd)"
+        fi
+        if [ ${#hosts[@]} -le 0 ]; then
+            echo 'Specify hosts.'  >&2
+            exit 1
+        fi
+    }
+
+    #
+    # If current shell is already in tmux session.
+    #
+    if [ -n "$TMUX" ]; then
+
+        # Extract first field separated by dot '.'
+        # ex, $1       =  aaa.bbb.ccc
+        #     WIN_NAME => aaa-12345(PID)
+        WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
+
+        # Create new window.
+        tmux new-window -n "$WIN_NAME"
+
+        # Spilit the window.
+        run_split "${hosts[@]}"
+
+        # Remove original window.
+        if [ -e $TMP_FILE ]; then
+            tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
+        fi
+
+
+        #
+        # If current shell is NOT in tmux session.
+        #
+    else
+        # Safely create tmp file (named pipe)
+        rm -f $TMP_FILE
+        mkfifo $TMP_FILE
+
+        # Store the windowname to the tmp file.
+        echo -n "$TMP_WIN_NAME" > $TMP_FILE &
+
+        # Create new session.
+        tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+
+        _hosts4args=$(arr2args "${hosts[@]}")
+        _opts4args=$(arr2args "${options[@]}")
+        tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
+
+        # Go to another condition of this if statement.
+        tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
+    fi
+}
+
 # If there is no argument, usage will be shown.
 if [ $# -lt 1 ]; then
     usage
@@ -251,6 +319,10 @@ do
             fi
             shift
             ;;
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
 
         # Short options
         -*)
@@ -277,69 +349,9 @@ do
     esac
 done
 
-: "Argument Validations" && {
-    # Validate log directory.
-    if [ $LOG_STORE_FLG -eq 1 ]; then
-        # Remove end of slash '/'
-        LOG_DIR="${LOG_DIR%/}"
-
-        # tilda expansion
-        LOG_DIR="${LOG_DIR/#~/$HOME}"
-
-        # Ensure its existance
-        dircheck "$LOG_DIR"
-
-        # absolute path
-        LOG_DIR="$(cd "$LOG_DIR" && pwd)"
-    fi
-    if [ ${#hosts[@]} -le 0 ]; then
-        echo 'Specify hosts.'  >&2
-        exit 1
-    fi
-}
-
-#
-# If current shell is already in tmux session.
-#
-if [ -n "$TMUX" ]; then
-
-    # Extract first field separated by dot '.'
-    # ex, $1       =  aaa.bbb.ccc
-    #     WIN_NAME => aaa-12345(PID)
-    WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
-
-    # Create new window.
-    tmux new-window -n "$WIN_NAME"
-
-    # Spilit the window.
-    run_split "${hosts[@]}"
-
-    # Remove original window.
-    if [ -e $TMP_FILE ]; then
-        tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
-    fi
-
-
-#
-# If current shell is NOT in tmux session.
-#
-else
-    # Safely create tmp file (named pipe)
-    rm -f $TMP_FILE
-    mkfifo $TMP_FILE
-
-    # Store the windowname to the tmp file.
-    echo -n "$TMP_WIN_NAME" > $TMP_FILE &
-
-    # Create new session.
-    tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
-
-    _hosts4args=$(arr2args "${hosts[@]}")
-    _opts4args=$(arr2args "${options[@]}")
-    tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
-
-    # Go to another condition of this if statement.
-    tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
+# When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+if [ $DRY_RUN -ne 1 ]; then
+    # Run script
+    run_script
+    exit 0
 fi
-
-exit 0
