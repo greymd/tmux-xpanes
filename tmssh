@@ -109,10 +109,16 @@ log_filenames () {
     done
 }
 
-dircheck() {
+#
+# Ensure existance of given directory
+# Usage:
+#        ensure_directory <direname>
+#
+ensure_directory() {
     local _dir="$1"
     # Check directory.
     if [ ! -e "${_dir}" ]; then
+        # Create directory
         if mkdir "${_dir}"; then
             echo "${_dir} is created." >&2
         else
@@ -154,7 +160,7 @@ arr2args() {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#        run_split <USER1@HOST1> <USER2@HOST2> ... <WINDOW NAME>
+#        run_split <USER1@HOST1> <USER2@HOST2> ...
 #
 run_split()
 {
@@ -229,8 +235,7 @@ run_script() {
             # tilda expansion
             LOG_DIR="${LOG_DIR/#~/$HOME}"
 
-            # Ensure its existance
-            dircheck "$LOG_DIR"
+            ensure_directory "$LOG_DIR"
 
             # absolute path
             LOG_DIR="$(cd "$LOG_DIR" && pwd)"
