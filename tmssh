@@ -95,7 +95,7 @@ get_tmux_conf() {
 log_filenames () {
     local _arg_fmt="$1"
     local _full_fmt=$(date '+'$_arg_fmt)
-    cat | perl -nle 'print $_."_".(($h{$_}++)+1)' | while read host ; do
+    cat | perl -nle 'print $_."-".(($h{$_}++)+1)' | while read host ; do
         echo $_full_fmt | \
         sed "s/\[:ARG:\]/$host/g" | \
         sed "s/\[:PID:\]/$$/g"
