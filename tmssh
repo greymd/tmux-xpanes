@@ -19,15 +19,6 @@ readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
 readonly TMP_WIN_NAME="tmp-$$"
 readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
 
-# Initialize parameters
-HOSTS=()
-OPTIONS=()
-LOG_STORE_FLG=0
-KILL_WIN_FLG=0
-KILL_WIN_NAME=0
-DRY_RUN=0
-LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
-LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 
 usage() {
     echo "Usage:"
@@ -76,6 +67,7 @@ usage() {
     echo
 }
 
+# Show version number
 version() {
     echo "$THIS_FILE_NAME $VERSION"
 }
@@ -176,9 +168,9 @@ generate_window_name() {
 #        run_split <window name> <num of pane>
 #
 split_window() {
-    local _window_name="$1"
-    local _num="$2"
-    for i in $(seq 0 $_num)
+    local _window_name="$1" ; shift
+    local _hosts_num="$1"
+    for i in $(seq 0 $_hosts_num)
     do
         tmux split-window -t ${_window_name} -h -d
         tmux select-layout even-horizontal
@@ -198,19 +190,42 @@ enable_logging() {
     local _log_format="$1" ; shift
     local _hosts=($@)
     local _hosts_num=$(($# - 1))
-
     # Generate log files from host list.
     local _logfiles=($(
-    for i in $(seq 0 $_host_quantity)
+    for i in $(seq 0 $_hosts_num)
     do
         echo "${_hosts[i]}"
     done | log_filenames "$_log_format"
     ))
-    for i in $(seq 0 $host_quantity)
+    for i in $(seq 0 $_hosts_num)
     do
         # Start logging
         tmux pipe-pane -t ${_window_name}.$(($i + ${_index_offset})) "cat >> '${_log_dir}/${_logfiles[i]}'"
     done
+}
+
+send_commands() {
+    local _window_name="$1" ; shift
+    local _index_offset="$1" ; shift
+    local _cmd="$1" ; shift
+    local _hosts=($@)
+    local _hosts_num=$(($# - 1))
+    for i in $(seq 0 $_hosts_num)
+    do
+        tmux send-keys -t $_window_name.$(($i + ${_index_offset})) "${_cmd} ${_hosts[i]}" C-m
+    done
+}
+
+# Serarate window vertically, when the number of panes is 1 or 2.
+arrange_pane_location() {
+    local _window_name="$1" ; shift
+    local _hosts_num="$1"
+
+    if [ $_hosts_num -eq 1 ]; then
+        tmux select-layout -t ${_window_name} even-horizontal
+    elif [ $_hosts_num -gt 1 ]; then
+        tmux select-layout -t ${_window_name} tiled
+    fi
 }
 
 #
@@ -243,35 +258,29 @@ run_split()
     fi
 
     # Sending ssh opearations for each pane.
-    for i in $(seq 0 $_last_host_idx)
-    do
-        tmux send-keys -t $_window_name.$(($i + ${_pane_base_index})) "${SSH_CMD} ${_hosts[i]}" C-m
-    done
+    send_commands "$_window_name" "$_pane_base_index" "$SSH_CMD" "${_hosts[@]}"
 
-    # Window is serarated vertically, when the number of panes is 1 or 2.
-    # This is just the author's preference (You can remove next five lines.)
-    if [ $_last_host_idx -eq 1 ]; then
-        tmux select-layout -t ${_window_name} even-horizontal
-    elif [ $_last_host_idx -gt 1 ]; then
-        tmux select-layout -t ${_window_name} tiled
-    fi
+    # This is just the author's preference (You can remove next statement.)
+    arrange_pane_location "$_window_name" $_last_host_idx
 
     # Enable broadcasting
     tmux set-window-option -t ${_window_name} synchronize-panes on
 }
 
-run_script() {
+# Following global variables will be used
+# within execution function and entrypoint.
+: "Initialize options" && {
+    HOSTS=()
+    OPTIONS=()
+    KILL_WIN_FLG=0
+    KILL_WIN_NAME=""
+    DRY_RUN_FLG=0
+    LOG_STORE_FLG=0
+    LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
+    LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+}
 
-    : "Argument Validations" && {
-        # Validate log directory.
-        if [ $LOG_STORE_FLG -eq 1 ]; then
-            LOG_DIR="$(ensure_directory "$LOG_DIR")"
-        fi
-        if [ ${#HOSTS[@]} -le 0 ]; then
-            echo 'Specify hosts.'  >&2
-            exit 1
-        fi
-    }
+execution() {
 
     #
     # If current shell is already in tmux session.
@@ -284,6 +293,7 @@ run_script() {
 
         # Spilit the window.
         run_split "$_win_name" "${HOSTS[@]}"
+        # run_split "$_win_name" "$LOG_STORE_FLG" "$LOG_DIR" "$LOG_FORMAT" "${HOSTS[@]}"
 
         # Remove original window.
         if [ $KILL_WIN_FLG -eq 1 ]; then
@@ -291,9 +301,9 @@ run_script() {
         fi
 
 
-        #
-        # If current shell is NOT in tmux session.
-        #
+    #
+    # If current shell is NOT in tmux session.
+    #
     else
 
         # Create new session.
@@ -310,77 +320,94 @@ run_script() {
     fi
 }
 
-# If there is no argument, usage will be shown.
-if [ $# -lt 1 ]; then
-    usage
-    exit 1
-fi
+: "Entry Point" && {
+    # If there is no argument, usage will be shown.
+    if [ $# -lt 1 ]; then
+        usage
+        exit 1
+    fi
 
-while (( $# > 0 ))
-do
-    case "$1" in
+    : "Parse Options" && {
+        while (( $# > 0 ))
+        do
+            case "$1" in
 
-        # Long options
-        --help)
-            usage
-            exit 0
-            ;;
-        --version)
-            version
-            exit 0
-            ;;
-        --log-format=*)
-            OPTIONS=("${OPTIONS[@]}" "$1")
-            LOG_STORE_FLG=1
-            LOG_FORMAT="${1#--log-format=}"
-            shift
-            ;;
-        --log*)
-            OPTIONS=("${OPTIONS[@]}" "$1")
-            LOG_STORE_FLG=1
-            if [[ "$1" =~ ^--log=  ]]; then
-                LOG_DIR="${1#--log=}"
+                # Long options
+                --help)
+                    usage
+                    exit 0
+                    ;;
+                --version)
+                    version
+                    exit 0
+                    ;;
+                --log-format=*)
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    LOG_FORMAT="${1#--log-format=}"
+                    shift
+                    ;;
+                --log*)
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    if [[ "$1" =~ ^--log=  ]]; then
+                        LOG_DIR="${1#--log=}"
+                    fi
+                    shift
+                    ;;
+                --dry-run)
+                    DRY_RUN_FLG=1
+                    shift
+                    ;;
+                --kill-window=*)
+                    KILL_WIN_FLG="1"
+                    KILL_WIN_NAME="${1#--kill-window=}"
+                    shift
+                    ;;
+
+                # Short options
+                -*)
+                    if [[ "$1" =~ 'h' ]]; then
+                        usage
+                        exit 0
+                    fi
+                    if [[ "$1" =~ 'v' ]]; then
+                        version
+                        exit 0
+                    fi
+                    if [[ "$1" =~ 'l' ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        LOG_STORE_FLG=1
+                    fi
+                    shift
+                    ;;
+
+                # Hosts
+                *)
+                    HOSTS=("${HOSTS[@]}" "$1")
+                    shift
+                    ;;
+            esac
+        done
+    }
+
+
+    # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+    if [ $DRY_RUN_FLG -ne 1 ]; then
+
+        : "Parameter validation" && {
+            if [ ${#HOSTS[@]} -le 0 ]; then
+                echo 'Specify hosts.'  >&2
+                exit 1
             fi
-            shift
-            ;;
-        --dry-run)
-            DRY_RUN=1
-            shift
-            ;;
-        --kill-window=*)
-            KILL_WIN_FLG="1"
-            KILL_WIN_NAME="${1#--kill-window=}"
-            shift
-            ;;
-
-        # Short options
-        -*)
-            if [[ "$1" =~ 'h' ]]; then
-                usage
-                exit 0
+            # Validate log directory.
+            if [ $LOG_STORE_FLG -eq 1 ]; then
+                LOG_DIR="$(ensure_directory "$LOG_DIR")"
             fi
-            if [[ "$1" =~ 'v' ]]; then
-                version
-                exit 0
-            fi
-            if [[ "$1" =~ 'l' ]]; then
-                OPTIONS=("${OPTIONS[@]}" "$1")
-                LOG_STORE_FLG=1
-            fi
-            shift
-            ;;
+        }
 
-        # Hosts
-        *)
-            HOSTS=("${HOSTS[@]}" "$1")
-            shift
-            ;;
-    esac
-done
-
-# When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-if [ $DRY_RUN -ne 1 ]; then
-    # Run script
-    run_script
-    exit 0
-fi
+        # Run script
+        execution
+        exit 0
+    fi
+}
