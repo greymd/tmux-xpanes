@@ -21,9 +21,8 @@ readonly TMP_FILE="$HOME/.$THIS_FILE_NAME-tmp"
 readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
 
 # Initialize parameters
-hosts=()
-options=()
-WIN_NAME="$TMP_WIN_NAME"
+HOSTS=()
+OPTIONS=()
 LOG_STORE_FLG=0
 DRY_RUN=0
 LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
@@ -167,17 +166,25 @@ arr2args() {
     done
 }
 
+# Extract first field separated by dot '.'
+# ex, $1       =  aaa.bbb.ccc
+#     return   =  aaa-12345(PID)
+generate_window_name() {
+    echo "$1" | perl -F'\.' -anle 'printf "$F[0]-'$$'"'
+}
+
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#        run_split <USER1@HOST1> <USER2@HOST2> ...
+#        run_split <window name> <USER1@HOST1> <USER2@HOST2> ...
 #
 run_split()
 {
     local _pane_base_index=$(tmux show-window-options -g | grep '^pane-base-index' | head -n 1 | perl -anle 'print $F[1]')
+    local _window_name="$1"
+    shift
     local _hosts=($@)
     local _last_host_idx=$(($# - 1))
-    local _window_name="$WIN_NAME"
 
     # ".0" means a pane which has the youngest number of index.
     tmux select-pane -t ${_window_name}.${_pane_base_index}
@@ -236,12 +243,13 @@ run_split()
 }
 
 run_script() {
+
     : "Argument Validations" && {
         # Validate log directory.
         if [ $LOG_STORE_FLG -eq 1 ]; then
             LOG_DIR="$(ensure_directory "$LOG_DIR")"
         fi
-        if [ ${#hosts[@]} -le 0 ]; then
+        if [ ${#HOSTS[@]} -le 0 ]; then
             echo 'Specify hosts.'  >&2
             exit 1
         fi
@@ -251,17 +259,13 @@ run_script() {
     # If current shell is already in tmux session.
     #
     if [ -n "$TMUX" ]; then
-
-        # Extract first field separated by dot '.'
-        # ex, $1       =  aaa.bbb.ccc
-        #     WIN_NAME => aaa-12345(PID)
-        WIN_NAME=$(echo "${hosts[0]}" | perl -F'\.' -anle 'printf "$F[0]"')"-$$"
+        local _win_name=$(generate_window_name "${HOSTS[0]}")
 
         # Create new window.
-        tmux new-window -n "$WIN_NAME"
+        tmux new-window -n "$_win_name"
 
         # Spilit the window.
-        run_split "${hosts[@]}"
+        run_split "$_win_name" "${HOSTS[@]}"
 
         # Remove original window.
         if [ -e $TMP_FILE ]; then
@@ -283,8 +287,8 @@ run_script() {
         # Create new session.
         tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
-        _hosts4args=$(arr2args "${hosts[@]}")
-        _opts4args=$(arr2args "${options[@]}")
+        _hosts4args=$(arr2args "${HOSTS[@]}")
+        _opts4args=$(arr2args "${OPTIONS[@]}")
         tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
 
         # Go to another condition of this if statement.
@@ -312,13 +316,13 @@ do
             exit 0
             ;;
         --log-format=*)
-            options=("${options[@]}" "$1")
+            OPTIONS=("${OPTIONS[@]}" "$1")
             LOG_STORE_FLG=1
             LOG_FORMAT="${1#--log-format=}"
             shift
             ;;
         --log*)
-            options=("${options[@]}" "$1")
+            OPTIONS=("${OPTIONS[@]}" "$1")
             LOG_STORE_FLG=1
             if [[ "$1" =~ ^--log=  ]]; then
                 LOG_DIR="${1#--log=}"
@@ -341,7 +345,7 @@ do
                 exit 0
             fi
             if [[ "$1" =~ 'l' ]]; then
-                options=("${options[@]}" "$1")
+                OPTIONS=("${OPTIONS[@]}" "$1")
                 LOG_STORE_FLG=1
             fi
             shift
@@ -349,7 +353,7 @@ do
 
         # Hosts
         *)
-            hosts=("${hosts[@]}" "$1")
+            HOSTS=("${HOSTS[@]}" "$1")
             shift
             ;;
     esac
