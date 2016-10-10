@@ -17,4 +17,11 @@ test_version(){
     assertEquals "0" "$?"
 }
 
+test_generate_window_name(){
+    result=`generate_window_name "aaa.bbb.ccc"`
+    echo ${result} | grep -Eq 'aaa-[0-9]+'
+    echo ${result}
+    assertEquals "0" "$?"
+}
+
 . ${TEST_DIR}/shunit2/source/2.1/src/shunit2
