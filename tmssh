@@ -17,20 +17,17 @@ readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-readonly TMP_FILE="$HOME/.$THIS_FILE_NAME-tmp"
 readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
 
 # Initialize parameters
 HOSTS=()
 OPTIONS=()
 LOG_STORE_FLG=0
+KILL_WIN_FLG=0
+KILL_WIN_NAME=0
 DRY_RUN=0
 LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
 LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-
-# In case of error, remove tmp file.
-trap "rm -f $TMP_FILE" ERR
-trap "rm -f $TMP_SOCKET" ERR
 
 usage() {
     echo "Usage:"
@@ -289,8 +286,8 @@ run_script() {
         run_split "$_win_name" "${HOSTS[@]}"
 
         # Remove original window.
-        if [ -e $TMP_FILE ]; then
-            tmux kill-window -t `cat $TMP_FILE && rm -f $TMP_FILE`
+        if [ $KILL_WIN_FLG -eq 1 ]; then
+            tmux kill-window -t "$KILL_WIN_NAME"
         fi
 
 
@@ -298,19 +295,15 @@ run_script() {
         # If current shell is NOT in tmux session.
         #
     else
-        # Safely create tmp file (named pipe)
-        rm -f $TMP_FILE
-        mkfifo $TMP_FILE
-
-        # Store the windowname to the tmp file.
-        echo -n "$TMP_WIN_NAME" > $TMP_FILE &
 
         # Create new session.
         tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
-        _hosts4args=$(arr2args "${HOSTS[@]}")
-        _opts4args=$(arr2args "${OPTIONS[@]}")
-        tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME "$ABS_THIS_FILE_NAME $_opts4args $_hosts4args" C-m
+        local _hosts4args=$(arr2args "${HOSTS[@]}")
+        local _opts4args=$(arr2args "${OPTIONS[@]}")
+
+        tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
+            "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_hosts4args" C-m
 
         # Go to another condition of this if statement.
         tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
@@ -352,6 +345,11 @@ do
             ;;
         --dry-run)
             DRY_RUN=1
+            shift
+            ;;
+        --kill-window=*)
+            KILL_WIN_FLG="1"
+            KILL_WIN_NAME="${1#--kill-window=}"
             shift
             ;;
 
