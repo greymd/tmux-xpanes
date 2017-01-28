@@ -1,0 +1,451 @@
+#!/bin/bash
+
+# @Author yasuhiro.yamada
+# @Filename xpanes
+readonly VERSION="1.3.0"
+
+set -e
+
+# THIS_FILE_NAME is supposed to be "xpanes".
+readonly THIS_FILE_NAME="${0##*/}"
+readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
+readonly ABS_THIS_FILE_NAME="$THIS_DIR/$THIS_FILE_NAME"
+
+# This is supposed to be xpanes-12345(PID)
+readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+
+# Temporary window name is tmp-12345(PID)
+readonly TMP_WIN_NAME="tmp-$$"
+readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
+
+
+usage() {
+    echo "Usage:"
+    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
+    echo
+    echo "OPTIONS:"
+    echo "  -h --help                    Show this screen."
+    echo "  -v --version                 Show version."
+    echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
+    echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
+    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
+    echo
+    echo " FORMAT:"
+    echo "     Default value is \"$LOG_FORMAT\""
+    echo "     Interpreted sequences are:"
+    echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
+    echo "     [:ARG:]   Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo
+    echo '     In addition, sequences same as `date` command are available.'
+    echo
+    echo "     For example:"
+    echo "     %Y   year  (e.g, 1960)"
+    echo "     %m   month (e.g, 01)"
+    echo "     %d   date  (e.g, 31)"
+    echo "     And etc."
+    echo "     Other sequences are available. Please refer to date(1) manual."
+    echo
+    echo " Examples:"
+    echo "     $ $THIS_FILE_NAME host1 host2 host3 host4"
+    echo "     New window is created and then, it will be separated into four panes."
+    echo
+    echo "     $ $THIS_FILE_NAME host{1..4}"
+    echo "     Four panes will be created."
+    echo "     Brace expansion is useful."
+    echo
+    echo "     $ $THIS_FILE_NAME -l user1@host1 user1@host1"
+    echo "     New window is created and it will be separated into two panes."
+    echo "     And also $LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     and      $LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs user1@host1 user2@host2"
+    echo "     Following files will be created."
+    echo "     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
+    echo "     will be created as their log files."
+    echo
+}
+
+# Show version number
+version() {
+    echo "$THIS_FILE_NAME $VERSION"
+}
+
+get_tmux_conf() {
+    local _conf_name="$1"
+    tmux show-window-options -g | grep "^${1}" | head -n 1 | perl -anle 'print $F[1]'
+}
+
+#
+# Generate log file names from given arguments.
+# Usage:
+#        echo <host1> <host2> ... | log_filenames <FORMAT>
+# Return:
+#        File names.
+# Example:
+#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:ARG:]_[:PID:]_%Y%m%d.log'
+#        aaa-1_1234_20160101.log
+#        bbb-1_1234_20160101.log
+#        ccc-1_1234_20160101.log
+#        aaa-2_1234_20160101.log
+#        ccc-2_1234_20160101.log
+#        ccc-3_1234_20160101.log
+#
+log_filenames () {
+    local _arg_fmt="$1"
+    local _full_fmt=$(date '+'$_arg_fmt)
+    cat | perl -nle 'print $_."-".(($h{$_}++)+1)' | while read host ; do
+        echo $_full_fmt | \
+        sed "s/\[:ARG:\]/$host/g" | \
+        sed "s/\[:PID:\]/$$/g"
+    done
+}
+
+#
+# Ensure existance of given directory
+# Usage:
+#        ensure_directory <direname>
+#
+ensure_directory() {
+    local _dir="$1"
+
+    # Remove end of slash '/'
+    _dir="${_dir%/}"
+
+    # tilda expansion
+    _dir="${_dir/#~/$HOME}"
+
+    # Check directory.
+    if [ ! -e "${_dir}" ]; then
+        # Create directory
+        if mkdir "${_dir}"; then
+            echo "${_dir} is created." >&2
+        else
+            echo "Failed to create ${_dir}" >&2
+            exit 1
+        fi
+    fi
+    if [ ! -d "${_dir}" ]; then
+        echo "${_dir} is not directory." >&2
+        exit 1
+    fi
+    if [ ! -w "${_dir}" ]; then
+        echo "${_dir} is not writable." >&2
+        exit 1
+    fi
+
+    # Return absolute path
+    echo "$(cd "$LOG_DIR" && pwd)"
+}
+
+# Convert array to string which is can be used as command line argument.
+# Usage:
+#       arr2args <array object>
+# Example:
+#       array=(aaa bbb "ccc ddd" eee "f'f")
+#       arr2args "${array[@]}"
+#       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
+# Result:
+arr2args() {
+    local _arr=($@)
+    local _arg=""
+    # If there is no argument, usage will be shown.
+    if [ $# -lt 1 ]; then
+        return 0
+    fi
+    for i in $( seq 0 $(( $# - 1)) ) ;do
+        _arg=${_arr[i]}
+        printf "'${_arg//\'/\\\'}' "
+    done
+}
+
+# Extract first field separated by dot '.'
+# ex, $1       =  aaa.bbb.ccc
+#     return   =  aaa-12345(PID)
+generate_window_name() {
+    echo "$1" | perl -F'\.' -anle 'printf "$F[0]-'$$'"'
+}
+
+#
+# Split a new window into multiple panes.
+# Usage:
+#        run_split <window name> <num of pane>
+#
+split_window() {
+    local _window_name="$1" ; shift
+    local _hosts_num="$1"
+    for i in $(seq 0 $_hosts_num)
+    do
+        tmux split-window -t ${_window_name} -h -d
+        tmux select-layout even-horizontal
+
+        # Restraining that size of pane's width becomes
+        # less than the minimum size which is defined by tmux.
+        if [ $i -ge 2 ]; then
+            tmux select-layout -t ${_window_name} tiled
+        fi
+    done
+}
+
+enable_logging() {
+    local _window_name="$1" ; shift
+    local _index_offset="$1" ; shift
+    local _log_dir="$1" ; shift
+    local _log_format="$1" ; shift
+    local _hosts=($@)
+    local _hosts_num=$(($# - 1))
+    # Generate log files from host list.
+    local _logfiles=($(
+    for i in $(seq 0 $_hosts_num)
+    do
+        echo "${_hosts[i]}"
+    done | log_filenames "$_log_format"
+    ))
+    for i in $(seq 0 $_hosts_num)
+    do
+        # Start logging
+        tmux pipe-pane -t ${_window_name}.$(($i + ${_index_offset})) "cat >> '${_log_dir}/${_logfiles[i]}'"
+    done
+}
+
+send_commands() {
+    local _window_name="$1" ; shift
+    local _index_offset="$1" ; shift
+    local _repstr="$1" ; shift
+    local _cmd="$1" ; shift
+    local _index=0
+    for host in "$@"
+    do
+        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$host}" C-m
+        _index=$(($_index + 1))
+    done
+}
+
+# Serarate window vertically, when the number of panes is 1 or 2.
+arrange_pane_location() {
+    local _window_name="$1" ; shift
+    local _hosts_num="$1"
+
+    if [ $_hosts_num -eq 1 ]; then
+        tmux select-layout -t ${_window_name} even-horizontal
+    elif [ $_hosts_num -gt 1 ]; then
+        tmux select-layout -t ${_window_name} tiled
+    fi
+}
+
+#
+# Split a new window which was created by tmux into multiple panes.
+# Usage:
+#        prepare_window <window name> <offset of index> <number of pane>
+#
+prepare_window()
+{
+    local _window_name="$1" ; shift
+    local _pane_base_index="$1" ;shift
+    local _pane_num="$1"
+
+    # Create new window.
+    tmux new-window -n "$_window_name"
+
+    # specify a pane which has the youngest number of index.
+    tmux select-pane -t ${_window_name}.${_pane_base_index}
+
+    # split window into multiple panes
+    split_window "$_window_name" "$_pane_num"
+
+    ### If the first pane is still remaining,
+    ### panes cannot be organized well.
+    # Delete the first pane
+    tmux kill-pane -t ${_window_name}.${_pane_base_index}
+
+    # Select second pane
+    tmux select-pane -t ${_window_name}.${_pane_base_index}
+}
+
+# Following global variables will be used
+# within execution function and entrypoint.
+: "Initialize options" && {
+    HOSTS=()
+    OPTIONS=()
+    KILL_WIN_FLG=0
+    KILL_WIN_NAME=""
+    DRY_RUN_FLG=0
+    LOG_STORE_FLG=0
+    LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
+    LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+    REPSTR="{}"
+    # CMD_UTILITY="ssh -o StrictHostKeyChecking=no "
+    CMD_UTILITY="echo {} "
+}
+
+execution() {
+
+    #
+    # If current shell is already in tmux session.
+    #
+    if [ -n "$TMUX" ]; then
+        local _pane_base_index=$(get_tmux_conf 'pane-base-index')
+        local _window_name=$(generate_window_name "${HOSTS[0]}")
+        local _last_host_idx=$((${#HOSTS[@]} - 1))
+
+        prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx"
+
+        if [ $LOG_STORE_FLG -eq 1 ]; then
+            enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${HOSTS[@]}"
+        fi
+
+        # Sending ssh opearations for each pane.
+        send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${HOSTS[@]}"
+
+        # This is just the author's preference (You can remove next statement.)
+        arrange_pane_location "$_window_name" $_last_host_idx
+
+        # Enable broadcasting
+        tmux set-window-option -t ${_window_name} synchronize-panes on
+
+        # Remove original window.
+        if [ $KILL_WIN_FLG -eq 1 ]; then
+            tmux kill-window -t "$KILL_WIN_NAME"
+        fi
+
+
+    #
+    # If current shell is NOT in tmux session.
+    #
+    else
+
+        # Create new session.
+        tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+
+        local _hosts4args=$(arr2args "${HOSTS[@]}")
+        local _opts4args=$(arr2args "${OPTIONS[@]}")
+
+        tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
+            "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_hosts4args" C-m
+
+        # Go to another condition of this if statement.
+        tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
+    fi
+}
+
+: "Entry Point" && {
+    # If there is no argument, usage will be shown.
+    if [ $# -lt 1 ]; then
+        usage
+        exit 1
+    fi
+
+    : "Parse Options" && {
+        while (( $# > 0 ))
+        do
+            case "$1" in
+
+                # Long options
+                --help)
+                    usage
+                    exit 0
+                    ;;
+                --version)
+                    version
+                    exit 0
+                    ;;
+                --log-format=*)
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    LOG_FORMAT="${1#--log-format=}"
+                    shift
+                    ;;
+                --log*)
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    if [[ "$1" =~ ^--log=  ]]; then
+                        LOG_DIR="${1#--log=}"
+                    fi
+                    shift
+                    ;;
+                --dry-run)
+                    DRY_RUN_FLG=1
+                    shift
+                    ;;
+                --kill-window=*)
+                    KILL_WIN_FLG="1"
+                    KILL_WIN_NAME="${1#--kill-window=}"
+                    shift
+                    ;;
+
+                # Short options
+                -[hvIcl]*)
+                    if [[ "$1" =~ ^-h ]]; then
+                        usage
+                        exit 0
+                    fi
+                    if [[ "$1" =~ ^-v ]]; then
+                        version
+                        exit 0
+                    fi
+
+                    # Behavior like this.
+                    # -IAAA         -- REPSTR="AAA"
+                    # -I AAA BBB    -- REPSTR="AAA"
+                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
+                    # -IAAA BBB     -- REPSTR="AAA", HOSTS=("BBB")
+                    if [[ "$1" =~ ^-I ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        if [[ "$1" =~ ^-I.+ ]]; then
+                            REPSTR="${1#-I}"
+                        elif ! [[ "$2" =~ ^-.* ]]; then
+                            REPSTR="$2"
+                            shift
+                            OPTIONS=("${OPTIONS[@]}" "$1")
+                        fi
+                    fi
+
+                    if [[ "$1" =~ ^-c ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        if [[ "$1" =~ ^-c.+ ]]; then
+                            CMD_UTILITY="${1#-c}"
+                        elif ! [[ "$2" =~ ^-.* ]]; then
+                            CMD_UTILITY="$2"
+                            shift
+                            OPTIONS=("${OPTIONS[@]}" "$1")
+                        fi
+                    fi
+
+                    if [[ "$1" =~ ^-l ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        LOG_STORE_FLG=1
+                    fi
+                    shift
+                    ;;
+
+                # Hosts
+                *)
+                    HOSTS=("${HOSTS[@]}" "$1")
+                    shift
+                    ;;
+            esac
+        done
+    }
+
+
+    # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+    if [ $DRY_RUN_FLG -ne 1 ]; then
+
+        : "Parameter validation" && {
+            if [ ${#HOSTS[@]} -le 0 ]; then
+                echo 'Specify hosts.'  >&2
+                exit 1
+            fi
+            # Validate log directory.
+            if [ $LOG_STORE_FLG -eq 1 ]; then
+                LOG_DIR="$(ensure_directory "$LOG_DIR")"
+            fi
+        }
+
+        # Run script
+        execution
+        exit 0
+    fi
+}
