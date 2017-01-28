@@ -66,7 +66,7 @@ test_version() {
     #
     # From out side of TMUX session
     #
-    cmd="${EXEC} -v"; result=$($cmd); echo $cmd
+    cmd="${EXEC} -V"; result=$($cmd); echo $cmd
     echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
 
@@ -77,7 +77,11 @@ test_version() {
     #
     # From in side of TMUX session
     #
-    cmd="exec_in_tmux_session ${EXEC} -v"; result=$($cmd); echo $cmd
+    cmd="exec_in_tmux_session ${EXEC} -V"; result=$($cmd); echo $cmd
+    echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
+    assertEquals "0" "$?"
+
+    cmd="exec_in_tmux_session ${EXEC} --version"; result=$($cmd); echo $cmd
     echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
 }

@@ -376,12 +376,12 @@ execution() {
                     ;;
 
                 # Short options
-                -[hvIcl]*)
+                -[hVIcl]*)
                     if [[ "$1" =~ ^-h ]]; then
                         usage
                         exit 0
                     fi
-                    if [[ "$1" =~ ^-v ]]; then
+                    if [[ "$1" =~ ^-V ]]; then
                         version
                         exit 0
                     fi
