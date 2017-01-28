@@ -27,6 +27,7 @@ usage() {
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
+    echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo
@@ -273,6 +274,7 @@ prepare_window()
     LOG_STORE_FLG=0
     LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+    REPSTR="{}"
 }
 
 execution() {
@@ -371,16 +373,21 @@ execution() {
                     ;;
 
                 # Short options
-                -*)
-                    if [[ "$1" =~ 'h' ]]; then
+                -[hvIl]*)
+                    if [[ "$1" =~ ^-h ]]; then
                         usage
                         exit 0
                     fi
-                    if [[ "$1" =~ 'v' ]]; then
+                    if [[ "$1" =~ ^-v ]]; then
                         version
                         exit 0
                     fi
-                    if [[ "$1" =~ 'l' ]]; then
+                    if [[ "$1" =~ ^-I.+ ]]; then
+                        REPSTR="${1#-I}"
+                    elif ! [[ "$2" =~ ^-.* ]]; then
+                        REPSTR="$2"
+                    fi
+                    if [[ "$1" =~ ^-l ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         LOG_STORE_FLG=1
                     fi
