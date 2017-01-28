@@ -13,8 +13,6 @@ readonly ABS_THIS_FILE_NAME="$(cd $(dirname $0) && pwd)/$THIS_FILE_NAME"
 # This is supposed to be tmssh-12345(PID)
 readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
-readonly SSH_CMD="ssh -o StrictHostKeyChecking=no"
-
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
 readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
@@ -27,6 +25,7 @@ usage() {
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
     echo "  -v --version                 Show version."
+    echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
     echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
@@ -213,12 +212,13 @@ enable_logging() {
 send_commands() {
     local _window_name="$1" ; shift
     local _index_offset="$1" ; shift
+    local _repstr="$1" ; shift
     local _cmd="$1" ; shift
-    local _hosts=($@)
-    local _hosts_num=$(($# - 1))
-    for i in $(seq 0 $_hosts_num)
+    local _index=0
+    for host in "$@"
     do
-        tmux send-keys -t $_window_name.$(($i + ${_index_offset})) "${_cmd} ${_hosts[i]}" C-m
+        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$host}" C-m
+        _index=$(($_index + 1))
     done
 }
 
@@ -275,6 +275,8 @@ prepare_window()
     LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
     REPSTR="{}"
+    # CMD_UTILITY="ssh -o StrictHostKeyChecking=no "
+    CMD_UTILITY="echo {} "
 }
 
 execution() {
@@ -294,7 +296,7 @@ execution() {
         fi
 
         # Sending ssh opearations for each pane.
-        send_commands "$_window_name" "$_pane_base_index" "$SSH_CMD" "${HOSTS[@]}"
+        send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${HOSTS[@]}"
 
         # This is just the author's preference (You can remove next statement.)
         arrange_pane_location "$_window_name" $_last_host_idx
@@ -373,7 +375,7 @@ execution() {
                     ;;
 
                 # Short options
-                -[hvIl]*)
+                -[hvIcl]*)
                     if [[ "$1" =~ ^-h ]]; then
                         usage
                         exit 0
@@ -382,11 +384,34 @@ execution() {
                         version
                         exit 0
                     fi
-                    if [[ "$1" =~ ^-I.+ ]]; then
-                        REPSTR="${1#-I}"
-                    elif ! [[ "$2" =~ ^-.* ]]; then
-                        REPSTR="$2"
+
+                    # Behavior like this.
+                    # -IAAA         -- REPSTR="AAA"
+                    # -I AAA BBB    -- REPSTR="AAA"
+                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
+                    # -IAAA BBB     -- REPSTR="AAA", HOSTS=("BBB")
+                    if [[ "$1" =~ ^-I ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        if [[ "$1" =~ ^-I.+ ]]; then
+                            REPSTR="${1#-I}"
+                        elif ! [[ "$2" =~ ^-.* ]]; then
+                            REPSTR="$2"
+                            shift
+                            OPTIONS=("${OPTIONS[@]}" "$1")
+                        fi
                     fi
+
+                    if [[ "$1" =~ ^-c ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        if [[ "$1" =~ ^-c.+ ]]; then
+                            CMD_UTILITY="${1#-c}"
+                        elif ! [[ "$2" =~ ^-.* ]]; then
+                            CMD_UTILITY="$2"
+                            shift
+                            OPTIONS=("${OPTIONS[@]}" "$1")
+                        fi
+                    fi
+
                     if [[ "$1" =~ ^-l ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         LOG_STORE_FLG=1
