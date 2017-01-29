@@ -16,7 +16,6 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-readonly TMP_SOCKET="$HOME/.$THIS_FILE_NAME-socket"
 
 
 usage() {
@@ -28,6 +27,7 @@ usage() {
     echo "  -v --version                 Show version."
     echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
     echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
+    echo "  -S socket-path               Specify a full alternative path to the server socket."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo
@@ -283,6 +283,7 @@ prepare_window()
     LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
     REPSTR="{}"
+    SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
     CMD_UTILITY="echo {} "
 }
 
@@ -321,20 +322,19 @@ execution() {
     # If current shell is NOT in tmux session.
     #
     else
-
         # Create new session.
-        tmux -S $TMP_SOCKET new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+        tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
         local _hosts4args=$(arr2args "${HOSTS[@]}")
         local _opts4args=$(arr2args "${OPTIONS[@]}")
 
-        tmux -S $TMP_SOCKET send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
+        tmux -S $SOCKET_PATH send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
             "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_hosts4args" C-m
 
         # Avoid attaching if it is unit testing.
         if [ $NO_ATTACH_FLG -eq 0 ]; then
             # Go to another condition of this if statement.
-            tmux -S $TMP_SOCKET attach-session -t $SESSION_NAME
+            tmux -S $SOCKET_PATH attach-session -t $SESSION_NAME
         fi
     fi
 }
@@ -392,7 +392,7 @@ execution() {
 
 
                 # Short options
-                -[hVIcl]*)
+                -[hVIcSl]*)
                     if [[ "$1" =~ ^-h ]]; then
                         usage
                         exit 0
@@ -424,6 +424,17 @@ execution() {
                             CMD_UTILITY="${1#-c}"
                         elif ! [[ "$2" =~ ^-.* ]]; then
                             CMD_UTILITY="$2"
+                            shift
+                            OPTIONS=("${OPTIONS[@]}" "$1")
+                        fi
+                    fi
+
+                    if [[ "$1" =~ ^-S ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        if [[ "$1" =~ ^-S.+ ]]; then
+                            SOCKET_PATH="${1#-I}"
+                        elif ! [[ "$2" =~ ^-.* ]]; then
+                            SOCKET_PATH="$2"
                             shift
                             OPTIONS=("${OPTIONS[@]}" "$1")
                         fi
