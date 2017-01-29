@@ -27,7 +27,9 @@ create_tmux_session(){
 
 exec_in_tmux_session(){
     # echo "tmux send-keys -t $_session_name:$_window_name \"cd ${BIN_DIR} && $*; touch ${TMPDIR}/done\" C-m" >&2
-    tmux send-keys -t $_session_name:$_window_name "cd ${BIN_DIR} && $*; touch ${TMPDIR}/done" C-m
+    # `head -n 10` prevents that the output exceeds the buffer size.
+    # If it is omitted, the test might be failed.
+    tmux send-keys -t $_session_name:$_window_name "cd ${BIN_DIR} && $* | head -n 10; touch ${TMPDIR}/done" C-m
 
     # Wait until tmux session is completely established.
     for i in $(seq 100) ;do
@@ -117,25 +119,31 @@ test_help() {
 }
 
 test_devide_two_panes() {
-    ${EXEC} --no-attach XPANES BBBB
-    window_name=$(tmux list-windows -F '#{window_name}' | grep 'XPANES' | head -n 1)
+    socket_file_name=".xpanes-shunit"
+    ${EXEC} -S $socket_file_name --no-attach XPANES AAAA
+    sleep 1
+    tmux -S $socket_file_name list-windows -F '#{window_name}'
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep 'XPANES' | head -n 1)
 
+    sleep 1
     echo "Check number of windows"
-    assertEquals 2 "$(tmux list-windows -t "$window_name" | grep -c .)"
+    tmux -S $socket_file_name list-panes -t "$window_name"
+    assertEquals 2 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
 
     echo "Check width -- A:$a_width B:$b_width"
-    a_width=$(tmux list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
+    a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
     # true:1, false:0
     # a_width +- 1 is b_width
     assertEquals 1 "$(( ( $a_width + 1 ) == $b_width || $a_width == $b_width || ( $a_width - 1 ) == $b_width ))"
 
-    a_height=$(tmux list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
+    a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
     echo "Check height -- A:$a_height B:$b_height"
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
     tmux kill-window -t $window_name
+    rm $socket_file_name
 }
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
