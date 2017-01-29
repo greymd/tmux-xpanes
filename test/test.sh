@@ -119,30 +119,43 @@ test_help() {
 }
 
 test_devide_two_panes() {
-    socket_file_name=".xpanes-shunit"
-    ${EXEC} -S $socket_file_name --no-attach XPANES AAAA
-    sleep 1
-    tmux -S $socket_file_name list-windows -F '#{window_name}'
-    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep 'XPANES' | head -n 1)
+    local window_name=""
+    local socket_file_name=".xpanes-shunit"
 
-    sleep 1
+    ${EXEC} -S $socket_file_name --no-attach XPANES AAAA
+    # Wait until pane separation is completed
+    for i in $(seq 100) ;do
+        sleep 1
+        window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
+        if ! [ -z "${window_name}" ]; then
+            break
+        fi
+        # Still not separated.
+        if [ $i -eq 100 ]; then
+            echo "Test failed" >&2
+            return 1
+        fi
+    done
+
     echo "Check number of windows"
     tmux -S $socket_file_name list-panes -t "$window_name"
     assertEquals 2 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
 
-    echo "Check width -- A:$a_width B:$b_width"
+    echo "Check width"
     a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
     b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
+    echo "A:$a_width B:$b_width"
     # true:1, false:0
     # a_width +- 1 is b_width
     assertEquals 1 "$(( ( $a_width + 1 ) == $b_width || $a_width == $b_width || ( $a_width - 1 ) == $b_width ))"
 
+    echo "Check height"
     a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
     b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
-    echo "Check height -- A:$a_height B:$b_height"
+    echo "A:$a_height B:$b_height"
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
-    tmux kill-window -t $window_name
+    tmux -S $socket_file_name kill-window -t $window_name
     rm $socket_file_name
 }
 
