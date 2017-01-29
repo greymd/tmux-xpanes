@@ -165,7 +165,7 @@ arr2args() {
 # ex, $1       =  aaa.bbb.ccc
 #     return   =  aaa-12345(PID)
 generate_window_name() {
-    echo "$1" | perl -F'\.' -anle 'printf "$F[0]-'$$'"'
+    echo "$1" | tr '.' ' ' | perl -anle 'printf "$F[0]-'$$'"'
 }
 
 #
