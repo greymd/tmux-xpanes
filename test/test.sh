@@ -95,6 +95,10 @@ wait_panes_separation() {
 
 }
 
+between_plus_minus_1() {
+    echo "$(( ( $1 + 1 ) == $2 || $1 == $2 || ( $1 - 1 ) == $2 ))"
+}
+
 setUp(){
     cd ${BIN_DIR}
     # create_tmux_session
@@ -159,13 +163,30 @@ test_help() {
     kill_tmux_session
 }
 
+test_start_separation() {
+    local window_name=""
+    local socket_file_name=".xpanes-shunit"
+
+    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB
+    wait_panes_separation "$socket_file_name" "AAAA" "2"
+    # Number of window is 1
+    assertEquals "1" "$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep -c .)"
+    tmux -S $socket_file_name kill-session
+    rm $socket_file_name
+}
+
 test_devide_two_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
 
-    ${EXEC} -S $socket_file_name --no-attach XPANES AAAA
-    wait_panes_separation "$socket_file_name" "XPANES" "2"
-    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
+    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB
+    wait_panes_separation "$socket_file_name" "AAAA" "2"
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+
+    # Window should be devided like this.
+    # +---+---+
+    # | A | B |
+    # +---+---+
 
     echo "Check number of panes"
     assertEquals 2 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
@@ -176,7 +197,7 @@ test_devide_two_panes() {
     echo "A:$a_width B:$b_width"
     # true:1, false:0
     # a_width +- 1 is b_width
-    assertEquals 1 "$(( ( $a_width + 1 ) == $b_width || $a_width == $b_width || ( $a_width - 1 ) == $b_width ))"
+    assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
 
     echo "Check height"
     a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
@@ -188,17 +209,58 @@ test_devide_two_panes() {
     rm $socket_file_name
 }
 
-between_plus_minus_1() {
-    echo "$(( ( $1 + 1 ) == $2 || $1 == $2 || ( $1 - 1 ) == $2 ))"
+test_devide_three_panes() {
+    local window_name=""
+    local socket_file_name=".xpanes-shunit"
+
+    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC
+    wait_panes_separation "$socket_file_name" "AAAA" "3"
+    window_name="$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)"
+
+    # Window should be devided like this.
+    # +---+---+
+    # | A | B |
+    # +---+---+
+    # |   C   |
+    # +---+---+
+
+    echo "Check number of panes"
+    assertEquals 3 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
+
+    echo "Check width"
+    a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==3')
+    echo "A:$a_width B:$b_width C:$c_width"
+    assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
+    assertEquals 1 "$(( $(( $a_width + $b_width + 1 )) == $c_width ))"
+
+    echo "Check height"
+    a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==3')
+    echo "A:$a_height B:$b_height C:$c_height"
+    # In this case, height must be same.
+    assertEquals 1 "$(( $a_height == $b_height ))"
+    assertEquals 1 "$(between_plus_minus_1 $c_height $a_height)"
+    tmux -S $socket_file_name kill-window -t $window_name
+    rm $socket_file_name
 }
 
 test_devide_four_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
 
-    ${EXEC} -S $socket_file_name --no-attach XPANES AAAA BBBB CCCC
-    wait_panes_separation "$socket_file_name" "XPANES" "4"
-    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
+    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC DDDD
+    wait_panes_separation "$socket_file_name" "AAAA" "4"
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+
+    # Window should be devided like this.
+    # +---+---+
+    # | A | B |
+    # +---+---+
+    # | C | D |
+    # +---+---+
 
     echo "Check width"
     a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
@@ -206,12 +268,7 @@ test_devide_four_panes() {
     c_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==3')
     d_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==4')
     echo "A:$a_width B:$b_width C:$c_width D:$d_width"
-    # Window should be devided like this.
-    # ---------
-    # | A | B |
-    # +---+---+
-    # | C | D |
-    # ---------
+
     assertEquals 1 "$(($a_width == $c_width))"
     assertEquals 1 "$(($b_width == $d_width))"
     assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
@@ -226,10 +283,61 @@ test_devide_four_panes() {
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
     assertEquals 1 "$(( $c_height == $d_height ))"
-    assertEquals 1 "$(between_plus_minus_1 $a_width $c_width)"
-    assertEquals 1 "$(between_plus_minus_1 $b_width $d_width)"
+    assertEquals 1 "$(between_plus_minus_1 $a_height $c_height)"
+    assertEquals 1 "$(between_plus_minus_1 $b_height $d_height)"
     tmux -S $socket_file_name kill-window -t $window_name
     rm $socket_file_name
+}
+
+
+test_devide_five_panes() {
+    local window_name=""
+    local socket_file_name=".xpanes-shunit"
+
+    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC DDDD EEEE
+    wait_panes_separation "$socket_file_name" "AAAA" "5"
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+
+    # Window should be devided like this.
+    # +---+---+
+    # | A | B |
+    # +---+---+
+    # | C | D |
+    # +---+---+
+    # |   E   |
+    # +---+---+
+
+    echo "Check width"
+    a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==3')
+    d_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==4')
+    e_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==5')
+    echo "A:$a_width B:$b_width C:$c_width D:$d_width E:$e_width"
+    assertEquals 1 "$(($a_width == $c_width))"
+    assertEquals 1 "$(($b_width == $d_width))"
+    assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
+    assertEquals 1 "$(between_plus_minus_1 $c_width $d_width)"
+    # Width of A + B is greater than E with 1 px. Because of the border.
+    assertEquals 1 "$(( $(( $a_width + $b_width + 1 )) == $e_width))"
+
+    echo "Check height"
+    a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==3')
+    d_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==4')
+    e_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==5')
+    echo "A:$a_height B:$b_height C:$c_height D:$d_height E:$e_height"
+    assertEquals 1 "$(( $a_height == $b_height ))"
+    assertEquals 1 "$(( $c_height == $d_height ))"
+    assertEquals 1 "$(between_plus_minus_1 $a_height $c_height)"
+    assertEquals 1 "$(between_plus_minus_1 $b_height $d_height)"
+    assertEquals 1 "$(between_plus_minus_1 $a_height $e_height)"
+    assertEquals 1 "$(between_plus_minus_1 $c_height $e_height)"
+
+    tmux -S $socket_file_name kill-window -t $window_name
+    rm $socket_file_name
+
 }
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
