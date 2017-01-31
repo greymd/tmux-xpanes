@@ -1,5 +1,18 @@
 #!/bin/bash
 
+if [ -n "$ZSH_VERSION" ]; then
+  # This is zsh
+  echo "Testing for zsh $ZSH_VERSION"
+  echo "            $(tmux -V)"
+  # Following two lines are necessary to run shuni2 with zsh
+  SHUNIT_PARENT="$0"
+  setopt shwordsplit
+elif [ -n "$BASH_VERSION" ]; then
+  # This is bash
+  echo "Testing for bash $BASH_VERSION"
+  echo "            $(tmux -V)"
+fi
+
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 
@@ -10,26 +23,26 @@ BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
 
-_socket="${TMPDIR}/shunit.session"
-_session_name="shunit_session"
-_window_name="shunit_window"
+shunit_socket="${TMPDIR}/shunit.session"
+shunit_session_name="shunit_session"
+shunit_window_name="shunit_window"
 
 create_tmux_session(){
-    # echo "tmux kill-session -t $_session_name 2> /dev/null"
-    tmux kill-session -t $_session_name 2> /dev/null
+    # echo "tmux kill-session -t $shunit_session_name 2> /dev/null"
+    tmux kill-session -t $shunit_session_name 2> /dev/null
 
     # echo "rm -f ${TMPDIR}/shunit.session"
     rm -f ${TMPDIR}/shunit.session
 
-    # echo "tmux new-session -s $_session_name -n $_window_name -d"
-    tmux new-session -s $_session_name -n $_window_name -d
+    # echo "tmux new-session -s $shunit_session_name -n $shunit_window_name -d"
+    tmux new-session -s $shunit_session_name -n $shunit_window_name -d
 }
 
 exec_in_tmux_session(){
-    # echo "tmux send-keys -t $_session_name:$_window_name \"cd ${BIN_DIR} && $*; touch ${TMPDIR}/done\" C-m" >&2
+    # echo "tmux send-keys -t $shunit_session_name:$shunit_window_name \"cd ${BIN_DIR} && $*; touch ${TMPDIR}/done\" C-m" >&2
     # `head -n 10` prevents that the output exceeds the buffer size.
     # If it is omitted, the test might be failed.
-    tmux send-keys -t $_session_name:$_window_name "cd ${BIN_DIR} && $* | head -n 10; touch ${TMPDIR}/done" C-m
+    tmux send-keys -t $shunit_session_name:$shunit_window_name "cd ${BIN_DIR} && $* | head -n 10; touch ${TMPDIR}/done" C-m
 
     # Wait until tmux session is completely established.
     for i in $(seq 100) ;do
@@ -45,13 +58,41 @@ exec_in_tmux_session(){
         fi
     done
 
-    # echo "tmux capture-pane -t $_session_name:$_window_name" >&2
-    tmux capture-pane -t $_session_name:$_window_name
+    # echo "tmux capture-pane -t $shunit_session_name:$shunit_window_name" >&2
+    tmux capture-pane -t $shunit_session_name:$shunit_window_name
 
     # Show result
     # echo "tmux show-buffer | awk NF" >&2
     tmux show-buffer | awk NF
     return 0
+}
+
+wait_panes_separation() {
+    local _socket_file_name="$1"
+    local _window_name_prefix="$2"
+    local _expected_window_num="$3"
+    local _window_name=""
+    local _window_num=""
+    local _wait_seconds=30
+    # Wait until pane separation is completed
+    echo "Check number of panes"
+    for i in $(seq $_wait_seconds) ;do
+        sleep 1
+        _window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep "^${_window_name_prefix}" | head -n 1)
+        if ! [ -z "${_window_name}" ]; then
+            _window_num="$(tmux -S $_socket_file_name list-panes -t "$_window_name" | grep -c .)"
+            if [ "${_window_num}" = "${_expected_window_num}" ]; then
+                tmux -S $_socket_file_name list-panes -t "$_window_name" >&2
+                break
+            fi
+        fi
+        # Still not separated.
+        if [ $i -eq $_wait_seconds ]; then
+            echo "Test failed" >&2
+            return 1
+        fi
+    done
+
 }
 
 setUp(){
@@ -60,7 +101,7 @@ setUp(){
 }
 
 kill_tmux_session(){
-    tmux kill-session -t $_session_name
+    tmux kill-session -t $shunit_session_name
     rm -f ${TMPDIR}/shunit.session
 }
 
@@ -123,22 +164,10 @@ test_devide_two_panes() {
     local socket_file_name=".xpanes-shunit"
 
     ${EXEC} -S $socket_file_name --no-attach XPANES AAAA
-    # Wait until pane separation is completed
-    for i in $(seq 100) ;do
-        sleep 1
-        window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
-        if ! [ -z "${window_name}" ]; then
-            break
-        fi
-        # Still not separated.
-        if [ $i -eq 100 ]; then
-            echo "Test failed" >&2
-            return 1
-        fi
-    done
+    wait_panes_separation "$socket_file_name" "XPANES" "2"
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
 
     echo "Check number of panes"
-    tmux -S $socket_file_name list-panes -t "$window_name"
     assertEquals 2 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
 
     echo "Check width"
@@ -159,7 +188,7 @@ test_devide_two_panes() {
     rm $socket_file_name
 }
 
-a_within_plus_minus_1_b() {
+between_plus_minus_1() {
     echo "$(( ( $1 + 1 ) == $2 || $1 == $2 || ( $1 - 1 ) == $2 ))"
 }
 
@@ -168,23 +197,8 @@ test_devide_four_panes() {
     local socket_file_name=".xpanes-shunit"
 
     ${EXEC} -S $socket_file_name --no-attach XPANES AAAA BBBB CCCC
-    # Wait until pane separation is completed
-    for i in $(seq 100) ;do
-        sleep 1
-        window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
-        if ! [ -z "${window_name}" ]; then
-            break
-        fi
-        # Still not separated.
-        if [ $i -eq 100 ]; then
-            echo "Test failed" >&2
-            return 1
-        fi
-    done
-
-    echo "Check number of panes"
-    tmux -S $socket_file_name list-panes -t "$window_name"
-    assertEquals 4 "$(tmux -S $socket_file_name list-panes -t "$window_name" | grep -c .)"
+    wait_panes_separation "$socket_file_name" "XPANES" "4"
+    window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^XPANES' | head -n 1)
 
     echo "Check width"
     a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
@@ -200,8 +214,8 @@ test_devide_four_panes() {
     # ---------
     assertEquals 1 "$(($a_width == $c_width))"
     assertEquals 1 "$(($b_width == $d_width))"
-    assertEquals 1 "$(a_within_plus_minus_1_b $a_width $b_width)"
-    assertEquals 1 "$(a_within_plus_minus_1_b $c_width $d_width)"
+    assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
+    assertEquals 1 "$(between_plus_minus_1 $c_width $d_width)"
 
     echo "Check height"
     a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
@@ -212,10 +226,10 @@ test_devide_four_panes() {
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
     assertEquals 1 "$(( $c_height == $d_height ))"
-    assertEquals 1 "$(a_within_plus_minus_1_b $a_width $c_width)"
-    assertEquals 1 "$(a_within_plus_minus_1_b $b_width $d_width)"
+    assertEquals 1 "$(between_plus_minus_1 $a_width $c_width)"
+    assertEquals 1 "$(between_plus_minus_1 $b_width $d_width)"
     tmux -S $socket_file_name kill-window -t $window_name
     rm $socket_file_name
 }
-. ${THIS_DIR}/shunit2/source/2.1/src/shunit2
 
+. ${THIS_DIR}/shunit2/source/2.1/src/shunit2
