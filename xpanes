@@ -18,7 +18,7 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 readonly TMP_WIN_NAME="tmp-$$"
 
 
-usage() {
+__xpanes::usage() {
     echo "Usage:"
     echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
     echo
@@ -69,11 +69,11 @@ usage() {
 }
 
 # Show version number
-version() {
+__xpanes::version() {
     echo "$THIS_FILE_NAME $VERSION"
 }
 
-get_tmux_conf() {
+__xpanes::get_tmux_conf() {
     local _conf_name="$1"
     tmux show-window-options -g | grep "^${1}" | head -n 1 | perl -anle 'print $F[1]'
 }
@@ -81,7 +81,7 @@ get_tmux_conf() {
 #
 # Generate log file names from given arguments.
 # Usage:
-#        echo <host1> <host2> ... | log_filenames <FORMAT>
+#        echo <host1> <host2> ... | __xpanes::log_filenames <FORMAT>
 # Return:
 #        File names.
 # Example:
@@ -93,7 +93,7 @@ get_tmux_conf() {
 #        ccc-2_1234_20160101.log
 #        ccc-3_1234_20160101.log
 #
-log_filenames () {
+__xpanes::log_filenames () {
     local _arg_fmt="$1"
     local _full_fmt=$(date '+'$_arg_fmt)
     cat | perl -nle 'print $_."-".(($h{$_}++)+1)' | while read host ; do
@@ -106,9 +106,9 @@ log_filenames () {
 #
 # Ensure existance of given directory
 # Usage:
-#        ensure_directory <direname>
+#        __xpanes::ensure_directory <direname>
 #
-ensure_directory() {
+__xpanes::ensure_directory() {
     local _dir="$1"
 
     # Remove end of slash '/'
@@ -142,13 +142,13 @@ ensure_directory() {
 
 # Convert array to string which is can be used as command line argument.
 # Usage:
-#       arr2args <array object>
+#       __xpanes::arr2args <array object>
 # Example:
 #       array=(aaa bbb "ccc ddd" eee "f'f")
-#       arr2args "${array[@]}"
+#       __xpanes::arr2args "${array[@]}"
 #       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
 # Result:
-arr2args() {
+__xpanes::arr2args() {
     local _arr=($@)
     local _arg=""
     # If there is no argument, usage will be shown.
@@ -164,7 +164,7 @@ arr2args() {
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
 #     return   =  aaa-12345(PID)
-generate_window_name() {
+__xpanes::generate_window_name() {
     echo "$1" | tr '.' ' ' | perl -anle 'printf "$F[0]-'$$'"'
 }
 
@@ -173,7 +173,7 @@ generate_window_name() {
 # Usage:
 #        run_split <window name> <num of pane>
 #
-split_window() {
+__xpanes::split_window() {
     local _window_name="$1" ; shift
     local _hosts_num="$1"
     for i in $(seq 0 $_hosts_num)
@@ -189,7 +189,7 @@ split_window() {
     done
 }
 
-enable_logging() {
+__xpanes::enable_logging() {
     local _window_name="$1" ; shift
     local _index_offset="$1" ; shift
     local _log_dir="$1" ; shift
@@ -201,7 +201,7 @@ enable_logging() {
     for i in $(seq 0 $_hosts_num)
     do
         echo "${_hosts[i]}"
-    done | log_filenames "$_log_format"
+    done | __xpanes::log_filenames "$_log_format"
     ))
     for i in $(seq 0 $_hosts_num)
     do
@@ -210,7 +210,7 @@ enable_logging() {
     done
 }
 
-send_commands() {
+__xpanes::send_commands() {
     local _window_name="$1" ; shift
     local _index_offset="$1" ; shift
     local _repstr="$1" ; shift
@@ -224,7 +224,7 @@ send_commands() {
 }
 
 # Serarate window vertically, when the number of panes is 1 or 2.
-arrange_pane_location() {
+__xpanes::arrange_pane_location() {
     local _window_name="$1" ; shift
     local _hosts_num="$1"
 
@@ -238,9 +238,9 @@ arrange_pane_location() {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#        prepare_window <window name> <offset of index> <number of pane>
+#        __xpanes::prepare_window <window name> <offset of index> <number of pane>
 #
-prepare_window()
+__xpanes::prepare_window()
 {
     local _window_name="$1" ; shift
     local _pane_base_index="$1"; shift
@@ -259,7 +259,7 @@ prepare_window()
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 
     # split window into multiple panes
-    split_window "$_window_name" "$_pane_num"
+    __xpanes::split_window "$_window_name" "$_pane_num"
 
     ### If the first pane is still remaining,
     ### panes cannot be organized well.
@@ -271,7 +271,7 @@ prepare_window()
 }
 
 # Following global variables will be used
-# within execution function and entrypoint.
+# within __xpanes::execution function and entrypoint.
 : "Initialize options" && {
     HOSTS=()
     OPTIONS=()
@@ -287,27 +287,27 @@ prepare_window()
     CMD_UTILITY="echo {} "
 }
 
-execution() {
+__xpanes::execution() {
 
     #
     # If current shell is already in tmux session.
     #
     if [ -n "$TMUX" ]; then
-        local _pane_base_index=$(get_tmux_conf 'pane-base-index')
-        local _window_name=$(generate_window_name "${HOSTS[0]}")
+        local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
+        local _window_name=$(__xpanes::generate_window_name "${HOSTS[0]}")
         local _last_host_idx=$((${#HOSTS[@]} - 1))
 
-        prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$NO_ATTACH_FLG"
+        __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$NO_ATTACH_FLG"
 
         if [ $LOG_STORE_FLG -eq 1 ]; then
-            enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${HOSTS[@]}"
+            __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${HOSTS[@]}"
         fi
 
         # Sending ssh opearations for each pane.
-        send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${HOSTS[@]}"
+        __xpanes::send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${HOSTS[@]}"
 
         # This is just the author's preference (You can remove next statement.)
-        arrange_pane_location "$_window_name" $_last_host_idx
+        __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
 
         # Enable broadcasting
         tmux set-window-option -t ${_window_name} synchronize-panes on
@@ -325,8 +325,8 @@ execution() {
         # Create new session.
         tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
 
-        local _hosts4args=$(arr2args "${HOSTS[@]}")
-        local _opts4args=$(arr2args "${OPTIONS[@]}")
+        local _hosts4args=$(__xpanes::arr2args "${HOSTS[@]}")
+        local _opts4args=$(__xpanes::arr2args "${OPTIONS[@]}")
 
         tmux -S $SOCKET_PATH send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
             "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_hosts4args" C-m
@@ -342,7 +342,7 @@ execution() {
 : "Entry Point" && {
     # If there is no argument, usage will be shown.
     if [ $# -lt 1 ]; then
-        usage
+        __xpanes::usage
         exit 1
     fi
 
@@ -353,11 +353,11 @@ execution() {
 
                 # Long options
                 --help)
-                    usage
+                    __xpanes::usage
                     exit 0
                     ;;
                 --version)
-                    version
+                    __xpanes::version
                     exit 0
                     ;;
                 --log-format=*)
@@ -394,11 +394,11 @@ execution() {
                 # Short options
                 -[hVIcSl]*)
                     if [[ "$1" =~ ^-h ]]; then
-                        usage
+                        __xpanes::usage
                         exit 0
                     fi
                     if [[ "$1" =~ ^-V ]]; then
-                        version
+                        __xpanes::version
                         exit 0
                     fi
 
@@ -467,12 +467,12 @@ execution() {
             fi
             # Validate log directory.
             if [ $LOG_STORE_FLG -eq 1 ]; then
-                LOG_DIR="$(ensure_directory "$LOG_DIR")"
+                LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
             fi
         }
 
         # Run script
-        execution
+        __xpanes::execution
         exit 0
     fi
 }
