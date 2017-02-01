@@ -22,49 +22,40 @@ BIN_DIR="${THIS_DIR}/../"
 BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
-
-shunit_socket="${TMPDIR}/shunit.session"
-shunit_session_name="shunit_session"
-shunit_window_name="shunit_window"
-
-create_tmux_session(){
-    # echo "tmux kill-session -t $shunit_session_name 2> /dev/null"
-    tmux kill-session -t $shunit_session_name 2> /dev/null
-
-    # echo "rm -f ${TMPDIR}/shunit.session"
-    rm -f ${TMPDIR}/shunit.session
-
-    # echo "tmux new-session -s $shunit_session_name -n $shunit_window_name -d"
-    tmux new-session -s $shunit_session_name -n $shunit_window_name -d
+create_tmux_session() {
+    local _socket_file="$1"
+    tmux -S $_socket_file new-session -d
 }
 
-exec_in_tmux_session(){
-    # echo "tmux send-keys -t $shunit_session_name:$shunit_window_name \"cd ${BIN_DIR} && $*; touch ${TMPDIR}/done\" C-m" >&2
-    # `head -n 10` prevents that the output exceeds the buffer size.
-    # If it is omitted, the test might be failed.
-    tmux send-keys -t $shunit_session_name:$shunit_window_name "cd ${BIN_DIR} && $* | head -n 10; touch ${TMPDIR}/done" C-m
-
+exec_tmux_session() {
+    local _socket_file="$1" ;shift
+    # echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
+    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" C-m
     # Wait until tmux session is completely established.
-    for i in $(seq 100) ;do
+    for i in $(seq 30) ;do
         sleep 1
         if [ -e "${TMPDIR}/done" ]; then
             rm -f "${TMPDIR}/done"
             break
         fi
         # Tmux session does not work.
-        if [ $i -eq 100 ]; then
+        if [ $i -eq 30 ]; then
             echo "Test failed" >&2
             return 1
         fi
     done
+}
 
-    # echo "tmux capture-pane -t $shunit_session_name:$shunit_window_name" >&2
-    tmux capture-pane -t $shunit_session_name:$shunit_window_name
+capture_tmux_session() {
+    local _socket_file="$1"
+    tmux -S $_socket_file capture-pane
+    tmux -S $_socket_file show-buffer
+}
 
-    # Show result
-    # echo "tmux show-buffer | awk NF" >&2
-    tmux show-buffer | awk NF
-    return 0
+close_tmux_session() {
+    local _socket_file="$1"
+    tmux -S $_socket_file kill-session
+    rm $_socket_file
 }
 
 wait_panes_separation() {
@@ -78,7 +69,7 @@ wait_panes_separation() {
     echo "Check number of panes"
     for i in $(seq $_wait_seconds) ;do
         sleep 1
-        _window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep "^${_window_name_prefix}" | head -n 1)
+        _window_name=$(tmux -S $_socket_file_name list-windows -F '#{window_name}' | grep "^${_window_name_prefix}" | head -n 1)
         if ! [ -z "${_window_name}" ]; then
             _window_num="$(tmux -S $_socket_file_name list-panes -t "$_window_name" | grep -c .)"
             if [ "${_window_num}" = "${_expected_window_num}" ]; then
@@ -92,7 +83,6 @@ wait_panes_separation() {
             return 1
         fi
     done
-
 }
 
 between_plus_minus_1() {
@@ -101,22 +91,9 @@ between_plus_minus_1() {
 
 setUp(){
     cd ${BIN_DIR}
-    # create_tmux_session
 }
-
-kill_tmux_session(){
-    tmux kill-session -t $shunit_session_name
-    rm -f ${TMPDIR}/shunit.session
-}
-
-# tearDown() {
-#     kill_tmux_session
-# }
 
 test_version() {
-    #
-    # From out side of TMUX session
-    #
     cmd="${EXEC} -V"; result=$($cmd); echo $cmd
     echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
@@ -125,20 +102,20 @@ test_version() {
     echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
 
-    #
-    # From in side of TMUX session
-    #
-    create_tmux_session
-    cmd="exec_in_tmux_session ${EXEC} -V"; result=$($cmd); echo $cmd
-    echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
-    assertEquals "0" "$?"
-    kill_tmux_session
+    : "In TMUX session" && {
+    local _socket_file="${TMPDIR}/.xpanes-shunit"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session  "$_socket_file" ${EXEC} -V
+        capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
+        assertEquals "0" "$?"
+        close_tmux_session $_socket_file
 
-    create_tmux_session
-    cmd="exec_in_tmux_session ${EXEC} --version"; result=$($cmd); echo $cmd
-    echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
-    assertEquals "0" "$?"
-    kill_tmux_session
+        create_tmux_session "$_socket_file"
+        exec_tmux_session  "$_socket_file" ${EXEC} --version
+        capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
+        assertEquals "0" "$?"
+        close_tmux_session $_socket_file
+    }
 }
 
 test_help() {
@@ -150,54 +127,43 @@ test_help() {
     echo ${result} | grep -q "${BIN_NAME} \[OPTIONS\] .*"
     assertEquals "0" "$?"
 
-    create_tmux_session
-    cmd="exec_in_tmux_session ${EXEC} -h"; result=$($cmd); echo $cmd
-    echo ${result} | grep -q "${BIN_NAME} \[OPTIONS\] .*"
-    assertEquals "0" "$?"
-    kill_tmux_session
+    : "In TMUX session" && {
+        local _socket_file="${TMPDIR}/.xpanes-shunit"
+        create_tmux_session "$_socket_file"
+        # "| head " is added to prevent that the result exceeds the buffer limit of TMUX.
+        exec_tmux_session  "$_socket_file" "${EXEC} -h | head"
+        capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} \[OPTIONS\] .*"
+        assertEquals "0" "$?"
+        close_tmux_session $_socket_file
 
-    create_tmux_session
-    cmd="exec_in_tmux_session ${EXEC} --help"; result=$($cmd); echo $cmd
-    echo ${result} | grep -q "${BIN_NAME} \[OPTIONS\] .*"
-    assertEquals "0" "$?"
-    kill_tmux_session
+        create_tmux_session "$_socket_file"
+        exec_tmux_session  "$_socket_file" "${EXEC} --help | head"
+        capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} \[OPTIONS\] .*"
+        assertEquals "0" "$?"
+        close_tmux_session $_socket_file
+    }
 }
+
 
 test_start_separation() {
     local window_name=""
-    local socket_file_name="/tmp/.xpanes-shunit"
+    local _socket_file="${TMPDIR}/.xpanes-shunit"
 
-    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB
-    wait_panes_separation "$socket_file_name" "AAAA" "2"
+    ${EXEC} -S $_socket_file --no-attach AAAA BBBB
+    wait_panes_separation "$_socket_file" "AAAA" "2"
     # Number of window is 1
-    assertEquals "1" "$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep -c .)"
-    tmux -S $socket_file_name kill-session
-    rm $socket_file_name
+    assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
+    tmux -S $_socket_file kill-session
+    rm $_socket_file
 
-        tmux -S $socket_file_name new-session -d
-        tmux -S $socket_file_name send-keys "${EXEC} -S $socket_file_name --no-attach AAAA BBBB && echo done" C-m
-        sleep 10
-        tmux -S $socket_file_name list-windows
-        assertEquals "2" "$(tmux -S $socket_file_name list-windows | grep -c .)"
-
-        window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
-        echo "Check width"
-        a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
-        b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
-        echo "A:$a_width B:$b_width"
-        # true:1, false:0
-        # a_width +- 1 is b_width
-        assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
-
-        echo "Check height"
-        a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
-        b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
-        echo "A:$a_height B:$b_height"
-        # In this case, height must be same.
-        assertEquals 1 "$(( $a_height == $b_height ))"
-
-        tmux -S $socket_file_name kill-session
-        rm $socket_file_name
+    : "In TMUX session" && {
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+        # There must be 2 windows -- default window & new window.
+        tmux -S $_socket_file list-windows
+        assertEquals "2" "$(tmux -S $_socket_file list-windows | grep -c .)"
+        close_tmux_session "$_socket_file"
+    }
 }
 
 test_devide_two_panes() {
