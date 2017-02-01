@@ -1,3 +1,7 @@
+
+# !This "tmssh" repository will be renamed in the near future. Please be careful!
+
+
 # tmssh
 SSH multiple servers over multiple tmux panes.
 
