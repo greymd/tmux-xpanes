@@ -91,6 +91,17 @@ between_plus_minus_1() {
 
 setUp(){
     cd ${BIN_DIR}
+    echo ">>>>>>>>>>" >&2
+}
+
+tearDown(){
+    echo "<<<<<<<<<<" >&2
+    echo >&2
+}
+
+test_insufficient_cmd() {
+    XPANES_DEPENDENCIES="hogehoge123 cat" ${BIN_NAME}
+    assertEquals "1" "$?"
 }
 
 test_version() {
@@ -104,14 +115,16 @@ test_version() {
 
     : "In TMUX session" && {
     local _socket_file="${TMPDIR}/.xpanes-shunit"
+        cmd="${EXEC} -V"; echo "TMUX($cmd)"
         create_tmux_session "$_socket_file"
-        exec_tmux_session  "$_socket_file" ${EXEC} -V
+        exec_tmux_session  "$_socket_file" $cmd
         capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
         assertEquals "0" "$?"
         close_tmux_session $_socket_file
 
+        cmd="${EXEC} --version"; echo "TMUX($cmd)"
         create_tmux_session "$_socket_file"
-        exec_tmux_session  "$_socket_file" ${EXEC} --version
+        exec_tmux_session  "$_socket_file" $cmd
         capture_tmux_session "$_socket_file" | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
         assertEquals "0" "$?"
         close_tmux_session $_socket_file

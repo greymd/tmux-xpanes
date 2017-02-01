@@ -17,6 +17,7 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
 
+XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
 
 __xpanes::usage() {
     echo "Usage:"
@@ -339,123 +340,139 @@ __xpanes::execution() {
     fi
 }
 
-: "Entry Point" && {
+__xpanes::get_opts() {
     # If there is no argument, usage will be shown.
     if [ $# -lt 1 ]; then
         __xpanes::usage
         exit 1
     fi
 
-    : "Parse Options" && {
-        while (( $# > 0 ))
-        do
-            case "$1" in
+    while (( $# > 0 ))
+    do
+        case "$1" in
 
-                # Long options
-                --help)
+            # Long options
+            --help)
+                __xpanes::usage
+                exit 0
+                ;;
+            --version)
+                __xpanes::version
+                exit 0
+                ;;
+            --log-format=*)
+                OPTIONS=("${OPTIONS[@]}" "$1")
+                LOG_STORE_FLG=1
+                LOG_FORMAT="${1#--log-format=}"
+                shift
+                ;;
+            --log*)
+                OPTIONS=("${OPTIONS[@]}" "$1")
+                LOG_STORE_FLG=1
+                if [[ "$1" =~ ^--log=  ]]; then
+                    LOG_DIR="${1#--log=}"
+                fi
+                shift
+                ;;
+            --dry-run)
+                DRY_RUN_FLG=1
+                shift
+                ;;
+            --kill-window=*)
+                KILL_WIN_FLG="1"
+                KILL_WIN_NAME="${1#--kill-window=}"
+                shift
+                ;;
+                # For unit testing
+            --no-attach)
+                NO_ATTACH_FLG=1
+                OPTIONS=("${OPTIONS[@]}" "$1")
+                shift
+                ;;
+
+
+            # Short options
+            -[hVIcSl]*)
+                if [[ "$1" =~ ^-h ]]; then
                     __xpanes::usage
                     exit 0
-                    ;;
-                --version)
+                fi
+                if [[ "$1" =~ ^-V ]]; then
                     __xpanes::version
                     exit 0
-                    ;;
-                --log-format=*)
+                fi
+
+                # Behavior like this.
+                # -IAAA         -- REPSTR="AAA"
+                # -I AAA BBB    -- REPSTR="AAA"
+                # -I"AAA BBB"   -- REPSTR="AAA BBB"
+                # -IAAA BBB     -- REPSTR="AAA", HOSTS=("BBB")
+                if [[ "$1" =~ ^-I ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    if [[ "$1" =~ ^-I.+ ]]; then
+                        REPSTR="${1#-I}"
+                    elif ! [[ "$2" =~ ^-.* ]]; then
+                        REPSTR="$2"
+                        shift
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                    fi
+                fi
+
+                if [[ "$1" =~ ^-c ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    if [[ "$1" =~ ^-c.+ ]]; then
+                        CMD_UTILITY="${1#-c}"
+                    elif ! [[ "$2" =~ ^-.* ]]; then
+                        CMD_UTILITY="$2"
+                        shift
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                    fi
+                fi
+
+                if [[ "$1" =~ ^-S ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    if [[ "$1" =~ ^-S.+ ]]; then
+                        SOCKET_PATH="${1#-I}"
+                    elif ! [[ "$2" =~ ^-.* ]]; then
+                        SOCKET_PATH="$2"
+                        shift
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                    fi
+                fi
+
+                if [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     LOG_STORE_FLG=1
-                    LOG_FORMAT="${1#--log-format=}"
-                    shift
-                    ;;
-                --log*)
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    LOG_STORE_FLG=1
-                    if [[ "$1" =~ ^--log=  ]]; then
-                        LOG_DIR="${1#--log=}"
-                    fi
-                    shift
-                    ;;
-                --dry-run)
-                    DRY_RUN_FLG=1
-                    shift
-                    ;;
-                --kill-window=*)
-                    KILL_WIN_FLG="1"
-                    KILL_WIN_NAME="${1#--kill-window=}"
-                    shift
-                    ;;
-                    # For unit testing
-                --no-attach)
-                    NO_ATTACH_FLG=1
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    shift
-                    ;;
+                fi
+                shift
+                ;;
+
+            # Hosts
+            *)
+                HOSTS=("${HOSTS[@]}" "$1")
+                shift
+                ;;
+        esac
+    done
+}
+
+__xpanes::is_env_ok () {
+    while read cmd ; do
+        type $cmd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "$cmd is required to work." >&2
+            exit 1
+        fi
+    done < <(echo "$XPANES_DEPENDENCIES" | tr ' ' '\n')
+    return 0
+}
 
 
-                # Short options
-                -[hVIcSl]*)
-                    if [[ "$1" =~ ^-h ]]; then
-                        __xpanes::usage
-                        exit 0
-                    fi
-                    if [[ "$1" =~ ^-V ]]; then
-                        __xpanes::version
-                        exit 0
-                    fi
-
-                    # Behavior like this.
-                    # -IAAA         -- REPSTR="AAA"
-                    # -I AAA BBB    -- REPSTR="AAA"
-                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
-                    # -IAAA BBB     -- REPSTR="AAA", HOSTS=("BBB")
-                    if [[ "$1" =~ ^-I ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        if [[ "$1" =~ ^-I.+ ]]; then
-                            REPSTR="${1#-I}"
-                        elif ! [[ "$2" =~ ^-.* ]]; then
-                            REPSTR="$2"
-                            shift
-                            OPTIONS=("${OPTIONS[@]}" "$1")
-                        fi
-                    fi
-
-                    if [[ "$1" =~ ^-c ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        if [[ "$1" =~ ^-c.+ ]]; then
-                            CMD_UTILITY="${1#-c}"
-                        elif ! [[ "$2" =~ ^-.* ]]; then
-                            CMD_UTILITY="$2"
-                            shift
-                            OPTIONS=("${OPTIONS[@]}" "$1")
-                        fi
-                    fi
-
-                    if [[ "$1" =~ ^-S ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        if [[ "$1" =~ ^-S.+ ]]; then
-                            SOCKET_PATH="${1#-I}"
-                        elif ! [[ "$2" =~ ^-.* ]]; then
-                            SOCKET_PATH="$2"
-                            shift
-                            OPTIONS=("${OPTIONS[@]}" "$1")
-                        fi
-                    fi
-
-                    if [[ "$1" =~ ^-l ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        LOG_STORE_FLG=1
-                    fi
-                    shift
-                    ;;
-
-                # Hosts
-                *)
-                    HOSTS=("${HOSTS[@]}" "$1")
-                    shift
-                    ;;
-            esac
-        done
-    }
-
+: "Main" && {
+    set +e
+    __xpanes::is_env_ok
+    set -e
+    __xpanes::get_opts "$@"
 
     # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
     if [ $DRY_RUN_FLG -ne 1 ]; then
