@@ -165,7 +165,7 @@ test_help() {
 
 test_start_separation() {
     local window_name=""
-    local socket_file_name=".xpanes-shunit"
+    local socket_file_name="/tmp/.xpanes-shunit"
 
     ${EXEC} -S $socket_file_name --no-attach AAAA BBBB
     wait_panes_separation "$socket_file_name" "AAAA" "2"
@@ -173,6 +173,31 @@ test_start_separation() {
     assertEquals "1" "$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep -c .)"
     tmux -S $socket_file_name kill-session
     rm $socket_file_name
+
+        tmux -S $socket_file_name new-session -d
+        tmux -S $socket_file_name send-keys "${EXEC} -S $socket_file_name --no-attach AAAA BBBB && echo done" C-m
+        sleep 10
+        tmux -S $socket_file_name list-windows
+        assertEquals "2" "$(tmux -S $socket_file_name list-windows | grep -c .)"
+
+        window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+        echo "Check width"
+        a_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==1')
+        b_width=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_width}' | awk 'NR==2')
+        echo "A:$a_width B:$b_width"
+        # true:1, false:0
+        # a_width +- 1 is b_width
+        assertEquals 1 "$(between_plus_minus_1 $a_width $b_width)"
+
+        echo "Check height"
+        a_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==1')
+        b_height=$(tmux -S $socket_file_name list-panes -t "$window_name" -F '#{pane_height}' | awk 'NR==2')
+        echo "A:$a_height B:$b_height"
+        # In this case, height must be same.
+        assertEquals 1 "$(( $a_height == $b_height ))"
+
+        tmux -S $socket_file_name kill-session
+        rm $socket_file_name
 }
 
 test_devide_two_panes() {
