@@ -341,12 +341,6 @@ __xpanes::execution() {
 }
 
 __xpanes::get_opts() {
-    # If there is no argument, usage will be shown.
-    if [ $# -lt 1 ]; then
-        __xpanes::usage
-        exit 1
-    fi
-
     while (( $# > 0 ))
     do
         case "$1" in
@@ -447,16 +441,26 @@ __xpanes::get_opts() {
                 shift
                 ;;
 
-            # Hosts
-            *)
-                HOSTS=("${HOSTS[@]}" "$1")
-                shift
+            # Other options
+            -*)
+                echo "Invalid option -- '${1#-}'" >&2
+                __xpanes::usage
+                exit 4
                 ;;
+
+            # Other
+            *)
+                # Show usage and exit
+                echo "Invalid argument -- '${1}'" >&2
+                __xpanes::usage
+                exit 4
+                ;;
+
         esac
     done
 }
 
-__xpanes::is_env_ok () {
+__xpanes::is_env_ok() {
     while read cmd ; do
         type $cmd > /dev/null 2>&1
         if [ $? -ne 0 ]; then
@@ -467,12 +471,19 @@ __xpanes::is_env_ok () {
     return 0
 }
 
+__xpanes::get_args() {
+    while read line; do
+        HOSTS=("${HOSTS[@]}" "$line")
+    done < <(cat)
+}
+
 
 : "Main" && {
     set +e
     __xpanes::is_env_ok
     set -e
     __xpanes::get_opts "$@"
+    __xpanes::get_args
 
     # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
     if [ $DRY_RUN_FLG -ne 1 ]; then
