@@ -104,13 +104,28 @@ test_insufficient_cmd() {
     assertEquals "1" "$?"
 }
 
+test_invalid_args() {
+    cmd="${BIN_NAME} -Z"
+    echo $cmd
+    # execute
+    $cmd > /dev/null
+    assertEquals "4" "$?"
+
+    cmd="${BIN_NAME} hogehoge123"
+    echo $cmd
+    # execute
+    $cmd > /dev/null
+    assertEquals "4" "$?"
+}
+
+
 test_version() {
-    cmd="${EXEC} -V"; result=$($cmd); echo $cmd
-    echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
+    cmd="${EXEC} -V"; echo $cmd
+    $cmd | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
 
-    cmd="${EXEC} --version"; result=$($cmd); echo $cmd
-    echo ${result} | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
+    cmd="${EXEC} --version"; echo $cmd
+    $cmd | grep -qE "${BIN_NAME} [0-9]+\.[0-9]+\.[0-9]+"
     assertEquals "0" "$?"
 
     : "In TMUX session" && {
