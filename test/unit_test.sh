@@ -27,7 +27,7 @@ source ${BIN_DIR}${BIN_NAME} --dry-run
 
 test_version() {
     result=`__xpanes::version`
-    echo ${result} | grep -q "$0 .*"
+    echo ${result} | grep -Eq "^$THIS_FILE_NAME [0-9]+\.[0-9]+\.[0-9]+$"
     assertEquals "0" "$?"
 }
 
