@@ -29,6 +29,10 @@ $ chmod +x /usr/local/bin/tmssh
 
 # Usage
 
+```
+$ xpanes -c "ssh {}" user1@host1 user2@host2
+```
+
 ```sh
 $ tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
 ```

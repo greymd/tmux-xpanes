@@ -34,6 +34,9 @@ __xpanes::usage() {
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo
+}
+
+__xpanes::usage_verbose() {
     echo " FORMAT:"
     echo "     Default value is \"$LOG_FORMAT\""
     echo "     Interpreted sequences are:"
@@ -152,17 +155,17 @@ __xpanes::ensure_directory() {
 #       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
 # Result:
 __xpanes::arr2args() {
-    local _arr=($@)
     local _arg=""
     # If there is no argument, usage will be shown.
     if [ $# -lt 1 ]; then
         return 0
     fi
-    for i in $( seq 0 $(( $# - 1)) ) ;do
-        _arg=${_arr[i]}
+    for i in "$@" ;do
+        _arg="$i"
         printf "'${_arg//\'/\\\'}' "
     done
 }
+# /Users/yasuhiro.yamada/reps/greymd/tmssh/xpanes --kill-window=tmp-75313 '-c' 'ssh -o StrictHostKeyChecking=no {}'  '' 'lryshare'
 
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
@@ -334,7 +337,7 @@ __xpanes::execution() {
     fi
 }
 
-__xpanes::get_opts() {
+__xpanes::parse_options() {
     while (( $# > 0 ))
     do
         case "$1" in
@@ -342,6 +345,7 @@ __xpanes::get_opts() {
             # Long options
             --help)
                 __xpanes::usage
+                __xpanes::usage_verbose
                 exit 0
                 ;;
             --version)
@@ -378,11 +382,11 @@ __xpanes::get_opts() {
                 shift
                 ;;
 
-
             # Short options
             -[hVIcSl]*)
                 if [[ "$1" =~ ^-h ]]; then
                     __xpanes::usage
+                    __xpanes::usage_verbose
                     exit 0
                 fi
                 if [[ "$1" =~ ^-V ]]; then
@@ -396,35 +400,35 @@ __xpanes::get_opts() {
                 # -I"AAA BBB"   -- REPSTR="AAA BBB"
                 # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
                 if [[ "$1" =~ ^-I ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
                     if [[ "$1" =~ ^-I.+ ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
                         REPSTR="${1#-I}"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         REPSTR="$2"
+                        OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
                         shift
-                        OPTIONS=("${OPTIONS[@]}" "$1")
                     fi
                 fi
 
                 if [[ "$1" =~ ^-c ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
                     if [[ "$1" =~ ^-c.+ ]]; then
+                        OPTIONS=("${OPTIONS[@]}" "$1")
                         CMD_UTILITY="${1#-c}"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         CMD_UTILITY="$2"
+                        OPTIONS=("${OPTIONS[@]}" "$1" "$CMD_UTILITY")
                         shift
-                        OPTIONS=("${OPTIONS[@]}" "$1")
                     fi
                 fi
 
                 if [[ "$1" =~ ^-S ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
                     if [[ "$1" =~ ^-S.+ ]]; then
-                        SOCKET_PATH="${1#-I}"
+                        OPTIONS=("${OPTIONS[@]}" "$1")
+                        SOCKET_PATH="${1#-S}"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         SOCKET_PATH="$2"
+                        OPTIONS=("${OPTIONS[@]}" "$1" "$SOCKET_PATH")
                         shift
-                        OPTIONS=("${OPTIONS[@]}" "$1")
                     fi
                 fi
 
@@ -439,6 +443,7 @@ __xpanes::get_opts() {
             -*)
                 echo "Invalid option -- '${1#-}'" >&2
                 __xpanes::usage
+                echo "Try '$THIS_FILE_NAME --help' for more information." >&2
                 exit 4
                 ;;
 
@@ -464,17 +469,17 @@ __xpanes::check_env() {
 }
 
 __xpanes::main() {
-    __xpanes::get_opts "$@"
+    __xpanes::parse_options "$@"
     set +e
     __xpanes::check_env
     set -e
 
     : "Parameter validation" && {
+        # Validate log directory.
         # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
         if [ $DRY_RUN_FLG -eq 1 ]; then
-            exit 0
+            return 0
         fi
-        # Validate log directory.
         if [ $LOG_STORE_FLG -eq 1 ]; then
             LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
         fi
