@@ -98,6 +98,50 @@ wait_panes_separation() {
     return 0
 }
 
+wait_all_files_creation(){
+    local _wait_seconds=30
+    local _break=1
+    # Wait until specific files are created.
+    for i in $(seq $_wait_seconds) ;do
+        sleep 1
+        _break=1
+        for f in "$@" ;do
+            if ! [ -e "$f" ]; then
+                # echo "$f:does not exist." >&2
+                _break=0
+            fi
+        done
+        if [ $_break -eq 1 ]; then
+            break
+        fi
+        if [ $i -eq $_wait_seconds ]; then
+            echo "Test failed" >&2
+            return 1
+        fi
+    done
+    return 0
+}
+
+wait_existing_file_number(){
+    local _target_dir="$1"
+    local _expected_num="$2"
+    local _num_of_files=0
+    local _wait_seconds=30
+    # Wait until specific number of files are created.
+    for i in $(seq $_wait_seconds) ;do
+        sleep 1
+        _num_of_files=$(ls "$_target_dir" | grep -c .)
+        if [ "$_num_of_files" = "$_expected_num" ]; then
+            break
+        fi
+        if [ $i -eq $_wait_seconds ]; then
+            echo "Test failed" >&2
+            return 1
+        fi
+    done
+    return 0
+}
+
 between_plus_minus_1() {
     echo "$(( ( $1 + 1 ) == $2 || $1 == $2 || ( $1 - 1 ) == $2 ))"
 }
@@ -107,6 +151,9 @@ setUp(){
     mkdir -p $THIS_DIR/test_tmp
     echo ">>>>>>>>>>" >&2
 }
+
+###################### START TESTING ######################
+
 
 tearDown(){
     rm -rf $THIS_DIR/test_tmp
@@ -444,32 +491,6 @@ test_devide_five_panes() {
     }
 }
 
-wait_all_files_creation(){
-    local _wait_seconds=30
-    local _break=1
-    # Wait until pane separation is completed
-    for i in $(seq $_wait_seconds) ;do
-        sleep 1
-        _break=1
-        for f in "$@" ;do
-            if ! [ -e "$f" ]; then
-                # echo "$f:does not exist." >&2
-                _break=0
-            fi
-        done
-        # Still not separated.
-        if [ $_break -eq 1 ]; then
-            break
-        fi
-        # Still not separated.
-        if [ $i -eq $_wait_seconds ]; then
-            echo "Test failed" >&2
-            return 1
-        fi
-    done
-    return 0
-}
-
 test_command_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
@@ -580,6 +601,40 @@ test_repstr_command_option_pipe() {
         close_tmux_session "$_socket_file"
         rm -f ${_tmpdir}/*.result
     }
+}
+
+test_log_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/\" --no-attach AAAA AAAA BBBB"
+    printf "\n $ $_cmd\n"
+    LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/" --no-attach AAAA AAAA BBBB
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    wait_existing_file_number "${_tmpdir}/logs" "3"
+
+    # TODO: Wait command completion.
+    sleep 5
+    ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BBBB_')
+
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/logs/*
+    rmdir ${_tmpdir}/logs
 }
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2

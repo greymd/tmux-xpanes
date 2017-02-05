@@ -294,7 +294,7 @@ __xpanes::check_env() {
     DRY_RUN_FLG=0
     ATTACH_FLG=1
     LOG_STORE_FLG=0
-    LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
+    LOG_DIR="${LOG_DIR:-$HOME/.$THIS_FILE_NAME-logs}"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
     REPSTR="{}"
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
