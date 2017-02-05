@@ -511,16 +511,18 @@ test_repstr_command_option() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"seq @ > ${_tmpdir}/@.result\" --no-attach 3 4 5"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"seq @ > ${_tmpdir}/@.result\" --no-attach 3 4 5 6"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "seq @ > ${_tmpdir}/@.result" --no-attach 3 4 5
-    wait_panes_separation "$_socket_file" "3" "3"
-    wait_all_files_creation ${_tmpdir}/{3,4,5}.result
+    ${EXEC} -I@ -S $_socket_file -c "seq @ > ${_tmpdir}/@.result" --no-attach 3 4 5 6
+    wait_panes_separation "$_socket_file" "4" "4"
+    wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
     diff "${_tmpdir}/3.result" <(seq 3)
     assertEquals 0 $?
     diff "${_tmpdir}/4.result" <(seq 4)
     assertEquals 0 $?
     diff "${_tmpdir}/5.result" <(seq 5)
+    assertEquals 0 $?
+    diff "${_tmpdir}/6.result" <(seq 6)
     assertEquals 0 $?
     close_tmux_session "$_socket_file"
     rm -f ${_tmpdir}/*.result
@@ -529,13 +531,15 @@ test_repstr_command_option() {
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "3" "3"
-        wait_all_files_creation ${_tmpdir}/{3,4,5}.result
+        wait_panes_separation "$_socket_file" "4" "4"
+        wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
         diff "${_tmpdir}/3.result" <(seq 3)
         assertEquals 0 $?
         diff "${_tmpdir}/4.result" <(seq 4)
         assertEquals 0 $?
         diff "${_tmpdir}/5.result" <(seq 5)
+        assertEquals 0 $?
+        diff "${_tmpdir}/6.result" <(seq 6)
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
         rm -f ${_tmpdir}/*.result
