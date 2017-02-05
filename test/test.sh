@@ -13,6 +13,11 @@ elif [ -n "$BASH_VERSION" ]; then
   echo "            $(tmux -V)"
 fi
 
+if [ -n "$TMUX" ]; then
+ echo "Do not execute this test inside TMUX session." >&2
+ exit 1
+fi
+
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 
@@ -110,12 +115,6 @@ test_invalid_args() {
     # execute
     $cmd > /dev/null
     assertEquals "4" "$?"
-
-    cmd="${BIN_NAME} hogehoge123"
-    echo $cmd
-    # execute
-    $cmd > /dev/null
-    assertEquals "4" "$?"
 }
 
 
@@ -175,9 +174,12 @@ test_help() {
 
 test_start_separation() {
     local window_name=""
-    local _socket_file="${TMPDIR}/.xpanes-shunit"
+    local _socket_file=".xpanes-shunit"
+    local _cmd=""
 
-    ${EXEC} -S $_socket_file --no-attach AAAA BBBB
+    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+    echo "$_cmd"
+    $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "2"
     # Number of window is 1
     assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
@@ -185,8 +187,10 @@ test_start_separation() {
     rm $_socket_file
 
     : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+        echo "TMUX($_cmd)"
         create_tmux_session "$_socket_file"
-        exec_tmux_session "$_socket_file" "${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+        exec_tmux_session "$_socket_file" "$_cmd"
         # There must be 2 windows -- default window & new window.
         tmux -S $_socket_file list-windows
         assertEquals "2" "$(tmux -S $_socket_file list-windows | grep -c .)"
@@ -197,8 +201,11 @@ test_start_separation() {
 test_devide_two_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
+    local _cmd=""
 
-    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB
+    _cmd="${EXEC} -S $socket_file_name --no-attach AAAA BBBB"
+    echo "$_cmd"
+    $_cmd
     wait_panes_separation "$socket_file_name" "AAAA" "2"
     window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
 
@@ -231,8 +238,11 @@ test_devide_two_panes() {
 test_devide_three_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
+    local _cmd=""
 
-    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC
+    _cmd="${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC"
+    echo "$_cmd"
+    $_cmd
     wait_panes_separation "$socket_file_name" "AAAA" "3"
     window_name="$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)"
 
@@ -269,8 +279,11 @@ test_devide_three_panes() {
 test_devide_four_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
+    local _cmd=""
 
-    ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC DDDD
+    _cmd="${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC DDDD"
+    echo "$_cmd"
+    $_cmd
     wait_panes_separation "$socket_file_name" "AAAA" "4"
     window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
 
@@ -312,8 +325,11 @@ test_devide_four_panes() {
 test_devide_five_panes() {
     local window_name=""
     local socket_file_name=".xpanes-shunit"
+    local _cmd=""
 
     ${EXEC} -S $socket_file_name --no-attach AAAA BBBB CCCC DDDD EEEE
+    echo "$_cmd"
+    $_cmd
     wait_panes_separation "$socket_file_name" "AAAA" "5"
     window_name=$(tmux -S $socket_file_name list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
 
@@ -356,7 +372,6 @@ test_devide_five_panes() {
 
     tmux -S $socket_file_name kill-window -t $window_name
     rm $socket_file_name
-
 }
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2

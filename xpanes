@@ -16,12 +16,15 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
+readonly NAMED_PIPE_NAME="${TMPDIR}/xpanes_pipe"
+
+trap "rm -f '${NAMED_PIPE_NAME}'; exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
 
 XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
 
 __xpanes::usage() {
     echo "Usage:"
-    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
+    echo "  $THIS_FILE_NAME [OPTIONS] [utility [argument ...]]"
     echo
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
@@ -246,14 +249,14 @@ __xpanes::prepare_window()
     local _window_name="$1" ; shift
     local _pane_base_index="$1"; shift
     local _pane_num="$1"; shift
-    local _no_attach_flg="$1"
+    local _attach_flg="$1"
 
     # Create new window.
-    if [ $_no_attach_flg -eq 1 ]; then
+    if [ $_attach_flg -eq 1 ]; then
+        tmux new-window -n "$_window_name"
+    else
         # Keep background
         tmux new-window -n "$_window_name" -d
-    else
-        tmux new-window -n "$_window_name"
     fi
 
     # specify a pane which has the youngest number of index.
@@ -274,12 +277,12 @@ __xpanes::prepare_window()
 # Following global variables will be used
 # within __xpanes::execution function and entrypoint.
 : "Initialize options" && {
-    HOSTS=()
     OPTIONS=()
+    ARGS=()
     KILL_WIN_FLG=0
     KILL_WIN_NAME=""
     DRY_RUN_FLG=0
-    NO_ATTACH_FLG=0
+    ATTACH_FLG=1
     LOG_STORE_FLG=0
     LOG_DIR="$HOME/.$THIS_FILE_NAME-logs"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
@@ -288,55 +291,47 @@ __xpanes::prepare_window()
     CMD_UTILITY="echo {} "
 }
 
+__xpanes::pre_execution() {
+    # Create new session.
+    tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+
+    local _opts4args=$(__xpanes::arr2args "${OPTIONS[@]}")
+    local _args4args=$(__xpanes::arr2args "${ARGS[@]}")
+
+    tmux -S $SOCKET_PATH send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
+        "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_args4args" C-m
+
+    # Avoid attaching (for unit testing).
+    if [ $ATTACH_FLG -eq 1 ]; then
+        # Go to another condition of this if statement.
+        tmux -S $SOCKET_PATH attach-session -t $SESSION_NAME
+    fi
+
+}
+
 __xpanes::execution() {
+    local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
+    local _window_name=$(__xpanes::generate_window_name "${ARGS[0]}")
+    local _last_host_idx=$((${#ARGS[@]} - 1))
 
-    #
-    # If current shell is already in tmux session.
-    #
-    if [ -n "$TMUX" ]; then
-        local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
-        local _window_name=$(__xpanes::generate_window_name "${HOSTS[0]}")
-        local _last_host_idx=$((${#HOSTS[@]} - 1))
+    __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$ATTACH_FLG"
 
-        __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$NO_ATTACH_FLG"
+    if [ $LOG_STORE_FLG -eq 1 ]; then
+        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${ARGS[@]}"
+    fi
 
-        if [ $LOG_STORE_FLG -eq 1 ]; then
-            __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${HOSTS[@]}"
-        fi
+    # Sending ssh opearations for each pane.
+    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${ARGS[@]}"
 
-        # Sending ssh opearations for each pane.
-        __xpanes::send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${HOSTS[@]}"
+    # This is just the author's preference (You can remove next statement.)
+    __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
 
-        # This is just the author's preference (You can remove next statement.)
-        __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
+    # Enable broadcasting
+    tmux set-window-option -t ${_window_name} synchronize-panes on
 
-        # Enable broadcasting
-        tmux set-window-option -t ${_window_name} synchronize-panes on
-
-        # Remove original window.
-        if [ $KILL_WIN_FLG -eq 1 ]; then
-            tmux kill-window -t "$KILL_WIN_NAME"
-        fi
-
-
-    #
-    # If current shell is NOT in tmux session.
-    #
-    else
-        # Create new session.
-        tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
-
-        local _hosts4args=$(__xpanes::arr2args "${HOSTS[@]}")
-        local _opts4args=$(__xpanes::arr2args "${OPTIONS[@]}")
-
-        tmux -S $SOCKET_PATH send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
-            "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_hosts4args" C-m
-
-        # Avoid attaching if it is unit testing.
-        if [ $NO_ATTACH_FLG -eq 0 ]; then
-            # Go to another condition of this if statement.
-            tmux -S $SOCKET_PATH attach-session -t $SESSION_NAME
-        fi
+    # Remove original window.
+    if [ $KILL_WIN_FLG -eq 1 ]; then
+        tmux kill-window -t "$KILL_WIN_NAME"
     fi
 }
 
@@ -379,7 +374,7 @@ __xpanes::get_opts() {
                 ;;
                 # For unit testing
             --no-attach)
-                NO_ATTACH_FLG=1
+                ATTACH_FLG=0
                 OPTIONS=("${OPTIONS[@]}" "$1")
                 shift
                 ;;
@@ -400,7 +395,7 @@ __xpanes::get_opts() {
                 # -IAAA         -- REPSTR="AAA"
                 # -I AAA BBB    -- REPSTR="AAA"
                 # -I"AAA BBB"   -- REPSTR="AAA BBB"
-                # -IAAA BBB     -- REPSTR="AAA", HOSTS=("BBB")
+                # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
                 if [[ "$1" =~ ^-I ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     if [[ "$1" =~ ^-I.+ ]]; then
@@ -448,19 +443,18 @@ __xpanes::get_opts() {
                 exit 4
                 ;;
 
-            # Other
+            # Other arguments
             *)
-                # Show usage and exit
-                echo "Invalid argument -- '${1}'" >&2
-                __xpanes::usage
-                exit 4
+                ARGS=("${ARGS[@]}" "$1")
+                shift
                 ;;
 
         esac
     done
 }
 
-__xpanes::is_env_ok() {
+__xpanes::check_env() {
+    rm -f "${NAMED_PIPE_NAME}"
     while read cmd ; do
         type $cmd > /dev/null 2>&1
         if [ $? -ne 0 ]; then
@@ -471,36 +465,39 @@ __xpanes::is_env_ok() {
     return 0
 }
 
-__xpanes::get_args() {
-    while read line; do
-        HOSTS=("${HOSTS[@]}" "$line")
-    done < <(cat)
-}
-
-
-: "Main" && {
-    set +e
-    __xpanes::is_env_ok
-    set -e
+__xpanes::main() {
     __xpanes::get_opts "$@"
-    __xpanes::get_args
+    set +e
+    __xpanes::check_env
+    set -e
 
-    # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-    if [ $DRY_RUN_FLG -ne 1 ]; then
+    : "Parameter validation" && {
+        # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+        if [ $DRY_RUN_FLG -eq 1 ]; then
+            exit 0
+        fi
+        # Validate log directory.
+        if [ $LOG_STORE_FLG -eq 1 ]; then
+            LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
+        fi
+    }
 
-        : "Parameter validation" && {
-            if [ ${#HOSTS[@]} -le 0 ]; then
-                echo 'Specify hosts.'  >&2
-                exit 1
-            fi
-            # Validate log directory.
-            if [ $LOG_STORE_FLG -eq 1 ]; then
-                LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
-            fi
-        }
+    #
+    # If current shell is NOT in tmux session.
+    #
+    if ! [ -n "$TMUX" ]; then
+        __xpanes::pre_execution
+        exit 0
 
-        # Run script
+    #
+    # If current shell is already in tmux session.
+    #
+    else
         __xpanes::execution
         exit 0
     fi
+}
+
+: "Entry point" && {
+    __xpanes::main "$@"
 }
