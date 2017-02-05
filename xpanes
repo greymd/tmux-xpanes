@@ -16,9 +16,8 @@ readonly SESSION_NAME="$THIS_FILE_NAME-$$"
 
 # Temporary window name is tmp-12345(PID)
 readonly TMP_WIN_NAME="tmp-$$"
-readonly NAMED_PIPE_NAME="${TMPDIR}/xpanes_pipe"
 
-trap "rm -f '${NAMED_PIPE_NAME}'; exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
+trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
 
 XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
 
@@ -454,7 +453,6 @@ __xpanes::get_opts() {
 }
 
 __xpanes::check_env() {
-    rm -f "${NAMED_PIPE_NAME}"
     while read cmd ; do
         type $cmd > /dev/null 2>&1
         if [ $? -ne 0 ]; then
