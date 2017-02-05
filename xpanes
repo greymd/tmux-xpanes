@@ -1,25 +1,16 @@
 #!/bin/bash
+set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
 readonly VERSION="1.3.0"
 
-set -e
+trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
 
 # THIS_FILE_NAME is supposed to be "xpanes".
 readonly THIS_FILE_NAME="${0##*/}"
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 readonly ABS_THIS_FILE_NAME="$THIS_DIR/$THIS_FILE_NAME"
-
-# This is supposed to be xpanes-12345(PID)
-readonly SESSION_NAME="$THIS_FILE_NAME-$$"
-
-# Temporary window name is tmp-12345(PID)
-readonly TMP_WIN_NAME="tmp-$$"
-
-trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
-
-XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
 
 __xpanes::usage() {
     echo "Usage:"
@@ -276,8 +267,25 @@ __xpanes::prepare_window()
     tmux select-pane -t ${_window_name}.${_pane_base_index}
 }
 
+# Check whether given command is in the PATH or not.
+__xpanes::check_env() {
+    local _cmds="$1"
+    while read cmd ; do
+        type $cmd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then
+            echo "$cmd is required to work." >&2
+            exit 1
+        fi
+    done < <(echo "$_cmds" | tr ' ' '\n')
+    return 0
+}
+
 # Following global variables will be used
-# within __xpanes::execution function and entrypoint.
+# in the following functions
+# __xpanes::execution
+# __xpanes::pre_execution
+# __xpanes::parse_options
+# __xpanes::main
 : "Initialize options" && {
     OPTIONS=()
     ARGS=()
@@ -291,6 +299,11 @@ __xpanes::prepare_window()
     REPSTR="{}"
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
     CMD_UTILITY="echo {} "
+    XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
+    # This is supposed to be xpanes-12345(PID)
+    readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+    # Temporary window name is tmp-12345(PID)
+    readonly TMP_WIN_NAME="tmp-$$"
 }
 
 __xpanes::pre_execution() {
@@ -457,21 +470,10 @@ __xpanes::parse_options() {
     done
 }
 
-__xpanes::check_env() {
-    while read cmd ; do
-        type $cmd > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            echo "$cmd is required to work." >&2
-            exit 1
-        fi
-    done < <(echo "$XPANES_DEPENDENCIES" | tr ' ' '\n')
-    return 0
-}
-
 __xpanes::main() {
     __xpanes::parse_options "$@"
     set +e
-    __xpanes::check_env
+    __xpanes::check_env "$XPANES_DEPENDENCIES"
     set -e
 
     : "Parameter validation" && {
@@ -490,15 +492,14 @@ __xpanes::main() {
     #
     if ! [ -n "$TMUX" ]; then
         __xpanes::pre_execution
-        exit 0
 
     #
     # If current shell is already in tmux session.
     #
     else
         __xpanes::execution
-        exit 0
     fi
+    exit 0
 }
 
 : "Entry point" && {
