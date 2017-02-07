@@ -153,7 +153,8 @@ __xpanes::arr2args() {
     fi
     for i in "$@" ;do
         _arg="$i"
-        printf "'${_arg//\'/\\\'}' "
+        # Escaping single quotation.
+        echo "$_arg" | sed "s/'/'\"'\"'/g" | sed "s/^/'/;s/$/' /" | tr -d '\n'
     done
 }
 # /Users/yasuhiro.yamada/reps/greymd/tmssh/xpanes --kill-window=tmp-75313 '-c' 'ssh -o StrictHostKeyChecking=no {}'  '' 'lryshare'
