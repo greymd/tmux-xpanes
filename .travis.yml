@@ -9,9 +9,9 @@ env:
   - SH=zsh TMUX_VERSION=1.6
 
 before_install:
-  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ ! $(which $SH) ]] && sudo apt-get -qq update
-  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ ! $(which $SH) ]] && sudo apt-get install -y $SH
-  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl
+  - test "$TRAVIS_OS_NAME" = "linux" && test ! $(which $SH) && sudo apt-get -qq update
+  - test "$TRAVIS_OS_NAME" = "linux" && test ! $(which $SH) && sudo apt-get install -y $SH
+  - test "$TRAVIS_OS_NAME" = "linux" && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl
 
 before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp # Default TMPDIR is not writable on Travis CI
