@@ -35,7 +35,7 @@ create_tmux_session() {
 
 exec_tmux_session() {
     local _socket_file="$1" ;shift
-    # echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
+    echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
     tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" C-m
     # Wait until tmux session is completely established.
     for i in $(seq 30) ;do
@@ -91,7 +91,7 @@ wait_panes_separation() {
         fi
         # Still not separated.
         if [ $i -eq $_wait_seconds ]; then
-            echo "Test failed" >&2
+            echo "wait_panes_separation: Test failed" >&2
             return 1
         fi
     done
@@ -115,7 +115,7 @@ wait_all_files_creation(){
             break
         fi
         if [ $i -eq $_wait_seconds ]; then
-            echo "Test failed" >&2
+            echo "wait_all_files_creation: Test failed" >&2
             return 1
         fi
     done
@@ -135,7 +135,7 @@ wait_existing_file_number(){
             break
         fi
         if [ $i -eq $_wait_seconds ]; then
-            echo "Test failed" >&2
+            echo "wait_existing_file_number: Test failed" >&2
             return 1
         fi
     done
@@ -152,14 +152,13 @@ setUp(){
     echo ">>>>>>>>>>" >&2
 }
 
-###################### START TESTING ######################
-
-
 tearDown(){
     rm -rf $THIS_DIR/test_tmp
     echo "<<<<<<<<<<" >&2
     echo >&2
 }
+
+###################### START TESTING ######################
 
 test_insufficient_cmd() {
     XPANES_DEPENDENCIES="hogehoge123 cat" ${BIN_NAME}
@@ -608,15 +607,16 @@ test_log_option() {
     local _cmd=""
     local _log_file=""
     local _tmpdir="${SHUNIT_TMPDIR}"
+    mkdir -p "${_tmpdir}/fin"
 
-    _cmd="LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/\" --no-attach AAAA AAAA BBBB"
+    _cmd="LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
-    LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/" --no-attach AAAA AAAA BBBB
+    LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    wait_existing_file_number "${_tmpdir}/logs" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "2"
 
-    # TODO: Wait command completion.
-    sleep 5
+    # Wait several seconds just in case.
+    sleep 3
     ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
     assertEquals 0 $?
     _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
@@ -635,6 +635,124 @@ test_log_option() {
     close_tmux_session "$_socket_file"
     rm -f ${_tmpdir}/logs/*
     rmdir ${_tmpdir}/logs
+    rm -f ${_tmpdir}/fin/*
+    rmdir ${_tmpdir}/fin
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        wait_existing_file_number "${_tmpdir}/fin" "2"
+
+        # Wait several seconds just in case.
+        sleep 3
+        ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BBBB_')
+
+        close_tmux_session "$_socket_file"
+
+        rm -f ${_tmpdir}/logs/*
+        rmdir ${_tmpdir}/logs
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
+}
+
+test_log_format_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB CCCC
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    # Wait several seconds just in case.
+    sleep 3
+    ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
+
+    ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
+
+    close_tmux_session "$_socket_file"
+    rm -f ${_logdir}/*
+    rmdir ${_logdir}
+    rm -f ${_tmpdir}/fin/*
+    rmdir ${_tmpdir}/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
+
+        ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
+
+        close_tmux_session "$_socket_file"
+        rm -f ${_logdir}/*
+        rmdir ${_logdir}
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
 }
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
