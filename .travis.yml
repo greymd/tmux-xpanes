@@ -5,8 +5,8 @@ os:
   - linux
 
 env:
-  - SH=bash TMUX_VERSION=1.5
-  - SH=zsh TMUX_VERSION=1.5
+#  - SH=bash TMUX_VERSION=1.5 # Version 1.5 is out of support
+#  - SH=zsh TMUX_VERSION=1.5  #
   - SH=bash TMUX_VERSION=1.6
   - SH=zsh TMUX_VERSION=1.6
   - SH=bash TMUX_VERSION=1.7
