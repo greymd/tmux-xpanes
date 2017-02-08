@@ -161,12 +161,12 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_insufficient_cmd() {
-    XPANES_DEPENDENCIES="hogehoge123 cat" ${BIN_NAME}
+    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC}
     assertEquals "1" "$?"
 }
 
 test_invalid_args() {
-    local _cmd="${BIN_NAME} -Z"
+    local _cmd="${EXEC} -Z"
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
