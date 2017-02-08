@@ -5,20 +5,22 @@ os:
   - linux
 
 env:
-  - SH=bash
-  - SH=zsh
+  - SH=bash TMUX_VERSION=1.6
+  - SH=zsh TMUX_VERSION=1.6
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then if [[ ! $(which $SH) ]]  ; then sudo apt-get -qq update      ; fi ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then if [[ ! $(which $SH) ]]  ; then sudo apt-get install -y $SH  ; fi ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then if [[ ! $(which tmux) ]] ; then sudo apt-get install -y tmux ; fi ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]   ; then if [[ ! $(which $SH) ]]  ; then brew update                  ; fi ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]   ; then if [[ ! $(which $SH) ]]  ; then brew install $SH             ; fi ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]   ; then if [[ ! $(which tmux) ]] ; then brew install tmux            ; fi ; fi
+  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ ! $(which $SH) ]] && sudo apt-get -qq update
+  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && [[ ! $(which $SH) ]] && sudo apt-get install -y $SH
+  - [[ "$TRAVIS_OS_NAME" == "linux" ]] && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl
 
 before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp # Default TMPDIR is not writable on Travis CI
   - mkdir -p $TMPDIR
+  - cd $TMPDIR
+  - curl -L "https://github.com/tmux/tmux/releases/download/1.5/tmux-${TMUX_VERSION}.tar.gz" | tar zxvf
+  - cd tmux-${TMUX_VERSION}
+  - ./configure && make
+  - make install
 
 script:
   - $SH ./test/test.sh
