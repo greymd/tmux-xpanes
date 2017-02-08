@@ -21,7 +21,7 @@ before_script:
   - cd tmux-${TMUX_VERSION}
   - ./configure
   - make
-  - make install
+  - sudo make install
 
 script:
   - $SH ./test/test.sh
