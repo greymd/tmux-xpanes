@@ -22,6 +22,7 @@ before_script:
   - ./configure
   - make
   - sudo make install
+  - cd $TRAVIS_BUILD_DIR
 
 script:
   - $SH ./test/test.sh
