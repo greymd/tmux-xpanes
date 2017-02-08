@@ -5,8 +5,26 @@ os:
   - linux
 
 env:
+  - SH=bash TMUX_VERSION=1.5
+  - SH=zsh TMUX_VERSION=1.5
   - SH=bash TMUX_VERSION=1.6
   - SH=zsh TMUX_VERSION=1.6
+  - SH=bash TMUX_VERSION=1.7
+  - SH=zsh TMUX_VERSION=1.7
+  - SH=bash TMUX_VERSION=1.8
+  - SH=zsh TMUX_VERSION=1.8
+  - SH=bash TMUX_VERSION=1.9
+  - SH=zsh TMUX_VERSION=1.9
+  - SH=bash TMUX_VERSION=1.9a
+  - SH=zsh TMUX_VERSION=1.9a
+  - SH=bash TMUX_VERSION=2.0
+  - SH=zsh TMUX_VERSION=2.0
+  - SH=bash TMUX_VERSION=2.1
+  - SH=zsh TMUX_VERSION=2.1
+  - SH=bash TMUX_VERSION=2.2
+  - SH=zsh TMUX_VERSION=2.2
+  - SH=bash TMUX_VERSION=2.3
+  - SH=zsh TMUX_VERSION=2.3
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get -qq update ;fi ;fi
