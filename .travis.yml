@@ -17,7 +17,7 @@ before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp # Default TMPDIR is not writable on Travis CI
   - mkdir -p $TMPDIR
   - cd $TMPDIR
-  - curl -L "https://github.com/tmux/tmux/releases/download/1.5/tmux-${TMUX_VERSION}.tar.gz" | tar zxvf
+  - curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv
   - cd tmux-${TMUX_VERSION}
   - ./configure
   - make
