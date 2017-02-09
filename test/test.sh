@@ -28,11 +28,15 @@ BIN_DIR="${THIS_DIR}/../"
 BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
+tmux_version_number() {
+    tmux -V | perl -anle 'print $F[1]'
+}
+
 create_tmux_session() {
     local _socket_file="$1"
     tmux -S $_socket_file new-session -d
     # Once attach tmux session and detach it.
-    # Because, pipe-pane feature does not work with tmux 1.8 and 2.3 (it might be bug).
+    # Because, pipe-pane feature does not work with tmux 1.8 (it might be bug).
     # To run pipe-pane, it is necessary to attach the session.
     tmux -S $_socket_file send-keys "sleep 1 && tmux detach-client" C-m
     tmux -S $_socket_file attach-session
@@ -610,6 +614,12 @@ test_repstr_command_option_pipe() {
 }
 
 test_log_option() {
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _log_file=""
@@ -682,6 +692,12 @@ test_log_option() {
 }
 
 test_log_format_option() {
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _log_file=""
