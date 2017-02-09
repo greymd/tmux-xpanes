@@ -1,21 +1,27 @@
-
-# !This "tmssh" repository will be renamed in the near future. Please be careful!
-
-
-# tmssh
-SSH multiple servers over multiple tmux panes.
+# xpanes
+Execute UNIX commands on multiple tmux panes
+more easily, casually, and smarter way.
 
 <p align="center">
 <img src="./img/tmssh_movie_720.gif" />
 </p>
 
+# Try it
+
+```
+$ xpanes 1 2 3 4
+```
+
 # Features
-* Split tmux's window into multiple panes and each one has ssh connection.
-* **It works even if the current shell is already in the tmux session.**
-* Off course, it works if the current shell is NOT in the tmux session.
+* Split tmux's window into multiple panes.
+  + Each pane executes given argument & command.
+* It works on both situations.
+  + Normal terminal (out of tmux session).
+  + In tmux session.
 
 # Dependencies
-* `bash` 4.x
+* `bash` 3.x, 4.x
+* `zsh` 4.x, 5.x
 * `tmux` 1.6 and more
 
 The author has not confirmed other versions, but they may work.
@@ -23,8 +29,8 @@ The author has not confirmed other versions, but they may work.
 # Install
 
 ```sh
-$ wget https://raw.githubusercontent.com/greymd/tmssh/master/tmssh -O /usr/local/bin/tmssh
-$ chmod +x /usr/local/bin/tmssh
+$ wget https://raw.githubusercontent.com/greymd/tmssh/master/bin/xpanes -O /usr/local/bin/xpanes
+$ chmod +x /usr/local/bin/xpanes
 ```
 
 # Usage
