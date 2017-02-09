@@ -31,12 +31,19 @@ EXEC="./${BIN_NAME}"
 create_tmux_session() {
     local _socket_file="$1"
     tmux -S $_socket_file new-session -d
+    # Once attach tmux session and detach it.
+    # Because, pipe-pane feature does not work with tmux 1.8 and 2.3 (it might be bug).
+    # To run pipe-pane, it is necessary to attach the session.
+    tmux -S $_socket_file send-keys "sleep 1 && tmux detach-client" C-m
+    tmux -S $_socket_file attach-session
 }
 
 exec_tmux_session() {
     local _socket_file="$1" ;shift
     echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
-    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" C-m
+    # Same reason as the comments near "create_tmux_session".
+    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done && sleep 1 && tmux detach-client" C-m
+    tmux -S $_socket_file attach-session
     # Wait until tmux session is completely established.
     for i in $(seq 30) ;do
         sleep 1
@@ -534,7 +541,7 @@ test_repstr_command_option() {
     _cmd="${EXEC} -I@ -S $_socket_file -c \"seq @ > ${_tmpdir}/@.result\" --no-attach 3 4 5 6"
     printf "\n $ $_cmd\n"
     ${EXEC} -I@ -S $_socket_file -c "seq @ > ${_tmpdir}/@.result" --no-attach 3 4 5 6
-    wait_panes_separation "$_socket_file" "4" "4"
+    wait_panes_separation "$_socket_file" "3" "4"
     wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
     diff "${_tmpdir}/3.result" <(seq 3)
     assertEquals 0 $?
@@ -551,7 +558,7 @@ test_repstr_command_option() {
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "4" "4"
+        wait_panes_separation "$_socket_file" "3" "4"
         wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
         diff "${_tmpdir}/3.result" <(seq 3)
         assertEquals 0 $?
@@ -609,9 +616,10 @@ test_log_option() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB"
+    _cmd="LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
-    LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB
+    # Execute command (slightly different)
+    LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
@@ -682,9 +690,10 @@ test_log_format_option() {
     local _year="$(date +%Y)"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB CCCC"
+    _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
-    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB CCCC
+    # Execute command
+    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
