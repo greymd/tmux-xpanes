@@ -19,10 +19,27 @@ Execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes with ext
 
 # Installation
 
+## With [zplug](https://zplug.sh) (for zsh users)
+
+If you are using zplug, it is easy and recommended way.
+Add those lines to `.zshrc`.
+
+```sh
+zplug "greymd/tmux-xpanes", as:command, use:"bin/*"
+```
+## Manual Installation
+
+If you are not using `zplug` (includeing bash users), execute following commands.
+
 ```sh
 $ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
 $ chmod +x /usr/local/bin/xpanes
+
+# If you want to use `tmssh`, follow those lines also.
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/tmssh -O /usr/local/bin/tmssh
+$ chmod +x /usr/local/bin/tmssh
 ```
+
 
 # Usage
 

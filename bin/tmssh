@@ -1,7 +1,7 @@
 #!/bin/bash
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-
+XPANES_DEPENDENCIES="tmux perl xpanes"
 # Load declared functions.
 source $THIS_DIR/xpanes --dry-run
 
