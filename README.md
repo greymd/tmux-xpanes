@@ -1,4 +1,4 @@
-# xpanes powerdy by tmux
+# xpanes -- eXtreme Panes Powered by [tmux](https://tmux.github.io/)
 Execute UNIX commands on multiple tmux panes with smart way.
 
 # Features
@@ -17,7 +17,7 @@ Execute UNIX commands on multiple tmux panes with smart way.
 # Installation
 
 ```sh
-$ wget https://raw.githubusercontent.com/greymd/tmssh/master/bin/xpanes -O /usr/local/bin/xpanes
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
 $ chmod +x /usr/local/bin/xpanes
 ```
 
