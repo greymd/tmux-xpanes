@@ -1,8 +1,8 @@
 [![latest version](https://img.shields.io/github/release/greymd/tmux-xpanes.svg)](https://github.com/greymd/tmux-xpanes/releases/latest)
 [![Build Status](https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master)](https://travis-ci.org/greymd/tmux-xpanes)
 
-# xpanes -- eXtreme Panes Powered by [tmux](https://tmux.github.io/)
-Execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes with extreme & smart way.
+# xpanes: eXtreme Panes -- powered by [tmux](https://tmux.github.io/)
+Extreme & smart way to execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes.
 
 # Features
 * Split tmux's window into multiple panes.
@@ -13,9 +13,9 @@ Execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes with ext
 
 # Dependencies
 
-* `bash` 3.x, 4.x
-* `zsh` 4.x, 5.x
-* `tmux` 1.6 and more
+* `zsh` (version 4.x, 5.x) or `bash` (version 3.x, 4.x)
+* plus `tmux` (version 1.6 and more)
+
 
 # Installation
 
@@ -27,6 +27,9 @@ Add those lines to `.zshrc`.
 ```sh
 zplug "greymd/tmux-xpanes", as:command, use:"bin/*"
 ```
+
+After that, `xpanes` and `tmssh` commands are yours.
+
 ## Manual Installation
 
 If you are not using `zplug` (includeing bash users), execute following commands.
@@ -43,6 +46,10 @@ $ chmod +x /usr/local/bin/tmssh
 
 # Usage
 
+There are two commands,
+
+`xpanes` and `tmssh`.
+
 ```
 $ xpanes --help
 Usage:
@@ -55,6 +62,21 @@ OPTIONS:
   -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option.
   -S socket-path               Specify a full alternative path to the server socket.
   -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.xpanes-logs or given <directory>.
+     --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
+```
+
+`tmssh` is the command which has more specific feature of `xpanes`.
+It executes `ssh` command to given arguments.
+
+```
+Usage:
+  tmssh [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]
+
+OPTIONS:
+  -h --help                    Show this screen.
+  -v --version                 Show version.
+  -S socket-path               Specify a full alternative path to the server socket.
+  -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.tmssh-logs or given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
 ```
 
