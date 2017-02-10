@@ -1,4 +1,4 @@
-# xpanes
+# xpanes powerdy by tmux
 Execute UNIX commands on multiple tmux panes with smart way.
 
 # Features
