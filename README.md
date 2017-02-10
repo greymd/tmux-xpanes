@@ -1,5 +1,8 @@
+[![latest version](https://img.shields.io/github/release/greymd/tmux-xpanes.svg)](https://github.com/greymd/tmux-xpanes/releases/latest)
+[![Build Status](https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master)](https://travis-ci.org/greymd/tmux-xpanes)
+
 # xpanes -- eXtreme Panes Powered by [tmux](https://tmux.github.io/)
-Execute UNIX commands on multiple tmux panes with smart way.
+Execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes with extreme & smart way.
 
 # Features
 * Split tmux's window into multiple panes.
