@@ -44,3 +44,4 @@ before_script:
 
 script:
   - $SH ./test/test.sh
+  - $SH ./test/unit_test.sh

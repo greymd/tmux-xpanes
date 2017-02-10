@@ -22,7 +22,7 @@ fi
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 readonly TEST_TMP="$THIS_DIR/test_tmp"
 
-BIN_DIR="${THIS_DIR}/../"
+BIN_DIR="${THIS_DIR}/../bin/"
 # Get repository name which equals to bin name.
 # BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
 BIN_NAME="xpanes"

@@ -16,7 +16,7 @@ fi
 # Directory name of this file
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 
-BIN_DIR="${TEST_DIR}/../"
+BIN_DIR="${TEST_DIR}/../bin/"
 # Get repository name which equals to bin name.
 # BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
 BIN_NAME="xpanes"
