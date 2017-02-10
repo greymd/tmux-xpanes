@@ -1,16 +1,5 @@
 # xpanes
-Execute UNIX commands on multiple tmux panes
-more easily, casually, and smarter way.
-
-<p align="center">
-<img src="./img/tmssh_movie_720.gif" />
-</p>
-
-# Try it
-
-```
-$ xpanes 1 2 3 4
-```
+Execute UNIX commands on multiple tmux panes with smart way.
 
 # Features
 * Split tmux's window into multiple panes.
@@ -20,13 +9,12 @@ $ xpanes 1 2 3 4
   + In tmux session.
 
 # Dependencies
+
 * `bash` 3.x, 4.x
 * `zsh` 4.x, 5.x
 * `tmux` 1.6 and more
 
-The author has not confirmed other versions, but they may work.
-
-# Install
+# Installation
 
 ```sh
 $ wget https://raw.githubusercontent.com/greymd/tmssh/master/bin/xpanes -O /usr/local/bin/xpanes
@@ -36,96 +24,99 @@ $ chmod +x /usr/local/bin/xpanes
 # Usage
 
 ```
-$ xpanes -c "ssh {}" user1@host1 user2@host2
-```
-
-```sh
-$ tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
-```
-
-### Use without messing up $PATH
-
-```sh
-$ ./tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
-```
-
-
-## Options
-
-```
-$ tmssh --help
+$ xpanes --help
 Usage:
-  tmssh [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]
+  xpanes [OPTIONS] [argument ...]
 
 OPTIONS:
   -h --help                    Show this screen.
   -v --version                 Show version.
-  -l --log[=<directory>]       Enable logging and store log files to ~/.tmssh-logs or given <directory>.
+  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used.
+  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option.
+  -S socket-path               Specify a full alternative path to the server socket.
+  -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.xpanes-logs or given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
 ```
 
-### Examples
+# Simple example
 
-* Create new window and separate it into two panes.
-
-```
-$ tmssh root@192.168.1.2 user@example.com
-```
-
-* Four panes.
+Try it.
 
 ```
-$ tmssh host{1..4}
+$ xpanes 1 2 3 4
 ```
 
+# Examples
 
-* Logging
+#### Ping multiple hosts
 
-With `-l` option, start to saving logs.
-
-```
-$ tmssh -l user1@host1 user1@host1
-```
-
-For example, following files will be created and each one is corresponding to each pane.
-
-```
-~/.tmssh-logs/user1@host1-1.log.2016-01-31_23-59-59.log
-~/.tmssh-logs/user1@host1-2.log.2016-01-31_23-59-59.log
+```sh
+$ xpanes -c "ping {}" 192.168.1.5 192.168.1.6 192.168.1.7 192.168.1.8
 ```
 
-* Save log files to another directory.
+#### Monitor multiple files
 
-```
-$ tmssh -l --log=/tmp/logs user1@host1 user2@host2
-/tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log
-/tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log
-will be created as their log files.
+```sh
+$ xpanes -c "tail -f {}" /var/log/apache/{error,access}.log /var/log/application/{error,access}.log
 ```
 
-## Share terminal sessions with others.
+#### Connecting multiple hosts with ssh and **logging operations**.
 
- `~/.tmssh-socket` file will automatically be created when `tmssh` is used.
+```sh
+$ xpanes --log=~/operation_log -c "ssh {}" user1@host1 user2@host2
+```
+
+#### Execute different commands on the different panes.
+
+```sh
+$ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
+```
+
+#### Create multiple windows and make each one devided into multiple panes.
+
+```sh
+$ xpanes -c "xpanes  -I@ -c 'echo @' {}" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
+```
+
+Result will be this.
+
+| window  | pane1              | pane2              | pane3              |
+| ------  | -----              | -----              | -----              |
+| window1 | `ssh groupA-host1` | `ssh groupA-host2` | none               |
+| window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
+| window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
+
+
+## Other features
+
+#### Share terminal sessions with others.
+
+ `~/.xpanes-socket` file will automatically be created when `xpanes` is used.
 Importing this socket file, different users can share their screens each other.
+Off course, with you can specify file name with `-S` option.
 
 * user1
 
 ```sh
-[user1@host] $ tmssh USER1@HOST1 USER2@HOST2 USER3@HOST3 ...
+[user1@host] $ xpanes -S /home/user1/mysocket a b c d ...
 ```
 
 * user2
 
 ```sh
-[user2@host] $ tmux -S /home/user1/.tmssh-socket attach
+[user2@host] $ tmux -S /home/user1/mysocket attach
 ```
 
 ... then, user1 and user2 can share their screen each other.
 
 
-# References
-* http://linuxpixies.blogspot.jp/2011/06/tmux-copy-mode-and-how-to-control.html
-* https://gist.github.com/dmytro/3984680
+#### Use without messing up `PATH`
+
+`xpanes` command is portable command. Even if PATH does not include `xpanes` file, it works.
+
+```sh
+$ ./xpanes ARG1 ARG2 ARG3 ...
+```
 
 # License
 
