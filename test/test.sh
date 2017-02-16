@@ -197,7 +197,7 @@ test_hyphen_only() {
 
 test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
-    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
@@ -206,19 +206,19 @@ test_failed_creat_directory() {
 
 test_use_file_insteadof_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/file"
-    touch $_log_dir
-    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    echo "dummy" > $_log_dir
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
     assertEquals "21" "$?"
 }
 
-test_use_file_insteadof_directory() {
+test_non_writable_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/log_dir"
     mkdir $_log_dir
     chmod -w $_log_dir
-    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
@@ -226,7 +226,7 @@ test_use_file_insteadof_directory() {
 }
 
 test_insufficient_cmd() {
-    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC}
+    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
     assertEquals "127" "$?"
 }
 
