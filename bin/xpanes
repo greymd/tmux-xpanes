@@ -121,16 +121,16 @@ __xpanes::ensure_directory() {
             echo "${_dir} is created." >&2
         else
             echo "Failed to create ${_dir}" >&2
-            exit 1
+            exit 20
         fi
     fi
     if [ ! -d "${_dir}" ]; then
         echo "${_dir} is not directory." >&2
-        exit 1
+        exit 21
     fi
     if [ ! -w "${_dir}" ]; then
         echo "${_dir} is not writable." >&2
-        exit 1
+        exit 22
     fi
 
     # Return absolute path
@@ -275,7 +275,7 @@ __xpanes::check_env() {
         type $cmd > /dev/null 2>&1
         if [ $? -ne 0 ]; then
             echo "$cmd is required to work." >&2
-            exit 1
+            exit 127
         fi
     done < <(echo "$_cmds" | tr ' ' '\n')
     return 0
@@ -518,7 +518,7 @@ __xpanes::parse_options() {
         echo "Any arguments are required." >&2
         __xpanes::usage
         echo "Try '$THIS_FILE_NAME --help' for more information." >&2
-        exit 4
+        exit 5
     fi
 }
 
