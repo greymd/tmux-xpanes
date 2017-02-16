@@ -18,7 +18,7 @@ __xpanes::usage() {
     echo
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
-    echo "  -v --version                 Show version."
+    echo "  -V --version                 Show version."
     echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
     echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
     echo "  -S socket-path               Specify a full alternative path to the server socket."
