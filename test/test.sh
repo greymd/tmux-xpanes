@@ -663,18 +663,18 @@ test_hyphen_and_option() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"printf @ > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"printf @ | awk 1 > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "printf @ > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
+    ${EXEC} -I@ -S $_socket_file -c "printf @ | awk 1 > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
     wait_panes_separation "$_socket_file" "-l" "4"
     wait_all_files_creation ${_tmpdir}/{-l,-V,-h,Z}.result
-    diff "${_tmpdir}/-l.result" <(printf -l)
+    diff "${_tmpdir}/-l.result" <(printf -l | awk 1)
     assertEquals 0 $?
-    diff "${_tmpdir}/-V.result" <(printf -V)
+    diff "${_tmpdir}/-V.result" <(printf -V | awk 1)
     assertEquals 0 $?
-    diff "${_tmpdir}/-h.result" <(printf -h)
+    diff "${_tmpdir}/-h.result" <(printf -h | awk 1)
     assertEquals 0 $?
-    diff "${_tmpdir}/-Z.result" <(printf -Z)
+    diff "${_tmpdir}/-Z.result" <(printf -Z | awk 1)
     assertEquals 0 $?
     close_tmux_session "$_socket_file"
     rm -f ${_tmpdir}/*.result
@@ -685,13 +685,13 @@ test_hyphen_and_option() {
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "-l" "4"
         wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
-        diff "${_tmpdir}/-l.result" <(printf -l)
+        diff "${_tmpdir}/-l.result" <(printf -l | awk 1)
         assertEquals 0 $?
-        diff "${_tmpdir}/-V.result" <(printf -V)
+        diff "${_tmpdir}/-V.result" <(printf -V | awk 1)
         assertEquals 0 $?
-        diff "${_tmpdir}/-h.result" <(printf -h)
+        diff "${_tmpdir}/-h.result" <(printf -h | awk 1)
         assertEquals 0 $?
-        diff "${_tmpdir}/-Z.result" <(printf -Z)
+        diff "${_tmpdir}/-Z.result" <(printf -Z | awk 1)
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
         rm -f ${_tmpdir}/*.result
