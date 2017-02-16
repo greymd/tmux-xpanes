@@ -171,6 +171,7 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+
 test_invalid_args() {
     local _cmd="${EXEC} -Z"
     printf "\n $ $_cmd\n"
@@ -193,6 +194,47 @@ test_hyphen_only() {
     # execute
     $_cmd > /dev/null
     assertEquals "5" "$?"
+}
+
+test_hyphen_and_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
+    # hyphen "-" in the window name will be replacet with "_".
+    wait_panes_separation "$_socket_file" "_l" "4"
+    wait_all_files_creation ${_tmpdir}/{-l,-V,-h,-Z}.result
+    diff "${_tmpdir}/-l.result" <(cat <<<-l)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-V.result" <(cat <<<-V)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-h.result" <(cat <<<-h)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-Z.result" <(cat <<<-Z)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/*.result
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "_l" "4"
+        wait_all_files_creation ${_tmpdir}/{-l,-V,-h,-Z}.result
+        diff "${_tmpdir}/-l.result" <(cat <<<-l)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-V.result" <(cat <<<-V)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-h.result" <(cat <<<-h)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-Z.result" <(cat <<<-Z)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f ${_tmpdir}/*.result
+    }
 }
 
 test_failed_creat_directory() {
@@ -658,45 +700,7 @@ test_repstr_command_option_pipe() {
     }
 }
 
-test_hyphen_and_option() {
-    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-    local _cmd=""
-    local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"printf @ | awk 1 > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
-    printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "printf @ | awk 1 > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
-    wait_panes_separation "$_socket_file" "-l" "4"
-    wait_all_files_creation ${_tmpdir}/{-l,-V,-h,Z}.result
-    diff "${_tmpdir}/-l.result" <(printf -l | awk 1)
-    assertEquals 0 $?
-    diff "${_tmpdir}/-V.result" <(printf -V | awk 1)
-    assertEquals 0 $?
-    diff "${_tmpdir}/-h.result" <(printf -h | awk 1)
-    assertEquals 0 $?
-    diff "${_tmpdir}/-Z.result" <(printf -Z | awk 1)
-    assertEquals 0 $?
-    close_tmux_session "$_socket_file"
-    rm -f ${_tmpdir}/*.result
-
-    : "In TMUX session" && {
-        printf "\n $ TMUX($_cmd)\n"
-        create_tmux_session "$_socket_file"
-        exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "-l" "4"
-        wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
-        diff "${_tmpdir}/-l.result" <(printf -l | awk 1)
-        assertEquals 0 $?
-        diff "${_tmpdir}/-V.result" <(printf -V | awk 1)
-        assertEquals 0 $?
-        diff "${_tmpdir}/-h.result" <(printf -h | awk 1)
-        assertEquals 0 $?
-        diff "${_tmpdir}/-Z.result" <(printf -Z | awk 1)
-        assertEquals 0 $?
-        close_tmux_session "$_socket_file"
-        rm -f ${_tmpdir}/*.result
-    }
-}
 
 test_log_option() {
     if [[ "$(tmux_version_number)" == "2.3" ]];then
