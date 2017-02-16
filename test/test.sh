@@ -171,10 +171,6 @@ tearDown(){
 
 ###################### START TESTING ######################
 
-test_insufficient_cmd() {
-    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC}
-    assertEquals "1" "$?"
-}
 
 test_invalid_args() {
     local _cmd="${EXEC} -Z"
@@ -184,6 +180,97 @@ test_invalid_args() {
     assertEquals "4" "$?"
 }
 
+test_no_args() {
+    local _cmd="${EXEC}"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "5" "$?"
+}
+
+test_hyphen_only() {
+    local _cmd="${EXEC} --"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "5" "$?"
+}
+
+test_hyphen_and_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
+    # hyphen "-" in the window name will be replacet with "_".
+    wait_panes_separation "$_socket_file" "_l" "4"
+    wait_all_files_creation ${_tmpdir}/{-l,-V,-h,-Z}.result
+    diff "${_tmpdir}/-l.result" <(cat <<<-l)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-V.result" <(cat <<<-V)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-h.result" <(cat <<<-h)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-Z.result" <(cat <<<-Z)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/*.result
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "_l" "4"
+        wait_all_files_creation ${_tmpdir}/{-l,-V,-h,-Z}.result
+        diff "${_tmpdir}/-l.result" <(cat <<<-l)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-V.result" <(cat <<<-V)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-h.result" <(cat <<<-h)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-Z.result" <(cat <<<-Z)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f ${_tmpdir}/*.result
+    }
+}
+
+test_failed_creat_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "20" "$?"
+}
+
+test_use_file_insteadof_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/file"
+    echo "dummy" > $_log_dir
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "21" "$?"
+}
+
+test_non_writable_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/log_dir"
+    mkdir $_log_dir
+    chmod -w $_log_dir
+    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "22" "$?"
+}
+
+test_insufficient_cmd() {
+    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
+    assertEquals "127" "$?"
+}
 
 test_version() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -612,6 +699,8 @@ test_repstr_command_option_pipe() {
         rm -f ${_tmpdir}/*.result
     }
 }
+
+
 
 test_log_option() {
     if [[ "$(tmux_version_number)" == "2.3" ]];then
