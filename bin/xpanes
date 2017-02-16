@@ -512,6 +512,14 @@ __xpanes::parse_options() {
 
         esac
     done
+
+    # Check the number of given arguments
+    if [ ${#ARGS[@]} -eq 0 ]; then
+        echo "Any arguments are required." >&2
+        __xpanes::usage
+        echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+        exit 4
+    fi
 }
 
 __xpanes::main() {
