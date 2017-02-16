@@ -184,6 +184,56 @@ test_invalid_args() {
     assertEquals "4" "$?"
 }
 
+test_no_args() {
+    local _cmd="${EXEC}"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "5" "$?"
+}
+
+test_hyphen_only() {
+    local _cmd="${EXEC} --"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "5" "$?"
+}
+
+test_failed_creat_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
+    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "20" "$?"
+}
+
+test_use_file_insteadof_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/file"
+    touch $_log_dir
+    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "21" "$?"
+}
+
+test_use_file_insteadof_directory() {
+    local _log_dir="${SHUNIT_TMPDIR}/log_dir"
+    mkdir $_log_dir
+    chmod -w $_log_dir
+    local _cmd="${EXEC} --log=$log_dir 1 2 3"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "22" "$?"
+}
+
+test_insufficient_cmd() {
+    XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC}
+    assertEquals "127" "$?"
+}
 
 test_version() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
