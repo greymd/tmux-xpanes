@@ -14,7 +14,7 @@ Extreme & smart way to execute UNIX commands on multiple [tmux](https://tmux.git
 # Dependencies
 
 * `zsh` (version 4.x, 5.x) or `bash` (version 3.x, 4.x)
-* plus `tmux` (version 1.6 and more)
+* `tmux` (version 1.6 and more)
 
 
 # Installation
