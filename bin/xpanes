@@ -14,7 +14,7 @@ readonly ABS_THIS_FILE_NAME="$THIS_DIR/$THIS_FILE_NAME"
 
 __xpanes::usage() {
     echo "Usage:"
-    echo "  $THIS_FILE_NAME [OPTIONS] [utility [argument ...]]"
+    echo "  $THIS_FILE_NAME [OPTIONS] [argument ...]"
     echo
     echo "OPTIONS:"
     echo "  -h --help                    Show this screen."
@@ -352,52 +352,84 @@ __xpanes::execution() {
 }
 
 __xpanes::parse_options() {
+    # When this flag becomes 1,
+    # rest of the arguments are not
+    # handled as options.
+    local _no_opt=0
     while (( $# > 0 ))
     do
         case "$1" in
+            --)
+            # Disable any more options
+            if [[ "$1" =~ ^--$ ]]; then
+                _no_opt=1
+                shift
+            fi
+            ;;
 
+            # ----------------
             # Long options
-            --help)
-                __xpanes::usage
-                __xpanes::usage_verbose
-                exit 0
-                ;;
-            --version)
-                __xpanes::version
-                exit 0
-                ;;
-            --log-format=*)
-                OPTIONS=("${OPTIONS[@]}" "$1")
-                LOG_STORE_FLG=1
-                LOG_FORMAT="${1#--log-format=}"
+            # ----------------
+            --*)
+            if [ $_no_opt -eq 1 ]; then
+                ARGS=("${ARGS[@]}" "$1")
                 shift
-                ;;
-            --log*)
-                OPTIONS=("${OPTIONS[@]}" "$1")
-                LOG_STORE_FLG=1
-                if [[ "$1" =~ ^--log=  ]]; then
-                    LOG_DIR="${1#--log=}"
+            else
+                if [[ "$1" =~ ^--help ]]; then
+                    __xpanes::usage
+                    __xpanes::usage_verbose
+                    exit 0
                 fi
-                shift
-                ;;
-            --dry-run)
-                DRY_RUN_FLG=1
-                shift
-                ;;
-            --kill-window=*)
-                KILL_WIN_FLG="1"
-                KILL_WIN_NAME="${1#--kill-window=}"
-                shift
-                ;;
-                # For unit testing
-            --no-attach)
-                ATTACH_FLG=0
-                OPTIONS=("${OPTIONS[@]}" "$1")
-                shift
-                ;;
 
+                if [[ "$1" =~ ^--version ]]; then
+                    __xpanes::version
+                    exit 0
+                fi
+
+                if [[ "$1" =~ ^--log-format=.* ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    LOG_FORMAT="${1#--log-format=}"
+                    shift
+                fi
+
+                if [[ "$1" =~ ^--log.* ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    LOG_STORE_FLG=1
+                    if [[ "$1" =~ ^--log=  ]]; then
+                        LOG_DIR="${1#--log=}"
+                    fi
+                    shift
+                fi
+
+                if [[ "$1" =~ ^--dry-run ]]; then
+                    DRY_RUN_FLG=1
+                    shift
+                fi
+
+                if [[ "$1" =~ ^--kill-window=.* ]]; then
+                    KILL_WIN_FLG="1"
+                    KILL_WIN_NAME="${1#--kill-window=}"
+                    shift
+                fi
+
+                # For unit testing
+                if [[ "$1" =~ ^--no-attach ]]; then
+                    ATTACH_FLG=0
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    shift
+                fi
+            fi
+            ;;
+
+            # ----------------
             # Short options
+            # ----------------
             -[hVIcSl]*)
+            if [ $_no_opt -eq 1 ]; then
+                ARGS=("${ARGS[@]}" "$1")
+                shift
+            else
                 if [[ "$1" =~ ^-h ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
@@ -451,21 +483,32 @@ __xpanes::parse_options() {
                     LOG_STORE_FLG=1
                 fi
                 shift
-                ;;
+            fi
+            ;;
 
+            # ----------------
             # Other options
+            # ----------------
             -*)
+            if [ $_no_opt -eq 1 ]; then
+                ARGS=("${ARGS[@]}" "$1")
+                shift
+            else
                 echo "Invalid option -- '${1#-}'" >&2
                 __xpanes::usage
                 echo "Try '$THIS_FILE_NAME --help' for more information." >&2
                 exit 4
-                ;;
+            fi
+            ;;
 
+            # ----------------
             # Other arguments
+            # ----------------
             *)
-                ARGS=("${ARGS[@]}" "$1")
-                shift
-                ;;
+            _no_opt=1
+            ARGS=("${ARGS[@]}" "$1")
+            shift
+            ;;
 
         esac
     done
