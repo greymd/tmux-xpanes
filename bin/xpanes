@@ -163,7 +163,12 @@ __xpanes::arr2args() {
 # ex, $1       =  aaa.bbb.ccc
 #     return   =  aaa-12345(PID)
 __xpanes::generate_window_name() {
-    echo "$1" | tr '.' ' ' | perl -anle 'printf "$F[0]-'$$'"'
+    echo "$1" | \
+        tr '.' ' ' | \
+        # coron must be replaced because tmux interprets it.
+        sed 's/:/;/g' | \
+        sed 's/-/_/g' | \
+        perl -anle 'printf "$F[0]-'$$'"'
 }
 
 #
