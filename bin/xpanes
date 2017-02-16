@@ -290,6 +290,7 @@ __xpanes::check_env() {
 : "Initialize options" && {
     OPTIONS=()
     ARGS=()
+    NO_OPT=0
     KILL_WIN_FLG=0
     KILL_WIN_NAME=""
     DRY_RUN_FLG=0
@@ -310,6 +311,12 @@ __xpanes::check_env() {
 __xpanes::pre_execution() {
     # Create new session.
     tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+
+    # Append -- flag.
+    # Because any arugments may have `-`
+    if [ $NO_OPT -eq 1 ]; then
+        ARGS=("--" "${ARGS[@]}")
+    fi
 
     local _opts4args=$(__xpanes::arr2args "${OPTIONS[@]}")
     local _args4args=$(__xpanes::arr2args "${ARGS[@]}")
@@ -355,14 +362,13 @@ __xpanes::parse_options() {
     # When this flag becomes 1,
     # rest of the arguments are not
     # handled as options.
-    local _no_opt=0
     while (( $# > 0 ))
     do
         case "$1" in
             --)
             # Disable any more options
             if [[ "$1" =~ ^--$ ]]; then
-                _no_opt=1
+                NO_OPT=1
                 shift
             fi
             ;;
@@ -371,7 +377,7 @@ __xpanes::parse_options() {
             # Long options
             # ----------------
             --*)
-            if [ $_no_opt -eq 1 ]; then
+            if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
@@ -426,7 +432,7 @@ __xpanes::parse_options() {
             # Short options
             # ----------------
             -[hVIcSl]*)
-            if [ $_no_opt -eq 1 ]; then
+            if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
@@ -490,7 +496,7 @@ __xpanes::parse_options() {
             # Other options
             # ----------------
             -*)
-            if [ $_no_opt -eq 1 ]; then
+            if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
@@ -505,7 +511,6 @@ __xpanes::parse_options() {
             # Other arguments
             # ----------------
             *)
-            _no_opt=1
             ARGS=("${ARGS[@]}" "$1")
             shift
             ;;
