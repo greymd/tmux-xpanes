@@ -279,6 +279,16 @@ test_hyphen_and_option2() {
 }
 
 test_desync_option() {
+    # If tmux version is less than 1.9, skip this test.
+    # Simple numerical comparison does not work because there is the version like "1.9a".
+    if [[ "$((echo "$(tmux_version_number)"; echo "1.9") | sort -n | head -n 1)" != "1.9" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -876,7 +886,7 @@ test_log_option() {
 
 test_log_format_option() {
     if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(tmux_version_number)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
         return 0
     fi
