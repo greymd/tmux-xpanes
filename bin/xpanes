@@ -296,6 +296,7 @@ __xpanes::check_env() {
     OPTIONS=()
     ARGS=()
     NO_OPT=0
+    OPT_IS_SYNC=1
     KILL_WIN_FLG=0
     KILL_WIN_NAME=""
     DRY_RUN_FLG=0
@@ -355,7 +356,9 @@ __xpanes::execution() {
     __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
 
     # Enable broadcasting
-    tmux set-window-option -t ${_window_name} synchronize-panes on
+    if [ $OPT_IS_SYNC -eq 1 ]; then
+        tmux set-window-option -t ${_window_name} synchronize-panes on
+    fi
 
     # Remove original window.
     if [ $KILL_WIN_FLG -eq 1 ]; then
@@ -397,6 +400,12 @@ __xpanes::parse_options() {
                     exit 0
                 fi
 
+                if [[ "$1" =~ ^--desync ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    OPT_IS_SYNC=0
+                    shift
+                fi
+
                 if [[ "$1" =~ ^--log-format=.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     LOG_STORE_FLG=1
@@ -436,7 +445,7 @@ __xpanes::parse_options() {
             # ----------------
             # Short options
             # ----------------
-            -[hVIcSl]*)
+            -[hVdIcSl]*)
             if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
@@ -493,6 +502,12 @@ __xpanes::parse_options() {
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     LOG_STORE_FLG=1
                 fi
+
+                if [[ "$1" =~ ^-d ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    OPT_IS_SYNC=0
+                fi
+
                 shift
             fi
             ;;
