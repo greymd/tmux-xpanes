@@ -45,20 +45,20 @@ __xpanes::usage_verbose() {
     echo "     Other sequences are available. Please refer to date(1) manual."
     echo
     echo " Examples:"
-    echo "     $ $THIS_FILE_NAME host1 host2 host3 host4"
+    echo "     $ $THIS_FILE_NAME arg1 arg2 arg3 arg4"
     echo "     New window is created and then, it will be separated into four panes."
     echo
-    echo "     $ $THIS_FILE_NAME host{1..4}"
+    echo "     $ $THIS_FILE_NAME arg{1..4}"
     echo "     Four panes will be created."
     echo "     Brace expansion is useful."
     echo
-    echo "     $ $THIS_FILE_NAME -l user1@host1 user1@host1"
+    echo "     $ $THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1"
     echo "     New window is created and it will be separated into two panes."
     echo "     And also $LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
     echo "     and      $LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
     echo "     will be created as their log files."
     echo
-    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs user1@host1 user2@host2"
+    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2"
     echo "     Following files will be created."
     echo "     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log"
     echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
