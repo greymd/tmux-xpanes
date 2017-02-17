@@ -24,6 +24,7 @@ __xpanes::usage() {
     echo "  -S socket-path               Specify a full alternative path to the server socket."
     echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
+    echo "  -d --desync                  Make synchronize-panes option off on new window."
     echo
 }
 
