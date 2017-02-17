@@ -196,7 +196,7 @@ test_hyphen_only() {
     assertEquals "5" "$?"
 }
 
-test_hyphen_and_option() {
+test_hyphen_and_option1() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
@@ -231,6 +231,47 @@ test_hyphen_and_option() {
         diff "${_tmpdir}/-h.result" <(cat <<<-h)
         assertEquals 0 $?
         diff "${_tmpdir}/-Z.result" <(cat <<<-Z)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f ${_tmpdir}/*.result
+    }
+}
+
+test_hyphen_and_option2() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -- AA --Z BB"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -- AA --Z BB
+    # hyphen "-" in the window name will be replacet with "_".
+    wait_panes_separation "$_socket_file" "__" "4"
+    wait_all_files_creation ${_tmpdir}/{--,AA,--Z,BB}.result
+    diff "${_tmpdir}/--.result" <(cat <<<--)
+    assertEquals 0 $?
+    diff "${_tmpdir}/AA.result" <(cat <<<AA)
+    assertEquals 0 $?
+    diff "${_tmpdir}/--Z.result" <(cat <<<--Z)
+    assertEquals 0 $?
+    diff "${_tmpdir}/BB.result" <(cat <<<BB)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/*.result
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "__" "4"
+        wait_all_files_creation ${_tmpdir}/{--,AA,--Z,BB}.result
+        diff "${_tmpdir}/--.result" <(cat <<<--)
+        assertEquals 0 $?
+        diff "${_tmpdir}/AA.result" <(cat <<<AA)
+        assertEquals 0 $?
+        diff "${_tmpdir}/--Z.result" <(cat <<<--Z)
+        assertEquals 0 $?
+        diff "${_tmpdir}/BB.result" <(cat <<<BB)
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
         rm -f ${_tmpdir}/*.result
