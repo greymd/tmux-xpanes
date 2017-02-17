@@ -158,7 +158,6 @@ __xpanes::arr2args() {
         echo "$_arg" | sed "s/'/'\"'\"'/g" | sed "s/^/'/;s/$/' /" | tr -d '\n'
     done
 }
-# /Users/yasuhiro.yamada/reps/greymd/tmssh/xpanes --kill-window=tmp-75313 '-c' 'ssh -o StrictHostKeyChecking=no {}'  '' 'lryshare'
 
 # Extract first field separated by dot '.'
 # ex, $1       =  aaa.bbb.ccc
@@ -375,8 +374,11 @@ __xpanes::parse_options() {
     do
         case "$1" in
             --)
-            # Disable any more options
-            if [[ "$1" =~ ^--$ ]]; then
+            if [ $NO_OPT -eq 1 ]; then
+                ARGS=("${ARGS[@]}" "$1")
+                shift
+            else
+                # Disable any more options
                 NO_OPT=1
                 shift
             fi
