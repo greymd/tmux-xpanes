@@ -237,6 +237,59 @@ test_hyphen_and_option() {
     }
 }
 
+test_desync_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    # synchronize-panes on
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    wait_panes_separation "$_socket_file" "AA" "4"
+    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    # Match
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+
+    # synchronize-panes off
+    _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -d -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    wait_panes_separation "$_socket_file" "AA" "4"
+    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    # Unmach
+    assertEquals 1 $?
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        # synchronize-panes on
+        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "4"
+        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        # Match
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+
+        # synchronize-panes off
+        _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "4"
+        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        # Unmach
+        assertEquals 1 $?
+        close_tmux_session "$_socket_file"
+    }
+}
+
 test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
