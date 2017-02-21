@@ -295,17 +295,17 @@ __xpanes::check_env() {
 : "Initialize options" && {
     OPTIONS=()
     ARGS=()
-    NO_OPT=0
     OPT_IS_SYNC=1
-    KILL_WIN_FLG=0
+    OPT_KILL_WIN=0
     KILL_WIN_NAME=""
-    DRY_RUN_FLG=0
-    ATTACH_FLG=1
-    LOG_STORE_FLG=0
+    OPT_DRY_RUN=0
+    OPT_ATTACH=1
+    OPT_LOG_STORE=0
     LOG_DIR="${LOG_DIR:-$HOME/.$THIS_FILE_NAME-logs}"
     LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
     REPSTR="{}"
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
+    NO_OPT=0
     CMD_UTILITY="echo {} "
     XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
     # This is supposed to be xpanes-12345(PID)
@@ -331,7 +331,7 @@ __xpanes::pre_execution() {
         "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_args4args" C-m
 
     # Avoid attaching (for unit testing).
-    if [ $ATTACH_FLG -eq 1 ]; then
+    if [ $OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
         tmux -S $SOCKET_PATH attach-session -t $SESSION_NAME
     fi
@@ -343,9 +343,9 @@ __xpanes::execution() {
     local _window_name=$(__xpanes::generate_window_name "${ARGS[0]}")
     local _last_host_idx=$((${#ARGS[@]} - 1))
 
-    __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$ATTACH_FLG"
+    __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$OPT_ATTACH"
 
-    if [ $LOG_STORE_FLG -eq 1 ]; then
+    if [ $OPT_LOG_STORE -eq 1 ]; then
         __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${ARGS[@]}"
     fi
 
@@ -361,7 +361,7 @@ __xpanes::execution() {
     fi
 
     # Remove original window.
-    if [ $KILL_WIN_FLG -eq 1 ]; then
+    if [ $OPT_KILL_WIN -eq 1 ]; then
         tmux kill-window -t "$KILL_WIN_NAME"
     fi
 }
@@ -411,14 +411,14 @@ __xpanes::parse_options() {
 
                 if [[ "$1" =~ ^--log-format=.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
-                    LOG_STORE_FLG=1
+                    OPT_LOG_STORE=1
                     LOG_FORMAT="${1#--log-format=}"
                     shift
                 fi
 
                 if [[ "$1" =~ ^--log.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
-                    LOG_STORE_FLG=1
+                    OPT_LOG_STORE=1
                     if [[ "$1" =~ ^--log=  ]]; then
                         LOG_DIR="${1#--log=}"
                     fi
@@ -426,19 +426,19 @@ __xpanes::parse_options() {
                 fi
 
                 if [[ "$1" =~ ^--dry-run ]]; then
-                    DRY_RUN_FLG=1
+                    OPT_DRY_RUN=1
                     shift
                 fi
 
                 if [[ "$1" =~ ^--kill-window=.* ]]; then
-                    KILL_WIN_FLG="1"
+                    OPT_KILL_WIN="1"
                     KILL_WIN_NAME="${1#--kill-window=}"
                     shift
                 fi
 
                 # For unit testing
                 if [[ "$1" =~ ^--no-attach ]]; then
-                    ATTACH_FLG=0
+                    OPT_ATTACH=0
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     shift
                 fi
@@ -503,7 +503,7 @@ __xpanes::parse_options() {
 
                 if [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
-                    LOG_STORE_FLG=1
+                    OPT_LOG_STORE=1
                 fi
 
                 if [[ "$1" =~ ^-d ]]; then
@@ -559,10 +559,10 @@ __xpanes::main() {
     : "Parameter validation" && {
         # Validate log directory.
         # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-        if [ $DRY_RUN_FLG -eq 1 ]; then
+        if [ $OPT_DRY_RUN -eq 1 ]; then
             return 0
         fi
-        if [ $LOG_STORE_FLG -eq 1 ]; then
+        if [ $OPT_LOG_STORE -eq 1 ]; then
             LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
         fi
     }
