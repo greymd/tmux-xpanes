@@ -1,6 +1,4 @@
 #!/bin/bash
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-XPANES_DEPENDENCIES="tmux perl $THIS_DIR/xpanes"
-# Load declared functions.
 $THIS_DIR/xpanes -c "ssh -o StrictHostKeyChecking=no {}" "$@"
