@@ -1,23 +1,6 @@
 #!/bin/bash
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-XPANES_DEPENDENCIES="tmux perl xpanes"
+XPANES_DEPENDENCIES="tmux perl $THIS_DIR/xpanes"
 # Load declared functions.
-source $THIS_DIR/xpanes --dry-run
-
-__xpanes::usage() {
-    echo "Usage:"
-    echo "  $THIS_FILE_NAME [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]"
-    echo
-    echo "OPTIONS:"
-    echo "  -h --help                    Show this screen."
-    echo "  -v --version                 Show version."
-    echo "  -S socket-path               Specify a full alternative path to the server socket."
-    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
-    echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
-    echo
-}
-
-__xpanes::parse_options "$@"
-
-$THIS_DIR/xpanes -c "ssh -o StrictHostKeyChecking=no {}" "${OPTIONS[@]}" "${ARGS[@]}"
+$THIS_DIR/xpanes -c "ssh -o StrictHostKeyChecking=no {}" "$@"
