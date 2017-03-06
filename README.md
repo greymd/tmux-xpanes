@@ -1,12 +1,11 @@
 [![latest version](https://img.shields.io/github/release/greymd/tmux-xpanes.svg)](https://github.com/greymd/tmux-xpanes/releases/latest)
 [![Build Status](https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master)](https://travis-ci.org/greymd/tmux-xpanes)
 
-# xpanes: eXtreme Panes -- powered by [tmux](https://tmux.github.io/)
-Extreme & smart way to execute UNIX commands on multiple [tmux](https://tmux.github.io/) panes.
+# xpanes: Build and eXecute command lines on PANES -- powered by [tmux](https://tmux.github.io/)
 
 # Features
 * Split tmux's window into multiple panes.
-  + Each pane executes given argument & command.
+  + Build command lines from given arguments & execute them on the panes.
 * It works on both situations.
   + Normal terminal (out of tmux session).
   + In tmux session.
@@ -78,6 +77,7 @@ OPTIONS:
   -S socket-path               Specify a full alternative path to the server socket.
   -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.tmssh-logs or given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
+  -d --desync                  Make synchronize-panes option off on new window.
 ```
 
 # Simple example
