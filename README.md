@@ -55,14 +55,14 @@ $ xpanes --help
 Usage:
   xpanes [OPTIONS] [argument ...]
 
-OPTIONS:
   -h --help                    Show this screen.
-  -v --version                 Show version.
+  -V --version                 Show version.
   -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used.
   -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option.
   -S socket-path               Specify a full alternative path to the server socket.
   -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.xpanes-logs or given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
+  -d --desync                  Make synchronize-panes option off on new window.
 ```
 
 `tmssh` is the command which has more specific feature of `xpanes`.
