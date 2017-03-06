@@ -196,7 +196,7 @@ test_hyphen_only() {
     assertEquals "5" "$?"
 }
 
-test_hyphen_and_option() {
+test_hyphen_and_option1() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
@@ -234,6 +234,110 @@ test_hyphen_and_option() {
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
         rm -f ${_tmpdir}/*.result
+    }
+}
+
+test_hyphen_and_option2() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -- AA --Z BB"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -- AA --Z BB
+    # hyphen "-" in the window name will be replacet with "_".
+    wait_panes_separation "$_socket_file" "__" "4"
+    wait_all_files_creation ${_tmpdir}/{--,AA,--Z,BB}.result
+    diff "${_tmpdir}/--.result" <(cat <<<--)
+    assertEquals 0 $?
+    diff "${_tmpdir}/AA.result" <(cat <<<AA)
+    assertEquals 0 $?
+    diff "${_tmpdir}/--Z.result" <(cat <<<--Z)
+    assertEquals 0 $?
+    diff "${_tmpdir}/BB.result" <(cat <<<BB)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/*.result
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "__" "4"
+        wait_all_files_creation ${_tmpdir}/{--,AA,--Z,BB}.result
+        diff "${_tmpdir}/--.result" <(cat <<<--)
+        assertEquals 0 $?
+        diff "${_tmpdir}/AA.result" <(cat <<<AA)
+        assertEquals 0 $?
+        diff "${_tmpdir}/--Z.result" <(cat <<<--Z)
+        assertEquals 0 $?
+        diff "${_tmpdir}/BB.result" <(cat <<<BB)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f ${_tmpdir}/*.result
+    }
+}
+
+test_desync_option() {
+    # If tmux version is less than 1.9, skip this test.
+    # Simple numerical comparison does not work because there is the version like "1.9a".
+    if [[ "$((echo "$(tmux_version_number)"; echo "1.9") | sort -n | head -n 1)" != "1.9" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    # synchronize-panes on
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    wait_panes_separation "$_socket_file" "AA" "4"
+    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    # Match
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+
+    # synchronize-panes off
+    _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -d -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    wait_panes_separation "$_socket_file" "AA" "4"
+    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    # Unmach
+    assertEquals 1 $?
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        # synchronize-panes on
+        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "4"
+        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        # Match
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+
+        # synchronize-panes off
+        _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "4"
+        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        # Unmach
+        assertEquals 1 $?
+        close_tmux_session "$_socket_file"
     }
 }
 
@@ -782,7 +886,7 @@ test_log_option() {
 
 test_log_format_option() {
     if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(tmux_version_number)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
         return 0
     fi
