@@ -29,7 +29,13 @@ BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
 tmux_version_number() {
-    tmux -V | perl -anle 'print $F[1]'
+    local _version=$(tmux -V)
+    # From tmux 0.9 to 1.3, there is no -V option.
+    if [ $? -ne 0 ]; then
+      # Adjust all 0.9
+      _version="tmux 0.9"
+    fi
+    echo "$_version" | perl -anle 'print $F[1]'
 }
 
 # If tmux version is less than 2.3, skip this test.

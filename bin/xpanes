@@ -73,7 +73,13 @@ __xpanes::version() {
 
 # Get version number for tmux
 __xpanes::get_tmux_version() {
-    tmux -V | perl -anle 'print $F[1]'
+    local _version=$(tmux -V)
+    # From tmux 0.9 to 1.3, there is no -V option.
+    if [ $? -ne 0 ]; then
+      # Adjust all 0.9
+      _version="tmux 0.9"
+    fi
+    echo "$_version" | perl -anle 'print $F[1]'
 }
 
 __xpanes::get_tmux_conf() {
