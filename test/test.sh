@@ -32,6 +32,14 @@ tmux_version_number() {
     tmux -V | perl -anle 'print $F[1]'
 }
 
+# If tmux version is less than 2.3, skip this test.
+# Simple numerical comparison does not work because there is the version like "1.9a".
+if [[ "$((echo "$(tmux_version_number)"; echo "2.3") | sort -n | head -n 1)" != "2.3" ]];then 
+    echo "Skip this test for $(tmux -V)." >&2
+    echo "Because this version is out of support." >&2
+    exit 0
+fi
+
 create_tmux_session() {
     local _socket_file="$1"
     tmux -S $_socket_file new-session -d
@@ -284,7 +292,6 @@ test_hyphen_and_option2() {
 
 test_desync_option() {
     # If tmux version is less than 1.9, skip this test.
-    # Simple numerical comparison does not work because there is the version like "1.9a".
     if [[ "$((echo "$(tmux_version_number)"; echo "1.9") | sort -n | head -n 1)" != "1.9" ]];then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2

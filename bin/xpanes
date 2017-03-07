@@ -71,6 +71,11 @@ __xpanes::version() {
     echo "$THIS_FILE_NAME $VERSION"
 }
 
+# Get version number for tmux
+__xpanes::get_tmux_version() {
+    tmux -V | perl -anle 'print $F[1]'
+}
+
 __xpanes::get_tmux_conf() {
     local _conf_name="$1"
     tmux show-window-options -g | grep "^${1}" | head -n 1 | perl -anle 'print $F[1]'
@@ -283,6 +288,14 @@ __xpanes::check_env() {
             exit 127
         fi
     done < <(echo "$_cmds" | tr ' ' '\n')
+
+    XPANES_CURRENT_TMUX_VERSION="${XPANES_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
+    echo "$XPANES_CURRENT_TMUX_VERSION" | grep -qE "$XPANES_SUPPORT_TMUX_VERSIONS"
+    if [ $? -eq 1 ];then
+        echo "warning: $THIS_FILE_NAME may not work properly!" >&2
+        echo "         Current tmux version '$XPANES_CURRENT_TMUX_VERSION' is out of support." >&2
+        echo "         From tmux version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER are officially supported."
+    fi
     return 0
 }
 
@@ -307,6 +320,9 @@ __xpanes::check_env() {
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
     NO_OPT=0
     CMD_UTILITY="echo {} "
+    XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
+    XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
+    XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
     XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
     # This is supposed to be xpanes-12345(PID)
     readonly SESSION_NAME="$THIS_FILE_NAME-$$"

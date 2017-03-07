@@ -5,6 +5,30 @@ matrix:
     include:
         - os: linux
           env: SH=bash
+          env: TMUX_VERSION=0.8
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=0.9
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.0
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.1
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.2
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.3
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.4
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.5
+        - os: linux
+          env: SH=bash
           env: TMUX_VERSION=1.6
         - os: linux
           env: SH=zsh
