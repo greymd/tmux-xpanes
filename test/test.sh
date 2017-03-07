@@ -38,9 +38,9 @@ tmux_version_number() {
     echo "$_version" | perl -anle 'print $F[1]'
 }
 
-# If tmux version is less than 2.3, skip this test.
+# If tmux version is less than 1.6, skip this test.
 # Simple numerical comparison does not work because there is the version like "1.9a".
-if [[ "$((echo "$(tmux_version_number)"; echo "1.5") | sort -n | head -n 1)" != "1.5" ]];then
+if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
     echo "Skip this test for $(tmux -V)." >&2
     echo "Because this version is out of support." >&2
     exit 0
