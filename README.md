@@ -1,7 +1,8 @@
 [![latest version](https://img.shields.io/github/release/greymd/tmux-xpanes.svg)](https://github.com/greymd/tmux-xpanes/releases/latest)
 [![Build Status](https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master)](https://travis-ci.org/greymd/tmux-xpanes)
 
-# xpanes: Build and eXecute command lines on PANES -- powered by [tmux](https://tmux.github.io/)
+# `xpanes` powered by [tmux](https://tmux.github.io/)
+Build and eXecute command lines on PANES.
 
 # Features
 * Split tmux's window into multiple panes.
@@ -84,8 +85,30 @@ OPTIONS:
 
 Try it.
 
-```
+```sh
 $ xpanes 1 2 3 4
+```
+
+You will get the screen like this.
+
+```
+$ echo 1                       │$ echo 2
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+───────────────────────────────┼───────────────────────────────
+$ echo 3                       │$ echo 4 
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
 ```
 
 # Examples
