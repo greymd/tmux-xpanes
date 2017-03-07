@@ -4,89 +4,61 @@ sudo: required
 matrix:
     include:
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=0.8
+          env: SH=bash TMUX_VERSION=0.8
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=0.9
+          env: SH=bash TMUX_VERSION=0.9
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.0
+          env: SH=bash TMUX_VERSION=1.0
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.1
+          env: SH=bash TMUX_VERSION=1.1
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.2
+          env: SH=bash TMUX_VERSION=1.2
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.3
+          env: SH=bash TMUX_VERSION=1.3
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.4
+          env: SH=bash TMUX_VERSION=1.4
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.5
+          env: SH=bash TMUX_VERSION=1.5
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.6
+          env: SH=bash TMUX_VERSION=1.6
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=1.6
+          env: SH=zsh TMUX_VERSION=1.6
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.7
+          env: SH=bash TMUX_VERSION=1.7
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=1.7
+          env: SH=zsh TMUX_VERSION=1.7
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.8
+          env: SH=bash TMUX_VERSION=1.8
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=1.8
+          env: SH=zsh TMUX_VERSION=1.8
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.9
+          env: SH=bash TMUX_VERSION=1.9
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=1.9
+          env: SH=zsh TMUX_VERSION=1.9
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=1.9a
+          env: SH=bash TMUX_VERSION=1.9a
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=1.9a
+          env: SH=zsh TMUX_VERSION=1.9a
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=2.0
+          env: SH=bash TMUX_VERSION=2.0
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=2.0
+          env: SH=zsh TMUX_VERSION=2.0
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=2.1
+          env: SH=bash TMUX_VERSION=2.1
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=2.1
+          env: SH=zsh TMUX_VERSION=2.1
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=2.2
+          env: SH=bash TMUX_VERSION=2.2
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=2.2
+          env: SH=zsh TMUX_VERSION=2.2
         - os: linux
-          env: SH=bash
-          env: TMUX_VERSION=2.3
+          env: SH=bash TMUX_VERSION=2.3
         - os: linux
-          env: SH=zsh
-          env: TMUX_VERSION=2.3
+          env: SH=zsh TMUX_VERSION=2.3
         - os: osx
-          env: SH=bash
-          env: TMUX_VERSION="default"
+          env: SH=bash TMUX_VERSION="default"
         - os: osx
-          env: SH=zsh
-          env: TMUX_VERSION="default"
+          env: SH=zsh TMUX_VERSION="default"
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get -qq update ;fi ;fi
