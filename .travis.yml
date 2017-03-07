@@ -4,43 +4,78 @@ sudo: required
 os:
   - linux
 
-env:
-#  - SH=bash TMUX_VERSION=1.5 # Version 1.5 is out of support
-#  - SH=zsh TMUX_VERSION=1.5  #
-  - SH=bash TMUX_VERSION=1.6
-  - SH=zsh TMUX_VERSION=1.6
-  - SH=bash TMUX_VERSION=1.7
-  - SH=zsh TMUX_VERSION=1.7
-  - SH=bash TMUX_VERSION=1.8
-  - SH=zsh TMUX_VERSION=1.8
-  - SH=bash TMUX_VERSION=1.9
-  - SH=zsh TMUX_VERSION=1.9
-  - SH=bash TMUX_VERSION=1.9a
-  - SH=zsh TMUX_VERSION=1.9a
-  - SH=bash TMUX_VERSION=2.0
-  - SH=zsh TMUX_VERSION=2.0
-  - SH=bash TMUX_VERSION=2.1
-  - SH=zsh TMUX_VERSION=2.1
-  - SH=bash TMUX_VERSION=2.2
-  - SH=zsh TMUX_VERSION=2.2
-  - SH=bash TMUX_VERSION=2.3
-  - SH=zsh TMUX_VERSION=2.3
+matrix:
+    include:
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.6
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=1.6
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.7
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=1.7
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.8
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=1.8
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.9
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=1.9
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=1.9a
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=1.9a
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=2.0
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=2.0
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=2.1
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=2.1
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=2.2
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=2.2
+        - os: linux
+          env: SH=bash
+          env: TMUX_VERSION=2.3
+        - os: linux
+          env: SH=zsh
+          env: TMUX_VERSION=2.3
+        - os: osx
+          env: SH=bash
+          env: TMUX_VERSION="default"
+        - os: osx
+          env: SH=zsh
+          env: TMUX_VERSION="default"
 
 before_install:
+  - export TMPDIR=$TRAVIS_BUILD_DIR/tmp
+  - mkdir -p $TMPDIR
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get -qq update ;fi ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get install -y $SH ;fi ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get install -y ncurses-dev libevent-dev gcc make curl ;fi
-
-before_script:
-  - export TMPDIR=$TRAVIS_BUILD_DIR/tmp # Default TMPDIR is not writable on Travis CI
-  - mkdir -p $TMPDIR
-  - cd $TMPDIR
-  - curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv
-  - cd tmux-${TMUX_VERSION}
-  - ./configure
-  - make
-  - sudo make install
-  - cd $TRAVIS_BUILD_DIR
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then cd $TMPDIR && curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv && cd tmux-${TMUX_VERSION} && ./configure && make && sudo make install && cd $TRAVIS_BUILD_DIR ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then if [[ ! $(which $SH) ]] ; then brew update; brew install $SH ;fi ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then if [[ ! $(which tmux) ]] ; then brew update; brew install tmux ;fi ;fi
 
 script:
   - $SH ./test/test.sh
