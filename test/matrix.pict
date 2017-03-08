@@ -1,19 +1,10 @@
 os:linux(10),osx(1)
 # Bash -- extract "MAJOR.MINOR" version. Ignore all the patch version's difference.
-# Zsh -- extract "MAJOR.MINOR.PATCH" version from sourceforge https://sourceforge.net/projects/zsh/files/zsh/.
-#         PATCH version is maximum or minimum ones within each MINOR version.
-# shell:bash-default,zsh-default,bash-3.0,bash-3.1,bash-3.2,bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4,zsh-3.1.7,zsh-3.1.9,zsh-4.0.1,zsh-4.0.9,zsh-4.2.0,zsh-4.2.7,zsh-5.0.0,zsh-5.0.1,zsh-5.0.8,zsh-5.1,zsh-5.1.1,zsh-5.2,zsh-5.3,zsh-5.3.1
-shell:bash-default,bash-3.2,bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
+shell:bash-default,bash-2.0,bash-2.01,bash-2.02,bash-2.03,bash-2.04,bash-2.05,bash-3.0,bash-3.1,bash-3.2,bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
 tmux:0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.9a,2.0,2.1,2.2,2.3
 
 IF [os] = "osx" THEN [shell] = "bash-default";
 IF [tmux] IN {"0.8","0.9","1.0","1.1","1.2","1.3","1.4","1.5"} THEN [os] = "linux" AND [shell] = "bash-default";
-
-# ============================
-# Out of support
-# ============================
-# shell: bash-2.0,bash-2.01,bash-2.02,bash-2.03,bash-2.04,bash-2.05,zsh-3.0.8,zsh-3.1.8,zsh-4.0.2,zsh-4.0.4,zsh-4.0.6,zsh-4.0.7,zsh-4.2.1,zsh-4.2.3,zsh-4.2.4,zsh-4.2.5,zsh-4.2.6,zsh-5.0.2,zsh-5.0.4,zsh-5.0.5,zsh-5.0.6,zsh-5.0.7
-# tmux: 0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5
 
 # ============================
 # How to generate test cases
