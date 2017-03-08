@@ -187,8 +187,8 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_unsupported_version() {
-    XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "'$(tmux_version_number)' is out of support."
-    assertEquals "1" "$?"
+    XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
+    assertEquals "$?" "0"
 }
 
 test_invalid_args() {

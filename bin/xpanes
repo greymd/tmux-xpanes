@@ -74,10 +74,9 @@ __xpanes::version() {
 # Get version number for tmux
 __xpanes::get_tmux_version() {
     local _version=$(tmux -V)
-    # From tmux 0.9 to 1.3, there is no -V option.
     if [ $? -ne 0 ]; then
-      # Adjust all 0.9
-      _version="tmux 0.9"
+      # From tmux 0.9 to 1.3, there is no -V option.
+      _version="tmux unknown version"
     fi
     echo "$_version" | perl -anle 'print $F[1]'
 }
@@ -300,7 +299,7 @@ __xpanes::check_env() {
     if [ $? -eq 1 ];then
         echo "warning: $THIS_FILE_NAME may not work properly!" >&2
         echo "         Current tmux version '$XPANES_CURRENT_TMUX_VERSION' is out of support." >&2
-        echo "         From tmux version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER are officially supported."
+        echo "         From tmux version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported."
     fi
     return 0
 }
