@@ -29,22 +29,14 @@ BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
 tmux_version_number() {
-    local _version=$(tmux -V 2> /dev/null)
+    local _tmux_version_number="$(tmux -V 2> /dev/null)"
     # From tmux 0.9 to 1.3, there is no -V option.
     if [ $? -ne 0 ]; then
       # Adjust all 0.9
-      _version="tmux 0.9"
+      _tmux_version_number="tmux 0.9"
     fi
-    echo "$_version" | perl -anle 'print $F[1]'
+    echo "$_tmux_version_number" | perl -anle 'print $F[1]'
 }
-
-# If tmux version is less than 1.6, skip this test.
-# Simple numerical comparison does not work because there is the version like "1.9a".
-if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
-    echo "Skip this test for $(tmux -V)." >&2
-    echo "Because this version is out of support." >&2
-    exit 0
-fi
 
 create_tmux_session() {
     local _socket_file="$1"
@@ -185,6 +177,18 @@ tearDown(){
 }
 
 ###################### START TESTING ######################
+
+# !!Run this test at first!!
+test_check_version() {
+    ${EXEC} --dry-run A
+    # If tmux version is less than 1.6, skip rest of the tests.
+    if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
+        # Simple numerical comparison does not work because there is the version like "1.9a".
+        echo "Skip rest of the tests." >&2
+        echo "Because this version is out of support." >&2
+        exit 0
+    fi
+}
 
 test_unsupported_version() {
     XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
