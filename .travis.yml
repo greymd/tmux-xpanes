@@ -64,13 +64,13 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get -qq update ;fi ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then if [[ ! $(which $SH) ]] ;then sudo apt-get install -y $SH ;fi ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get install -y ncurses-dev libevent-dev gcc make curl ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then ( curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv && cd tmux-${TMUX_VERSION} && ./configure; make && sudo make install ) ;fi # tmux 0.8 does not require ./configure
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then if [[ ! $(which $SH) ]] ; then brew update; brew install $SH ;fi ;fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then if [[ ! $(which tmux) ]] ; then brew update; brew install tmux ;fi ;fi
 
 -before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp
   - mkdir -p $TMPDIR
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then ( curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv && cd tmux-${TMUX_VERSION} && ./configure; make && sudo make install ) ;fi # tmux 0.8 does not require ./configure
 
 script:
   - $SH ./test/test.sh

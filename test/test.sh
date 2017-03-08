@@ -29,7 +29,7 @@ BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
 tmux_version_number() {
-    local _version=$(tmux -V)
+    local _version=$(tmux -V 2> /dev/null)
     # From tmux 0.9 to 1.3, there is no -V option.
     if [ $? -ne 0 ]; then
       # Adjust all 0.9
@@ -58,15 +58,16 @@ create_tmux_session() {
 
 exec_tmux_session() {
     local _socket_file="$1" ;shift
-    echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
+    local _tmpdir=${SHUNIT_TMPDIR:-/tmp}
+    echo "send-keys: cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done" >&2
     # Same reason as the comments near "create_tmux_session".
-    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done && sleep 1 && tmux detach-client" C-m
+    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done && sleep 1 && tmux detach-client" C-m
     tmux -S $_socket_file attach-session
     # Wait until tmux session is completely established.
     for i in $(seq 30) ;do
         sleep 1
-        if [ -e "${TMPDIR}/done" ]; then
-            rm -f "${TMPDIR}/done"
+        if [ -e "${SHUNIT_TMPDIR}/done" ]; then
+            rm -f "${SHUNIT_TMPDIR}/done"
             break
         fi
         # Tmux session does not work.
@@ -378,9 +379,15 @@ test_use_file_insteadof_directory() {
 }
 
 test_non_writable_directory() {
+    local _user=${USER:-$(whoami)}
+    echo "USER:$_user"
+    if [ "$_user" = "root" ]; then
+        echo 'This test cannot be done by root. Skip.' 1>&2
+        return 0
+    fi
     local _log_dir="${SHUNIT_TMPDIR}/log_dir"
     mkdir $_log_dir
-    chmod -w $_log_dir
+    chmod 400 $_log_dir
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
