@@ -40,6 +40,7 @@ tmux_version_number() {
 
 # !!Run this function at first!!
 check_version() {
+    cd ${BIN_DIR}
     ${EXEC} --dry-run A
     # If tmux version is less than 1.6, skip rest of the tests.
     if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
