@@ -19,4 +19,4 @@ IF [tmux] IN {"0.8","0.9","1.0","1.1","1.2","1.3","1.4","1.5"} THEN [os] = "linu
 # How to generate test cases
 # ============================
 # Use pict (https://github.com/Microsoft/pict)
-# $ pict matrix.pict | sed '1d' | perl -anle 'print "- os: $F[0]"; ($sh, $sh_ver) = split("-",$F[1]); print "  env: SH=$sh SH_VERSION=$sh_ver TMUX_VERSION=$F[2]";' | sed 's/^/        /'
+# $ pict matrix.pict | sed '1d' | sort | perl -anle 'print "- os: $F[0]"; ($sh, $sh_ver) = split("-",$F[1]); print "  env: SH=$sh SH_VERSION=$sh_ver TMUX_VERSION=$F[2]";' | sed 's/^/        /'
