@@ -38,6 +38,20 @@ tmux_version_number() {
     echo "$_tmux_version_number" | perl -anle 'print $F[1]'
 }
 
+# !!Run this function at first!!
+check_version() {
+    ${EXEC} --dry-run A
+    # If tmux version is less than 1.6, skip rest of the tests.
+    if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
+        # Simple numerical comparison does not work because there is the version like "1.9a".
+        echo "Skip rest of the tests." >&2
+        echo "Because this version is out of support." >&2
+        exit 0
+    fi
+}
+
+check_version
+
 create_tmux_session() {
     local _socket_file="$1"
     tmux -S $_socket_file new-session -d
@@ -177,18 +191,6 @@ tearDown(){
 }
 
 ###################### START TESTING ######################
-
-# !!Run this test at first!!
-test_check_version() {
-    ${EXEC} --dry-run A
-    # If tmux version is less than 1.6, skip rest of the tests.
-    if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
-        # Simple numerical comparison does not work because there is the version like "1.9a".
-        echo "Skip rest of the tests." >&2
-        echo "Because this version is out of support." >&2
-        exit 0
-    fi
-}
 
 test_unsupported_version() {
     XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
