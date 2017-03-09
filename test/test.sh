@@ -196,6 +196,7 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_unsupported_version() {
+    tty
     XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
     assertEquals "$?" "0"
 }
@@ -918,6 +919,7 @@ test_log_option() {
 }
 
 test_log_format_option() {
+    tty
     if [[ "$(tmux_version_number)" == "2.3" ]];then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
@@ -1007,6 +1009,7 @@ test_log_format_option() {
 }
 
 test_log_format_option_no_attach() {
+    tty
     if [[ "$(tmux_version_number)" == "1.8" ]];then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Logging feature does not work when the tmux session is not be attached, with this version." >&2
