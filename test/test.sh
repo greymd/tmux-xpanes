@@ -1006,4 +1006,88 @@ test_log_format_option() {
     }
 }
 
+test_log_format_option_no_attach() {
+    if [[ "$(tmux_version_number)" == "1.8" ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Logging feature does not work when the tmux session is not be attached, with this version." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB CCCC
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
+
+    ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
+
+    close_tmux_session "$_socket_file"
+    rm -f ${_logdir}/*
+    rmdir ${_logdir}
+    rm -f ${_tmpdir}/fin/*
+    rmdir ${_tmpdir}/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
+
+        ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
+
+        close_tmux_session "$_socket_file"
+        rm -f ${_logdir}/*
+        rmdir ${_logdir}
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
+}
+
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
