@@ -1,6 +1,8 @@
+# Let test cases of osx as small as possible because Travis CI takes long time to finish osx's tests.
 os:linux(10),osx(1)
 # Bash -- extract "MAJOR.MINOR" version. Ignore all the patch version's difference.
-shell:bash-default,bash-2.0,bash-2.01,bash-2.02,bash-2.03,bash-2.04,bash-2.05,bash-3.0,bash-3.1,bash-3.2,bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
+#         Less than version 3.1 is out of support.
+shell:bash-default,bash-3.1,bash-3.2,bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
 tmux:0.8,0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,1.9a,2.0,2.1,2.2,2.3
 
 IF [os] = "osx" THEN [shell] = "bash-default";
