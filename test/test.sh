@@ -838,11 +838,12 @@ test_repstr_command_option_pipe() {
 }
 
 test_log_option() {
-    if [[ "$(tmux_version_number)" == "1.8" && ! $(tty) ]];then
+    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of following phenomenon." >&2
-        echo "1. Logging feature does not work when tmux version 1.8 and standard input is NOT a terminal. " >&2
-        echo "2. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
         return 0
     fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
@@ -923,11 +924,12 @@ test_log_option() {
 }
 
 test_log_format_option() {
-    if [[ "$(tmux_version_number)" == "1.8" && ! $(tty) ]];then
+    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of following phenomenon." >&2
-        echo "1. Logging feature does not work when tmux version 1.8 and standard input is NOT a terminal. " >&2
-        echo "2. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
         return 0
     fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
