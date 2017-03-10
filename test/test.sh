@@ -196,7 +196,6 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_unsupported_version() {
-    tty
     XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
     assertEquals "$?" "0"
 }
@@ -838,9 +837,14 @@ test_repstr_command_option_pipe() {
     }
 }
 
-
-
 test_log_option() {
+    if [[ "$(tmux_version_number)" == "1.8" && ! $(tty) ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following phenomenon." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and standard input is NOT a terminal. " >&2
+        echo "2. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
@@ -919,7 +923,13 @@ test_log_option() {
 }
 
 test_log_format_option() {
-    tty
+    if [[ "$(tmux_version_number)" == "1.8" && ! $(tty) ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following phenomenon." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and standard input is NOT a terminal. " >&2
+        echo "2. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
@@ -980,91 +990,6 @@ test_log_format_option() {
 
         # Wait several seconds just in case.
         sleep 3
-        ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
-        assertEquals 0 $?
-        _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
-        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
-
-        ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
-        assertEquals 0 $?
-        _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
-        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
-
-        ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
-        assertEquals 0 $?
-        _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
-        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
-
-        ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
-        assertEquals 0 $?
-        _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
-        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
-
-        close_tmux_session "$_socket_file"
-        rm -f ${_logdir}/*
-        rmdir ${_logdir}
-        rm -f ${_tmpdir}/fin/*
-        rmdir ${_tmpdir}/fin
-    }
-}
-
-test_log_format_option_no_attach() {
-    tty
-    if [[ "$(tmux_version_number)" == "1.8" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
-        echo "Logging feature does not work when the tmux session is not be attached, with this version." >&2
-        return 0
-    fi
-
-    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-    local _cmd=""
-    local _log_file=""
-    local _tmpdir="${SHUNIT_TMPDIR}"
-    local _logdir="${_tmpdir}/hoge"
-    local _year="$(date +%Y)"
-    mkdir -p "${_tmpdir}/fin"
-
-    _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" --no-attach AAAA AAAA BBBB CCCC"
-    echo $'\n'" $ $_cmd"$'\n'
-    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@" --no-attach AAAA AAAA BBBB CCCC
-    wait_panes_separation "$_socket_file" "AAAA" "4"
-    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-
-    ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
-    assertEquals 0 $?
-    _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
-    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
-
-    ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
-    assertEquals 0 $?
-    _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
-    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
-
-    ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
-    assertEquals 0 $?
-    _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
-    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
-
-    ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
-    assertEquals 0 $?
-    _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
-    assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
-
-    close_tmux_session "$_socket_file"
-    rm -f ${_logdir}/*
-    rmdir ${_logdir}
-    rm -f ${_tmpdir}/fin/*
-    rmdir ${_tmpdir}/fin
-
-    : "In TMUX session" && {
-        echo $'\n'" $ TMUX($_cmd)"$'\n'
-        mkdir -p "${_tmpdir}/fin"
-
-        create_tmux_session "$_socket_file"
-        exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "AAAA" "4"
-        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-
         ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
         assertEquals 0 $?
         _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
