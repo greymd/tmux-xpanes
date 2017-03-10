@@ -13,7 +13,7 @@ Build and eXecute command lines on PANES.
 
 # Dependencies
 
-* `zsh` (version 4.x, 5.x) or `bash` (version 3.x, 4.x)
+* `bash` (version 3.1 and more)
 * `tmux` (version 1.6 and more)
 
 
@@ -24,10 +24,10 @@ Build and eXecute command lines on PANES.
 ```sh
 # Install
 $ brew tap greymd/tools
-$ brew install greymd/tools/tmux-xpanes
+$ brew install tmux-xpanes
 
 # Uninstall
-$ brew uninstall greymd/tools/tmux-xpanes
+$ brew uninstall tmux-xpanes
 ```
 
 ## With [zplug](https://zplug.sh) (for zsh users)
