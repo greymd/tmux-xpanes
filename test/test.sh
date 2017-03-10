@@ -29,8 +29,31 @@ BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
 
 tmux_version_number() {
-    tmux -V | perl -anle 'print $F[1]'
+    local _tmux_version=""
+    tmux -V &> /dev/null
+    if [ $? -ne 0 ]; then
+        # From tmux 0.9 to 1.3, there is no -V option.
+        # Adjust all to 0.9
+        _tmux_version="tmux 0.9"
+    else
+        _tmux_version="$(tmux -V)"
+    fi
+    echo "$_tmux_version" | perl -anle 'printf $F[1]'
 }
+
+# !!Run this function at first!!
+check_version() {
+    ${BIN_DIR}${EXEC} --dry-run A
+    # If tmux version is less than 1.6, skip rest of the tests.
+    if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
+        # Simple numerical comparison does not work because there is the version like "1.9a".
+        echo "Skip rest of the tests." >&2
+        echo "Because this version is out of support." >&2
+        exit 0
+    fi
+}
+
+check_version
 
 create_tmux_session() {
     local _socket_file="$1"
@@ -44,15 +67,16 @@ create_tmux_session() {
 
 exec_tmux_session() {
     local _socket_file="$1" ;shift
-    echo "send-keys: cd ${BIN_DIR} && $* && touch ${TMPDIR}/done" >&2
+    local _tmpdir=${SHUNIT_TMPDIR:-/tmp}
+    echo "send-keys: cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done" >&2
     # Same reason as the comments near "create_tmux_session".
-    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${TMPDIR}/done && sleep 1 && tmux detach-client" C-m
+    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done && sleep 1 && tmux detach-client" C-m
     tmux -S $_socket_file attach-session
     # Wait until tmux session is completely established.
     for i in $(seq 30) ;do
         sleep 1
-        if [ -e "${TMPDIR}/done" ]; then
-            rm -f "${TMPDIR}/done"
+        if [ -e "${SHUNIT_TMPDIR}/done" ]; then
+            rm -f "${SHUNIT_TMPDIR}/done"
             break
         fi
         # Tmux session does not work.
@@ -171,6 +195,10 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_unsupported_version() {
+    XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
+    assertEquals "$?" "0"
+}
 
 test_invalid_args() {
     local _cmd="${EXEC} -Z"
@@ -280,7 +308,6 @@ test_hyphen_and_option2() {
 
 test_desync_option() {
     # If tmux version is less than 1.9, skip this test.
-    # Simple numerical comparison does not work because there is the version like "1.9a".
     if [[ "$((echo "$(tmux_version_number)"; echo "1.9") | sort -n | head -n 1)" != "1.9" ]];then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
@@ -361,9 +388,15 @@ test_use_file_insteadof_directory() {
 }
 
 test_non_writable_directory() {
+    local _user=${USER:-$(whoami)}
+    echo "USER:$_user"
+    if [ "$_user" = "root" ]; then
+        echo 'This test cannot be done by root. Skip.' 1>&2
+        return 0
+    fi
     local _log_dir="${SHUNIT_TMPDIR}/log_dir"
     mkdir $_log_dir
-    chmod -w $_log_dir
+    chmod 400 $_log_dir
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
@@ -804,9 +837,15 @@ test_repstr_command_option_pipe() {
     }
 }
 
-
-
 test_log_option() {
+    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
@@ -885,6 +924,14 @@ test_log_option() {
 }
 
 test_log_format_option() {
+    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2

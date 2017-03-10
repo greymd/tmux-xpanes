@@ -19,6 +19,17 @@ Build and eXecute command lines on PANES.
 
 # Installation
 
+## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
+
+```sh
+# Install
+$ brew tap greymd/tools
+$ brew install greymd/tools/tmux-xpanes
+
+# Uninstall
+$ brew uninstall greymd/tools/tmux-xpanes
+```
+
 ## With [zplug](https://zplug.sh) (for zsh users)
 
 If you are using zplug, it is easy and recommended way.
