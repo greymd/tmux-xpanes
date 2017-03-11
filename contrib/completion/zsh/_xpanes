@@ -1,0 +1,38 @@
+#compdef -U xpanes
+# xpanes completion for zsh. Source from somewhere in your $fpath.
+
+# Reload
+# $ unfunction _xpanes && autoload -Uz +X _xpanes
+
+_xpanes() {
+    local -a args
+
+    if [[ "${words}" =~ (-h|--help|-V|--version) ]] ; then
+        # Do nothing
+        return 0
+    elif [[ '--log' == "${words[$CURRENT-1]}" ]] ; then
+        # Complete directory name
+        _dir_list
+    elif [[ '--log-format' == "${words[$CURRENT-1]}" ]] ; then
+        # For now, disable this completion because of the bug.
+        # http://stackoverflow.com/questions/25614613/how-to-disable-zsh-substitution-autocomplete-with-url-and-backslashes
+        # args=($args {$'\x5b'"\:ARG\:\].log","[\:ARG\:]_[\:PID\:]_%Y-%m-%d.txt"}":Example FORMAT.")
+        return 0
+    elif [[ '-S' == "${words[$CURRENT-1]}" ]] ; then
+        _files
+    elif [[ '-I' == "${words[$CURRENT-1]}" ]] ; then
+        args=($args {"@","_HERE_","%","REPSTR"}":Example repstr.")
+    elif [[ '-c' == "${words[$CURRENT-1]}" ]] ; then
+        return 0
+    else
+        echo $words | grep -w -- '-h\|--help'    1> /dev/null || args=($args {-h,--help}':Show detailed usage.')
+        echo $words | grep -w -- '-V\|--version' 1> /dev/null || args=($args {-V,--version}':Show version.')
+        echo $words | grep -w -- '-c'            1> /dev/null || args=($args -c':Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used.')
+        echo $words | grep -w -- '-I'            1> /dev/null || args=($args -I':Replacing one or more occurrences of replstr in utility given by -c option.')
+        echo $words | grep -w -- '-S'            1> /dev/null || args=($args -S':Specify a full alternative path to the server socket.')
+        echo $words | grep -w -- '-l\|--log'     1> /dev/null || args=($args {-l,--log}':Enable logging and store log files to ~/.xpanes-logs or given <directory>.')
+        echo $words | grep -w -- '--log-format'  1> /dev/null || args=($args --log-format':File name of log files follows given <FORMAT>.')
+        echo $words | grep -w -- '-d'            1> /dev/null || args=($args '-d:Make synchronize-panes option off on new window.')
+    fi
+    _describe -t args 'args' args
+}
