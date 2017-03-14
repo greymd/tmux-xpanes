@@ -10,7 +10,7 @@ _xpanes () {
         "($opts_help -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
         "($opts_help -l --log)"{-l=,--log=}"[Enable logging and store log files to ~/.xpanes-logs or given <directory>.]:dirs:_dir_list" \
         "($opts_help --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
-        "($opts_help -d)-d[Make synchronize-panes option off on new window.]"
+        "($opts_help -d)"{-d,--desync}"[Make synchronize-panes option off on new window.]"
 }
 
 _tmux-xpanes() {

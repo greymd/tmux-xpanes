@@ -17,14 +17,14 @@ __xpanes::usage() {
     echo "  $THIS_FILE_NAME [OPTIONS] [argument ...]"
     echo
     echo "OPTIONS:"
-    echo "  -h --help                    Show this screen."
-    echo "  -V --version                 Show version."
-    echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
-    echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
-    echo "  -S socket-path               Specify a full alternative path to the server socket."
-    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "  -h,--help                    Show this screen."
+    echo "  -V,--version                 Show version."
+    echo "  -c,utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
+    echo "  -I,replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
+    echo "  -S,socket-path               Specify a full alternative path to the server socket."
+    echo "  -l,--log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
-    echo "  -d --desync                  Make synchronize-panes option off on new window."
+    echo "  -d,--desync                  Make synchronize-panes option off on new window."
     echo
 }
 
@@ -33,9 +33,9 @@ __xpanes::usage_verbose() {
     echo "     Default value is \"$LOG_FORMAT\""
     echo "     Interpreted sequences are:"
     echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
-    echo "     [:ARG:]   Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo "     [:ARG:]   Argument name"
     echo
-    echo '     In addition, sequences same as `date` command are available.'
+    echo '     In addition, sequences same as date(1) command are available.'
     echo
     echo "     For example:"
     echo "     %Y   year  (e.g, 1960)"
@@ -49,8 +49,8 @@ __xpanes::usage_verbose() {
     echo "     New window is created and then, it will be separated into four panes."
     echo
     echo "     $ $THIS_FILE_NAME arg{1..4}"
-    echo "     Four panes will be created."
     echo "     Brace expansion is useful."
+    echo "     Four panes will be created."
     echo
     echo "     $ $THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1"
     echo "     New window is created and it will be separated into two panes."
