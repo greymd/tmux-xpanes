@@ -233,9 +233,9 @@ __xpanes::send_commands() {
     local _repstr="$1" ; shift
     local _cmd="$1" ; shift
     local _index=0
-    for host in "$@"
+    for arg in "$@"
     do
-        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$host}" C-m
+        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$arg}" C-m
         _index=$(($_index + 1))
     done
 }
@@ -303,7 +303,7 @@ __xpanes::check_env() {
     if [ $? -eq 1 ];then
         echo "warning: '$THIS_FILE_NAME' may not work properly!" >&2
         echo "         Current tmux version $XPANES_CURRENT_TMUX_VERSION is out of support." >&2
-        echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported."
+        echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
     return 0
 }
