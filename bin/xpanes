@@ -20,7 +20,7 @@ __xpanes::usage() {
     echo "  -h,--help                    Show this screen."
     echo "  -V,--version                 Show version."
     echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
-    echo "  -I <replstr>                 Replacing one or more occurrences of <replstr> in <utility> given by -c option. Default value of repstr is {}."
+    echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S,socket-path               Specify a full alternative path to the server socket."
     echo "  -l,--log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
@@ -508,6 +508,8 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
                         shift
                     fi
+                    # TODO : -I option without any repstr should be handled.
+                    shift
 
                 elif [[ "$1" =~ ^-c ]]; then
                     if [[ "$1" =~ ^-c.+ ]]; then
@@ -518,6 +520,7 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$CMD_UTILITY")
                         shift
                     fi
+                    shift
 
                 elif [[ "$1" =~ ^-S ]]; then
                     if [[ "$1" =~ ^-S.+ ]]; then
@@ -528,6 +531,7 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$SOCKET_PATH")
                         shift
                     fi
+                    shift
 
                 elif [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
@@ -540,6 +544,7 @@ __xpanes::parse_options() {
                 elif [[ "$1" =~ ^-d ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_IS_SYNC=0
+                    shift
 
                 # ----------------
                 # Other options
