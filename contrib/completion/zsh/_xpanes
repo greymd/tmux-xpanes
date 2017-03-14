@@ -1,16 +1,17 @@
 #compdef xpanes tmux-xpanes
 
 _xpanes () {
-    local opts_help="-h --help"
+    local opts_omit="-h --help -V --version"
     # (<options which should not exist together>)-option[description]:name:(element1 element2 ...)
     _arguments "(: -)"{-h,--help}"[Show detailed usage.]" \
-        "($opts_help -V --version)"{-V,--version}"[Show version.]" \
-        "($opts_help -c)-c[Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used.]" \
-        "($opts_help -I)-I[Replacing one or more occurrences of replstr in utility given by -c option.]:repstr:(@ % _REPLACE_ @@@)" \
-        "($opts_help -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
-        "($opts_help -l --log)"{-l=,--log=}"[Enable logging and store log files to ~/.xpanes-logs or given <directory>.]:dirs:_dir_list" \
-        "($opts_help --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
-        "($opts_help -d)"{-d,--desync}"[Make synchronize-panes option off on new window.]"
+               "(: -)"{-V,--version}"[Show version.]" \
+        "($opts_omit -c --ssh)-c[Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.]" \
+        "($opts_omit -I --ssh)-I[Replacing one or more occurrences of <replstr> in <utility> given by -c option. Default value of repstr is {}.]:repstr:(@ % _REPLACE_ @@@)" \
+        "($opts_omit -I -c --ssh)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]" \
+        "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
+        "($opts_omit -l --log)"{-l=,--log=}"[Enable logging and store log files to ~/.xpanes-logs or given <directory>.]:dirs:_dir_list" \
+        "($opts_omit --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
+        "($opts_omit -d)"{-d,--desync}"[Make synchronize-panes option off on new window.]"
 }
 
 _tmux-xpanes() {
