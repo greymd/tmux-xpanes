@@ -19,8 +19,9 @@ __xpanes::usage() {
     echo "OPTIONS:"
     echo "  -h,--help                    Show this screen."
     echo "  -V,--version                 Show version."
-    echo "  -c,utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
-    echo "  -I,replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
+    echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
+    echo "  -I <replstr>                 Replacing one or more occurrences of <replstr> in <utility> given by -c option. Default value of repstr is {}."
+    echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S,socket-path               Specify a full alternative path to the server socket."
     echo "  -l,--log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
@@ -328,6 +329,7 @@ __xpanes::check_env() {
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
     NO_OPT=0
     CMD_UTILITY="echo {} "
+    SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
     XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
     XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
@@ -444,6 +446,11 @@ __xpanes::parse_options() {
                     fi
                     shift
 
+                elif [[ "$1" =~ ^--ssh ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    CMD_UTILITY="$SSH_CMD_UTILITY"
+                    shift
+
                 elif [[ "$1" =~ ^--dry-run ]]; then
                     OPT_DRY_RUN=1
                     shift
@@ -487,15 +494,15 @@ __xpanes::parse_options() {
                     __xpanes::version
                     exit 0
 
-                # Behavior like this.
-                # -IAAA         -- REPSTR="AAA"
-                # -I AAA BBB    -- REPSTR="AAA"
-                # -I"AAA BBB"   -- REPSTR="AAA BBB"
-                # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
                 elif [[ "$1" =~ ^-I ]]; then
                     if [[ "$1" =~ ^-I.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         REPSTR="${1#-I}"
+                    # Behavior like this.
+                    # -IAAA         -- REPSTR="AAA"
+                    # -I AAA BBB    -- REPSTR="AAA"
+                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
+                    # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         REPSTR="$2"
                         OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
