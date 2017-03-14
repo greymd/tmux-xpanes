@@ -528,6 +528,10 @@ __xpanes::parse_options() {
                 if [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
+                    if [[ "$1" =~ ^-l=.+  ]]; then
+                        LOG_DIR="${1#-l=}"
+                    fi
+                    shift
                 fi
 
                 if [[ "$1" =~ ^-d ]]; then
