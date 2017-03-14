@@ -208,6 +208,15 @@ test_invalid_args() {
     assertEquals "4" "$?"
 }
 
+test_invalid_long_args() {
+    local _cmd="${EXEC} --hogehoge"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "4" "$?"
+}
+
+
 test_no_args() {
     local _cmd="${EXEC}"
     printf "\n $ $_cmd\n"

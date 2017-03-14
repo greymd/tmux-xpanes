@@ -416,55 +416,57 @@ __xpanes::parse_options() {
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
-                if [[ "$1" =~ ^--help ]]; then
+                if   [[ "$1" =~ ^--help ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
-                fi
 
-                if [[ "$1" =~ ^--version ]]; then
+                elif [[ "$1" =~ ^--version ]]; then
                     __xpanes::version
                     exit 0
-                fi
 
-                if [[ "$1" =~ ^--desync ]]; then
+                elif [[ "$1" =~ ^--desync ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_IS_SYNC=0
                     shift
-                fi
 
-                if [[ "$1" =~ ^--log-format=.* ]]; then
+                elif [[ "$1" =~ ^--log-format=.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
                     LOG_FORMAT="${1#--log-format=}"
                     shift
-                fi
 
-                if [[ "$1" =~ ^--log.* ]]; then
+                elif [[ "$1" =~ ^--log.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
                     if [[ "$1" =~ ^--log=  ]]; then
                         LOG_DIR="${1#--log=}"
                     fi
                     shift
-                fi
 
-                if [[ "$1" =~ ^--dry-run ]]; then
+                elif [[ "$1" =~ ^--dry-run ]]; then
                     OPT_DRY_RUN=1
                     shift
-                fi
 
-                if [[ "$1" =~ ^--kill-window=.* ]]; then
+                elif [[ "$1" =~ ^--kill-window=.* ]]; then
                     OPT_KILL_WIN="1"
                     KILL_WIN_NAME="${1#--kill-window=}"
                     shift
-                fi
 
                 # For unit testing
-                if [[ "$1" =~ ^--no-attach ]]; then
+                elif [[ "$1" =~ ^--no-attach ]]; then
                     OPT_ATTACH=0
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     shift
+
+                # ----------------
+                # Other options
+                # ----------------
+                else
+                    echo "Invalid option -- '${1#--}'" >&2
+                    __xpanes::usage
+                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    exit 4
                 fi
             fi
             ;;
@@ -472,27 +474,25 @@ __xpanes::parse_options() {
             # ----------------
             # Short options
             # ----------------
-            -[hVdIcSl]*)
+            -*)
             if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
-                if [[ "$1" =~ ^-h ]]; then
+                if   [[ "$1" =~ ^-h ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
-                fi
-                if [[ "$1" =~ ^-V ]]; then
+                elif [[ "$1" =~ ^-V ]]; then
                     __xpanes::version
                     exit 0
-                fi
 
                 # Behavior like this.
                 # -IAAA         -- REPSTR="AAA"
                 # -I AAA BBB    -- REPSTR="AAA"
                 # -I"AAA BBB"   -- REPSTR="AAA BBB"
                 # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
-                if [[ "$1" =~ ^-I ]]; then
+                elif [[ "$1" =~ ^-I ]]; then
                     if [[ "$1" =~ ^-I.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         REPSTR="${1#-I}"
@@ -501,9 +501,8 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
                         shift
                     fi
-                fi
 
-                if [[ "$1" =~ ^-c ]]; then
+                elif [[ "$1" =~ ^-c ]]; then
                     if [[ "$1" =~ ^-c.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         CMD_UTILITY="${1#-c}"
@@ -512,9 +511,8 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$CMD_UTILITY")
                         shift
                     fi
-                fi
 
-                if [[ "$1" =~ ^-S ]]; then
+                elif [[ "$1" =~ ^-S ]]; then
                     if [[ "$1" =~ ^-S.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         SOCKET_PATH="${1#-S}"
@@ -523,38 +521,28 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$SOCKET_PATH")
                         shift
                     fi
-                fi
 
-                if [[ "$1" =~ ^-l ]]; then
+                elif [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
                     if [[ "$1" =~ ^-l=.+  ]]; then
                         LOG_DIR="${1#-l=}"
                     fi
                     shift
-                fi
 
-                if [[ "$1" =~ ^-d ]]; then
+                elif [[ "$1" =~ ^-d ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_IS_SYNC=0
+
+                # ----------------
+                # Other options
+                # ----------------
+                else
+                    echo "Invalid option -- '${1#-}'" >&2
+                    __xpanes::usage
+                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    exit 4
                 fi
-
-                shift
-            fi
-            ;;
-
-            # ----------------
-            # Other options
-            # ----------------
-            -*)
-            if [ $NO_OPT -eq 1 ]; then
-                ARGS=("${ARGS[@]}" "$1")
-                shift
-            else
-                echo "Invalid option -- '${1#-}'" >&2
-                __xpanes::usage
-                echo "Try '$THIS_FILE_NAME --help' for more information." >&2
-                exit 4
             fi
             ;;
 
