@@ -409,10 +409,12 @@ __xpanes::execution() {
     fi
 
     # Remove original window.
-    if [ ! -z "$_XP_KILL_SESSION_NAME" ]; then
-        # In case of `set-option -g allow-rename on`, killing window with window name might be failed.
-        # killing window having youngest index instead of killing specific name.
-        __xpanes::kill_youngest_window "$_XP_KILL_SESSION_NAME"
+    if [ ! -z "$_XP_KILL_WINDOW_NAME" ] && [ ! -z "$_XP_KILL_SESSION_NAME" ]; then
+        tmux kill-window -t "$_XP_KILL_WINDOW_NAME" 2> /dev/null || \
+            # In case of `set-option -g allow-rename on`, killing window might be failed.
+            # In that case, killing the window having youngest index instead.
+            # The reason why there are two ways is, to keep downward compatibility as much as possible.
+            __xpanes::kill_youngest_window "$_XP_KILL_SESSION_NAME"
     fi
 }
 
