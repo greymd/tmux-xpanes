@@ -3,19 +3,19 @@ set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly VERSION="1.3.0"
+readonly _XPANES_VERSION="1.3.0"
 
 trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
 
-# THIS_FILE_NAME is supposed to be "xpanes".
-readonly THIS_FILE_NAME="${0##*/}"
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-readonly ABS_THIS_FILE_NAME="$THIS_DIR/$THIS_FILE_NAME"
+# _XPANES_THIS_FILE_NAME is supposed to be "xpanes".
+readonly _XPANES_THIS_FILE_NAME="${0##*/}"
+readonly _XPANES_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
+readonly _XPANES_ABS_THIS_FILE_NAME="$_XPANES_THIS_DIR/$_XPANES_THIS_FILE_NAME"
 
 # Basically xpanes follows XDG Base Direcotry Specification.
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html
 XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-XPANES_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
+_XPANES_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 
 # Following global variables will be used
 # in the following functions
@@ -24,34 +24,34 @@ XPANES_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 # __xpanes::parse_options
 # __xpanes::main
 : "Initialize options" && {
-    OPTIONS=()
-    ARGS=()
-    OPT_IS_SYNC=1
-    OPT_KILL_WIN=0
-    KILL_WIN_NAME=""
-    OPT_DRY_RUN=0
-    OPT_ATTACH=1
-    OPT_LOG_STORE=0
-    LOG_DIR="${LOG_DIR:-$XPANES_CACHE_HOME/logs}"
-    LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-    REPSTR="{}"
-    SOCKET_PATH="${SOCKET_PATH:-$XPANES_CACHE_HOME/socket}"
-    NO_OPT=0
-    CMD_UTILITY="echo {} "
-    SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
-    XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
-    XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
-    XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
-    XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
+    _XPANES_OPTIONS=()
+    _XPANES_ARGS=()
+    _XPANES_OPT_IS_SYNC=1
+    _XPANES_OPT_KILL_WIN=0
+    _XPANES_KILL_WIN_NAME=""
+    _XPANES_OPT_DRY_RUN=0
+    _XPANES_OPT_ATTACH=1
+    _XPANES_OPT_LOG_STORE=0
+    _XPANES_LOG_DIR="${_XPANES_LOG_DIR:-$_XPANES_CACHE_HOME/logs}"
+    _XPANES_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+    _XPANES_REPSTR="{}"
+    _XPANES_SOCKET_PATH="${_XPANES_SOCKET_PATH:-$_XPANES_CACHE_HOME/socket}"
+    _XPANES_NO_OPT=0
+    _XPANES_CMD_UTILITY="echo {} "
+    _XPANES_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+    _XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
+    _XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
+    _XPANES_SUPPORT_TMUX_VERSIONS="${_XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
+    _XPANES_DEPENDENCIES="${_XPANES_DEPENDENCIES:-tmux perl}"
     # This is supposed to be xpanes-12345(PID)
-    readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+    readonly _XPANES_SESSION_NAME="$_XPANES_THIS_FILE_NAME-$$"
     # Temporary window name is tmp-12345(PID)
-    readonly TMP_WIN_NAME="tmp-$$"
+    readonly _XPANES_TMP_WIN_NAME="tmp-$$"
 }
 
 __xpanes::usage() {
     echo "Usage:"
-    echo "  $THIS_FILE_NAME [OPTIONS] [argument ...]"
+    echo "  $_XPANES_THIS_FILE_NAME [OPTIONS] [argument ...]"
     echo
     echo "OPTIONS:"
     echo "  -h,--help                    Show this screen."
@@ -60,7 +60,7 @@ __xpanes::usage() {
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S,socket-path               Specify a full alternative path to the server socket."
-    echo "  -l,--log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "  -l,--log[=<directory>]       Enable logging and store log files to $_XPANES_LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
     echo
@@ -68,7 +68,7 @@ __xpanes::usage() {
 
 __xpanes::usage_verbose() {
     echo " FORMAT:"
-    echo "     Default value is \"$LOG_FORMAT\""
+    echo "     Default value is \"$_XPANES_LOG_FORMAT\""
     echo "     Interpreted sequences are:"
     echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
     echo "     [:ARG:]   Argument name"
@@ -83,20 +83,20 @@ __xpanes::usage_verbose() {
     echo "     Other sequences are available. Please refer to date(1) manual."
     echo
     echo " Examples:"
-    echo "     $ $THIS_FILE_NAME arg1 arg2 arg3 arg4"
+    echo "     $ $_XPANES_THIS_FILE_NAME arg1 arg2 arg3 arg4"
     echo "     New window is created and then, it will be separated into four panes."
     echo
-    echo "     $ $THIS_FILE_NAME arg{1..4}"
+    echo "     $ $_XPANES_THIS_FILE_NAME arg{1..4}"
     echo "     Brace expansion is useful."
     echo "     Four panes will be created."
     echo
-    echo "     $ $THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1"
+    echo "     $ $_XPANES_THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1"
     echo "     New window is created and it will be separated into two panes."
-    echo "     And also $LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
-    echo "     and      $LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
+    echo "     And also $_XPANES_LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log"
+    echo "     and      $_XPANES_LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log"
     echo "     will be created as their log files."
     echo
-    echo "     $ $THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2"
+    echo "     $ $_XPANES_THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2"
     echo "     Following files will be created."
     echo "     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log"
     echo "     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log"
@@ -106,7 +106,7 @@ __xpanes::usage_verbose() {
 
 # Show version number
 __xpanes::version() {
-    echo "$THIS_FILE_NAME $VERSION"
+    echo "$_XPANES_THIS_FILE_NAME $_XPANES_VERSION"
 }
 
 # Get version number for tmux
@@ -186,7 +186,7 @@ __xpanes::ensure_directory() {
     fi
 
     # Return absolute path
-    echo "$(cd "$LOG_DIR" && pwd)"
+    echo "$(cd "$_XPANES_LOG_DIR" && pwd)"
 }
 
 # Convert array to string which is can be used as command line argument.
@@ -335,70 +335,70 @@ __xpanes::check_env() {
         fi
     done < <(echo "$_cmds" | tr ' ' '\n')
 
-    mkdir -p "$XPANES_CACHE_HOME"
+    mkdir -p "$_XPANES_CACHE_HOME"
     if [ $? -eq 1 ];then
-        echo "warning: failed to create cache directory '${XPANES_CACHE_HOME}'." >&2
+        echo "warning: failed to create cache directory '${_XPANES_CACHE_HOME}'." >&2
     fi
 
     XPANES_CURRENT_TMUX_VERSION="${XPANES_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
-    echo "$XPANES_CURRENT_TMUX_VERSION" | grep -qE "$XPANES_SUPPORT_TMUX_VERSIONS"
+    echo "$XPANES_CURRENT_TMUX_VERSION" | grep -qE "$_XPANES_SUPPORT_TMUX_VERSIONS"
     if [ $? -eq 1 ];then
-        echo "warning: '$THIS_FILE_NAME' may not work properly!" >&2
+        echo "warning: '$_XPANES_THIS_FILE_NAME' may not work properly!" >&2
         echo "         Current tmux version $XPANES_CURRENT_TMUX_VERSION is out of support." >&2
-        echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
+        echo "         From version $_XPANES_SUPPORT_TMUX_VERSION_LOWER to $_XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
     return 0
 }
 
 __xpanes::pre_execution() {
     # Create new session.
-    tmux -S $SOCKET_PATH new-session -s $SESSION_NAME -n $TMP_WIN_NAME -d
+    tmux -S $_XPANES_SOCKET_PATH new-session -s $_XPANES_SESSION_NAME -n $_XPANES_TMP_WIN_NAME -d
 
     # Append -- flag.
     # Because any arugments may have `-`
-    if [ $NO_OPT -eq 1 ]; then
-        ARGS=("--" "${ARGS[@]}")
+    if [ $_XPANES_NO_OPT -eq 1 ]; then
+        _XPANES_ARGS=("--" "${_XPANES_ARGS[@]}")
     fi
 
-    local _opts4args=$(__xpanes::arr2args "${OPTIONS[@]}")
-    local _args4args=$(__xpanes::arr2args "${ARGS[@]}")
+    local _opts4args=$(__xpanes::arr2args "${_XPANES_OPTIONS[@]}")
+    local _args4args=$(__xpanes::arr2args "${_XPANES_ARGS[@]}")
 
-    tmux -S $SOCKET_PATH send-keys -t $SESSION_NAME:$TMP_WIN_NAME \
-        "$ABS_THIS_FILE_NAME --kill-window=$TMP_WIN_NAME $_opts4args $_args4args" C-m
+    tmux -S $_XPANES_SOCKET_PATH send-keys -t $_XPANES_SESSION_NAME:$_XPANES_TMP_WIN_NAME \
+        "$_XPANES_ABS_THIS_FILE_NAME --kill-window=$_XPANES_TMP_WIN_NAME $_opts4args $_args4args" C-m
 
     # Avoid attaching (for unit testing).
-    if [ $OPT_ATTACH -eq 1 ]; then
+    if [ $_XPANES_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
-        tmux -S $SOCKET_PATH attach-session -t $SESSION_NAME
+        tmux -S $_XPANES_SOCKET_PATH attach-session -t $_XPANES_SESSION_NAME
     fi
 
 }
 
 __xpanes::execution() {
     local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
-    local _window_name=$(__xpanes::generate_window_name "${ARGS[0]}")
-    local _last_host_idx=$((${#ARGS[@]} - 1))
+    local _window_name=$(__xpanes::generate_window_name "${_XPANES_ARGS[0]}")
+    local _last_host_idx=$((${#_XPANES_ARGS[@]} - 1))
 
-    __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$OPT_ATTACH"
+    __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XPANES_OPT_ATTACH"
 
-    if [ $OPT_LOG_STORE -eq 1 ]; then
-        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$LOG_DIR" "$LOG_FORMAT" "${ARGS[@]}"
+    if [ $_XPANES_OPT_LOG_STORE -eq 1 ]; then
+        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XPANES_LOG_DIR" "$_XPANES_LOG_FORMAT" "${_XPANES_ARGS[@]}"
     fi
 
     # Sending ssh opearations for each pane.
-    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$REPSTR" "$CMD_UTILITY" "${ARGS[@]}"
+    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XPANES_REPSTR" "$_XPANES_CMD_UTILITY" "${_XPANES_ARGS[@]}"
 
     # This is just the author's preference (You can remove next statement.)
     __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
 
     # Enable broadcasting
-    if [ $OPT_IS_SYNC -eq 1 ]; then
+    if [ $_XPANES_OPT_IS_SYNC -eq 1 ]; then
         tmux set-window-option -t ${_window_name} synchronize-panes on
     fi
 
     # Remove original window.
-    if [ $OPT_KILL_WIN -eq 1 ]; then
-        tmux kill-window -t "$KILL_WIN_NAME"
+    if [ $_XPANES_OPT_KILL_WIN -eq 1 ]; then
+        tmux kill-window -t "$_XPANES_KILL_WIN_NAME"
     fi
 }
 
@@ -410,12 +410,12 @@ __xpanes::parse_options() {
     do
         case "$1" in
             --)
-            if [ $NO_OPT -eq 1 ]; then
-                ARGS=("${ARGS[@]}" "$1")
+            if [ $_XPANES_NO_OPT -eq 1 ]; then
+                _XPANES_ARGS=("${_XPANES_ARGS[@]}" "$1")
                 shift
             else
                 # Disable any more options
-                NO_OPT=1
+                _XPANES_NO_OPT=1
                 shift
             fi
             ;;
@@ -424,8 +424,8 @@ __xpanes::parse_options() {
             # Long options
             # ----------------
             --*)
-            if [ $NO_OPT -eq 1 ]; then
-                ARGS=("${ARGS[@]}" "$1")
+            if [ $_XPANES_NO_OPT -eq 1 ]; then
+                _XPANES_ARGS=("${_XPANES_ARGS[@]}" "$1")
                 shift
             else
                 if   [[ "$1" =~ ^--help ]]; then
@@ -438,42 +438,42 @@ __xpanes::parse_options() {
                     exit 0
 
                 elif [[ "$1" =~ ^--desync ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    OPT_IS_SYNC=0
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_OPT_IS_SYNC=0
                     shift
 
                 elif [[ "$1" =~ ^--log-format=.* ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    OPT_LOG_STORE=1
-                    LOG_FORMAT="${1#--log-format=}"
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_OPT_LOG_STORE=1
+                    _XPANES_LOG_FORMAT="${1#--log-format=}"
                     shift
 
                 elif [[ "$1" =~ ^--log.* ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    OPT_LOG_STORE=1
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_OPT_LOG_STORE=1
                     if [[ "$1" =~ ^--log=  ]]; then
-                        LOG_DIR="${1#--log=}"
+                        _XPANES_LOG_DIR="${1#--log=}"
                     fi
                     shift
 
                 elif [[ "$1" =~ ^--ssh ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    CMD_UTILITY="$SSH_CMD_UTILITY"
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_CMD_UTILITY="$_XPANES_SSH_CMD_UTILITY"
                     shift
 
                 elif [[ "$1" =~ ^--dry-run ]]; then
-                    OPT_DRY_RUN=1
+                    _XPANES_OPT_DRY_RUN=1
                     shift
 
                 elif [[ "$1" =~ ^--kill-window=.* ]]; then
-                    OPT_KILL_WIN="1"
-                    KILL_WIN_NAME="${1#--kill-window=}"
+                    _XPANES_OPT_KILL_WIN="1"
+                    _XPANES_KILL_WIN_NAME="${1#--kill-window=}"
                     shift
 
                 # For unit testing
                 elif [[ "$1" =~ ^--no-attach ]]; then
-                    OPT_ATTACH=0
-                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    _XPANES_OPT_ATTACH=0
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
                     shift
 
                 # ----------------
@@ -482,7 +482,7 @@ __xpanes::parse_options() {
                 else
                     echo "Invalid option -- '${1#--}'" >&2
                     __xpanes::usage
-                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    echo "Try '$_XPANES_THIS_FILE_NAME --help' for more information." >&2
                     exit 4
                 fi
             fi
@@ -492,8 +492,8 @@ __xpanes::parse_options() {
             # Short options
             # ----------------
             -*)
-            if [ $NO_OPT -eq 1 ]; then
-                ARGS=("${ARGS[@]}" "$1")
+            if [ $_XPANES_NO_OPT -eq 1 ]; then
+                _XPANES_ARGS=("${_XPANES_ARGS[@]}" "$1")
                 shift
             else
                 if   [[ "$1" =~ ^-h ]]; then
@@ -506,16 +506,16 @@ __xpanes::parse_options() {
 
                 elif [[ "$1" =~ ^-I ]]; then
                     if [[ "$1" =~ ^-I.+ ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        REPSTR="${1#-I}"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                        _XPANES_REPSTR="${1#-I}"
                     # Behavior like this.
-                    # -IAAA         -- REPSTR="AAA"
-                    # -I AAA BBB    -- REPSTR="AAA"
-                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
-                    # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
+                    # -IAAA         -- _XPANES_REPSTR="AAA"
+                    # -I AAA BBB    -- _XPANES_REPSTR="AAA"
+                    # -I"AAA BBB"   -- _XPANES_REPSTR="AAA BBB"
+                    # -IAAA BBB     -- _XPANES_REPSTR="AAA", _XPANES_ARGS=("BBB")
                     elif ! [[ "$2" =~ ^-.* ]]; then
-                        REPSTR="$2"
-                        OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
+                        _XPANES_REPSTR="$2"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1" "$_XPANES_REPSTR")
                         shift
                     fi
                     # TODO : -I option without any repstr should be handled.
@@ -523,37 +523,37 @@ __xpanes::parse_options() {
 
                 elif [[ "$1" =~ ^-c ]]; then
                     if [[ "$1" =~ ^-c.+ ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        CMD_UTILITY="${1#-c}"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                        _XPANES_CMD_UTILITY="${1#-c}"
                     elif ! [[ "$2" =~ ^-.* ]]; then
-                        CMD_UTILITY="$2"
-                        OPTIONS=("${OPTIONS[@]}" "$1" "$CMD_UTILITY")
+                        _XPANES_CMD_UTILITY="$2"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1" "$_XPANES_CMD_UTILITY")
                         shift
                     fi
                     shift
 
                 elif [[ "$1" =~ ^-S ]]; then
                     if [[ "$1" =~ ^-S.+ ]]; then
-                        OPTIONS=("${OPTIONS[@]}" "$1")
-                        SOCKET_PATH="${1#-S}"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                        _XPANES_SOCKET_PATH="${1#-S}"
                     elif ! [[ "$2" =~ ^-.* ]]; then
-                        SOCKET_PATH="$2"
-                        OPTIONS=("${OPTIONS[@]}" "$1" "$SOCKET_PATH")
+                        _XPANES_SOCKET_PATH="$2"
+                        _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1" "$_XPANES_SOCKET_PATH")
                         shift
                     fi
                     shift
 
                 elif [[ "$1" =~ ^-l ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    OPT_LOG_STORE=1
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_OPT_LOG_STORE=1
                     if [[ "$1" =~ ^-l=.+  ]]; then
-                        LOG_DIR="${1#-l=}"
+                        _XPANES_LOG_DIR="${1#-l=}"
                     fi
                     shift
 
                 elif [[ "$1" =~ ^-d ]]; then
-                    OPTIONS=("${OPTIONS[@]}" "$1")
-                    OPT_IS_SYNC=0
+                    _XPANES_OPTIONS=("${_XPANES_OPTIONS[@]}" "$1")
+                    _XPANES_OPT_IS_SYNC=0
                     shift
 
                 # ----------------
@@ -562,7 +562,7 @@ __xpanes::parse_options() {
                 else
                     echo "Invalid option -- '${1#-}'" >&2
                     __xpanes::usage
-                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    echo "Try '$_XPANES_THIS_FILE_NAME --help' for more information." >&2
                     exit 4
                 fi
             fi
@@ -572,7 +572,7 @@ __xpanes::parse_options() {
             # Other arguments
             # ----------------
             *)
-            ARGS=("${ARGS[@]}" "$1")
+            _XPANES_ARGS=("${_XPANES_ARGS[@]}" "$1")
             shift
             ;;
 
@@ -580,10 +580,10 @@ __xpanes::parse_options() {
     done
 
     # Check the number of given arguments
-    if [ ${#ARGS[@]} -eq 0 ]; then
+    if [ ${#_XPANES_ARGS[@]} -eq 0 ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
-        echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+        echo "Try '$_XPANES_THIS_FILE_NAME --help' for more information." >&2
         exit 5
     fi
 }
@@ -591,17 +591,17 @@ __xpanes::parse_options() {
 __xpanes::main() {
     __xpanes::parse_options "$@"
     set +e
-    __xpanes::check_env "$XPANES_DEPENDENCIES"
+    __xpanes::check_env "$_XPANES_DEPENDENCIES"
     set -e
 
     : "Parameter validation" && {
         # Validate log directory.
         # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-        if [ $OPT_DRY_RUN -eq 1 ]; then
+        if [ $_XPANES_OPT_DRY_RUN -eq 1 ]; then
             return 0
         fi
-        if [ $OPT_LOG_STORE -eq 1 ]; then
-            LOG_DIR="$(__xpanes::ensure_directory "$LOG_DIR")"
+        if [ $_XPANES_OPT_LOG_STORE -eq 1 ]; then
+            _XPANES_LOG_DIR="$(__xpanes::ensure_directory "$_XPANES_LOG_DIR")"
         fi
     }
 
