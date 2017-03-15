@@ -485,7 +485,6 @@ test_help() {
     }
 }
 
-
 test_start_separation() {
     local _window_name=""
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
