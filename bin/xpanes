@@ -12,6 +12,43 @@ readonly THIS_FILE_NAME="${0##*/}"
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 readonly ABS_THIS_FILE_NAME="$THIS_DIR/$THIS_FILE_NAME"
 
+# Basically xpanes follows XDG Base Direcotry Specification.
+# https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html
+XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+XPANES_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
+
+# Following global variables will be used
+# in the following functions
+# __xpanes::execution
+# __xpanes::pre_execution
+# __xpanes::parse_options
+# __xpanes::main
+: "Initialize options" && {
+    OPTIONS=()
+    ARGS=()
+    OPT_IS_SYNC=1
+    OPT_KILL_WIN=0
+    KILL_WIN_NAME=""
+    OPT_DRY_RUN=0
+    OPT_ATTACH=1
+    OPT_LOG_STORE=0
+    LOG_DIR="${LOG_DIR:-$XPANES_CACHE_HOME/logs}"
+    LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+    REPSTR="{}"
+    SOCKET_PATH="${SOCKET_PATH:-$XPANES_CACHE_HOME/socket}"
+    NO_OPT=0
+    CMD_UTILITY="echo {} "
+    SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+    XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
+    XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
+    XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
+    XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
+    # This is supposed to be xpanes-12345(PID)
+    readonly SESSION_NAME="$THIS_FILE_NAME-$$"
+    # Temporary window name is tmp-12345(PID)
+    readonly TMP_WIN_NAME="tmp-$$"
+}
+
 __xpanes::usage() {
     echo "Usage:"
     echo "  $THIS_FILE_NAME [OPTIONS] [argument ...]"
@@ -298,6 +335,11 @@ __xpanes::check_env() {
         fi
     done < <(echo "$_cmds" | tr ' ' '\n')
 
+    mkdir -p "$XPANES_CACHE_HOME"
+    if [ $? -eq 1 ];then
+        echo "warning: failed to create cache directory '${XPANES_CACHE_HOME}'." >&2
+    fi
+
     XPANES_CURRENT_TMUX_VERSION="${XPANES_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
     echo "$XPANES_CURRENT_TMUX_VERSION" | grep -qE "$XPANES_SUPPORT_TMUX_VERSIONS"
     if [ $? -eq 1 ];then
@@ -306,38 +348,6 @@ __xpanes::check_env() {
         echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
     return 0
-}
-
-# Following global variables will be used
-# in the following functions
-# __xpanes::execution
-# __xpanes::pre_execution
-# __xpanes::parse_options
-# __xpanes::main
-: "Initialize options" && {
-    OPTIONS=()
-    ARGS=()
-    OPT_IS_SYNC=1
-    OPT_KILL_WIN=0
-    KILL_WIN_NAME=""
-    OPT_DRY_RUN=0
-    OPT_ATTACH=1
-    OPT_LOG_STORE=0
-    LOG_DIR="${LOG_DIR:-$HOME/.$THIS_FILE_NAME-logs}"
-    LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-    REPSTR="{}"
-    SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
-    NO_OPT=0
-    CMD_UTILITY="echo {} "
-    SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
-    XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
-    XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
-    XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
-    XPANES_DEPENDENCIES="${XPANES_DEPENDENCIES:-tmux perl}"
-    # This is supposed to be xpanes-12345(PID)
-    readonly SESSION_NAME="$THIS_FILE_NAME-$$"
-    # Temporary window name is tmp-12345(PID)
-    readonly TMP_WIN_NAME="tmp-$$"
 }
 
 __xpanes::pre_execution() {
