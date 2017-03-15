@@ -196,7 +196,7 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_unsupported_version() {
-    _XPANES_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
+    _XP_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
     assertEquals "$?" "0"
 }
 
@@ -414,7 +414,7 @@ test_non_writable_directory() {
 }
 
 test_insufficient_cmd() {
-    _XPANES_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
+    _XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
     assertEquals "127" "$?"
 }
 
@@ -867,10 +867,10 @@ test_log_option() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="_XPANES_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    _cmd="_XP_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    _XPANES_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    _XP_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
