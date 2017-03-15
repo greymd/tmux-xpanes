@@ -293,14 +293,6 @@ __xpanes::arrange_pane_location() {
     fi
 }
 
-__xpanes::kill_youngest_window() {
-    local _target_session="$1"
-    local _youngest_index="$(tmux list-windows -t "$_target_session" -F '#{window_index}' | sort -n | head -n 1)"
-    if echo "$_youngest_index" | grep -qE '^[0-9]+$' ; then
-        tmux kill-window -t "$_target_session:$_youngest_index"
-    fi
-}
-
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -376,7 +368,7 @@ __xpanes::pre_execution() {
     local _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
 
     tmux -S $_XP_SOCKET_PATH send-keys -t $_XP_SESSION_NAME:$_XP_TMP_WIN_NAME \
-        "$_XP_ABS_THIS_FILE_NAME --kill-session=$_XP_SESSION_NAME --kill-window=$_XP_TMP_WIN_NAME $_opts4args $_args4args" C-m
+        "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
 
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
@@ -409,12 +401,8 @@ __xpanes::execution() {
     fi
 
     # Remove original window.
-    if [ ! -z "$_XP_KILL_WINDOW_NAME" ] && [ ! -z "$_XP_KILL_SESSION_NAME" ]; then
-        tmux kill-window -t "$_XP_KILL_WINDOW_NAME" 2> /dev/null || \
-            # In case of `set-option -g allow-rename on`, killing window might be failed.
-            # In that case, killing the window having youngest index instead.
-            # The reason why there are two ways is, to keep downward compatibility as much as possible.
-            __xpanes::kill_youngest_window "$_XP_KILL_SESSION_NAME"
+    if [ ! -z "$_XP_KILL_WINDOW_NAME" ]; then
+        tmux kill-window -t "$_XP_KILL_WINDOW_NAME"
     fi
 }
 
@@ -481,12 +469,8 @@ __xpanes::parse_options() {
                     _XP_OPT_DRY_RUN=1
                     shift
 
-                elif [[ "$1" =~ ^--kill-session=.* ]]; then
-                    _XP_KILL_SESSION_NAME="${1#--kill-session=}"
-                    shift
-
-                elif [[ "$1" =~ ^--kill-window=.* ]]; then
-                    _XP_KILL_WINDOW_NAME="${1#--kill-window=}"
+                elif [[ "$1" =~ ^--kill$ ]]; then
+                    _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
                     shift
 
                 # For unit testing
