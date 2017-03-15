@@ -1,4 +1,0 @@
-#!/bin/bash
-
-THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-$THIS_DIR/xpanes -c "ssh -o StrictHostKeyChecking=no {}" "$@"

@@ -17,14 +17,15 @@ __xpanes::usage() {
     echo "  $THIS_FILE_NAME [OPTIONS] [argument ...]"
     echo
     echo "OPTIONS:"
-    echo "  -h --help                    Show this screen."
-    echo "  -V --version                 Show version."
-    echo "  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used."
-    echo "  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option."
-    echo "  -S socket-path               Specify a full alternative path to the server socket."
-    echo "  -l --log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
+    echo "  -h,--help                    Show this screen."
+    echo "  -V,--version                 Show version."
+    echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
+    echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
+    echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
+    echo "  -S,socket-path               Specify a full alternative path to the server socket."
+    echo "  -l,--log[=<directory>]       Enable logging and store log files to $LOG_DIR or given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
-    echo "  -d --desync                  Make synchronize-panes option off on new window."
+    echo "  -d,--desync                  Make synchronize-panes option off on new window."
     echo
 }
 
@@ -33,9 +34,9 @@ __xpanes::usage_verbose() {
     echo "     Default value is \"$LOG_FORMAT\""
     echo "     Interpreted sequences are:"
     echo "     [:PID:]   Process id of the tmux session. (e.g, 41531)"
-    echo "     [:ARG:]   Host name to which the pane is logging in. (e.g, userA@serverA)"
+    echo "     [:ARG:]   Argument name"
     echo
-    echo '     In addition, sequences same as `date` command are available.'
+    echo '     In addition, sequences same as date(1) command are available.'
     echo
     echo "     For example:"
     echo "     %Y   year  (e.g, 1960)"
@@ -49,8 +50,8 @@ __xpanes::usage_verbose() {
     echo "     New window is created and then, it will be separated into four panes."
     echo
     echo "     $ $THIS_FILE_NAME arg{1..4}"
-    echo "     Four panes will be created."
     echo "     Brace expansion is useful."
+    echo "     Four panes will be created."
     echo
     echo "     $ $THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1"
     echo "     New window is created and it will be separated into two panes."
@@ -232,9 +233,9 @@ __xpanes::send_commands() {
     local _repstr="$1" ; shift
     local _cmd="$1" ; shift
     local _index=0
-    for host in "$@"
+    for arg in "$@"
     do
-        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$host}" C-m
+        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$arg}" C-m
         _index=$(($_index + 1))
     done
 }
@@ -302,7 +303,7 @@ __xpanes::check_env() {
     if [ $? -eq 1 ];then
         echo "warning: '$THIS_FILE_NAME' may not work properly!" >&2
         echo "         Current tmux version $XPANES_CURRENT_TMUX_VERSION is out of support." >&2
-        echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported."
+        echo "         From version $XPANES_SUPPORT_TMUX_VERSION_LOWER to $XPANES_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
     return 0
 }
@@ -328,6 +329,7 @@ __xpanes::check_env() {
     SOCKET_PATH="$HOME/.$THIS_FILE_NAME-socket"
     NO_OPT=0
     CMD_UTILITY="echo {} "
+    SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     XPANES_SUPPORT_TMUX_VERSION_LOWER="1.6"
     XPANES_SUPPORT_TMUX_VERSION_UPPER="2.3"
     XPANES_SUPPORT_TMUX_VERSIONS="${XPANES_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
@@ -416,55 +418,62 @@ __xpanes::parse_options() {
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
-                if [[ "$1" =~ ^--help ]]; then
+                if   [[ "$1" =~ ^--help ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
-                fi
 
-                if [[ "$1" =~ ^--version ]]; then
+                elif [[ "$1" =~ ^--version ]]; then
                     __xpanes::version
                     exit 0
-                fi
 
-                if [[ "$1" =~ ^--desync ]]; then
+                elif [[ "$1" =~ ^--desync ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_IS_SYNC=0
                     shift
-                fi
 
-                if [[ "$1" =~ ^--log-format=.* ]]; then
+                elif [[ "$1" =~ ^--log-format=.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
                     LOG_FORMAT="${1#--log-format=}"
                     shift
-                fi
 
-                if [[ "$1" =~ ^--log.* ]]; then
+                elif [[ "$1" =~ ^--log.* ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
                     if [[ "$1" =~ ^--log=  ]]; then
                         LOG_DIR="${1#--log=}"
                     fi
                     shift
-                fi
 
-                if [[ "$1" =~ ^--dry-run ]]; then
+                elif [[ "$1" =~ ^--ssh ]]; then
+                    OPTIONS=("${OPTIONS[@]}" "$1")
+                    CMD_UTILITY="$SSH_CMD_UTILITY"
+                    shift
+
+                elif [[ "$1" =~ ^--dry-run ]]; then
                     OPT_DRY_RUN=1
                     shift
-                fi
 
-                if [[ "$1" =~ ^--kill-window=.* ]]; then
+                elif [[ "$1" =~ ^--kill-window=.* ]]; then
                     OPT_KILL_WIN="1"
                     KILL_WIN_NAME="${1#--kill-window=}"
                     shift
-                fi
 
                 # For unit testing
-                if [[ "$1" =~ ^--no-attach ]]; then
+                elif [[ "$1" =~ ^--no-attach ]]; then
                     OPT_ATTACH=0
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     shift
+
+                # ----------------
+                # Other options
+                # ----------------
+                else
+                    echo "Invalid option -- '${1#--}'" >&2
+                    __xpanes::usage
+                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    exit 4
                 fi
             fi
             ;;
@@ -472,38 +481,37 @@ __xpanes::parse_options() {
             # ----------------
             # Short options
             # ----------------
-            -[hVdIcSl]*)
+            -*)
             if [ $NO_OPT -eq 1 ]; then
                 ARGS=("${ARGS[@]}" "$1")
                 shift
             else
-                if [[ "$1" =~ ^-h ]]; then
+                if   [[ "$1" =~ ^-h ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
-                fi
-                if [[ "$1" =~ ^-V ]]; then
+                elif [[ "$1" =~ ^-V ]]; then
                     __xpanes::version
                     exit 0
-                fi
 
-                # Behavior like this.
-                # -IAAA         -- REPSTR="AAA"
-                # -I AAA BBB    -- REPSTR="AAA"
-                # -I"AAA BBB"   -- REPSTR="AAA BBB"
-                # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
-                if [[ "$1" =~ ^-I ]]; then
+                elif [[ "$1" =~ ^-I ]]; then
                     if [[ "$1" =~ ^-I.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         REPSTR="${1#-I}"
+                    # Behavior like this.
+                    # -IAAA         -- REPSTR="AAA"
+                    # -I AAA BBB    -- REPSTR="AAA"
+                    # -I"AAA BBB"   -- REPSTR="AAA BBB"
+                    # -IAAA BBB     -- REPSTR="AAA", ARGS=("BBB")
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         REPSTR="$2"
                         OPTIONS=("${OPTIONS[@]}" "$1" "$REPSTR")
                         shift
                     fi
-                fi
+                    # TODO : -I option without any repstr should be handled.
+                    shift
 
-                if [[ "$1" =~ ^-c ]]; then
+                elif [[ "$1" =~ ^-c ]]; then
                     if [[ "$1" =~ ^-c.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         CMD_UTILITY="${1#-c}"
@@ -512,9 +520,9 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$CMD_UTILITY")
                         shift
                     fi
-                fi
+                    shift
 
-                if [[ "$1" =~ ^-S ]]; then
+                elif [[ "$1" =~ ^-S ]]; then
                     if [[ "$1" =~ ^-S.+ ]]; then
                         OPTIONS=("${OPTIONS[@]}" "$1")
                         SOCKET_PATH="${1#-S}"
@@ -523,34 +531,30 @@ __xpanes::parse_options() {
                         OPTIONS=("${OPTIONS[@]}" "$1" "$SOCKET_PATH")
                         shift
                     fi
-                fi
+                    shift
 
-                if [[ "$1" =~ ^-l ]]; then
+                elif [[ "$1" =~ ^-l ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_LOG_STORE=1
-                fi
+                    if [[ "$1" =~ ^-l=.+  ]]; then
+                        LOG_DIR="${1#-l=}"
+                    fi
+                    shift
 
-                if [[ "$1" =~ ^-d ]]; then
+                elif [[ "$1" =~ ^-d ]]; then
                     OPTIONS=("${OPTIONS[@]}" "$1")
                     OPT_IS_SYNC=0
+                    shift
+
+                # ----------------
+                # Other options
+                # ----------------
+                else
+                    echo "Invalid option -- '${1#-}'" >&2
+                    __xpanes::usage
+                    echo "Try '$THIS_FILE_NAME --help' for more information." >&2
+                    exit 4
                 fi
-
-                shift
-            fi
-            ;;
-
-            # ----------------
-            # Other options
-            # ----------------
-            -*)
-            if [ $NO_OPT -eq 1 ]; then
-                ARGS=("${ARGS[@]}" "$1")
-                shift
-            else
-                echo "Invalid option -- '${1#-}'" >&2
-                __xpanes::usage
-                echo "Try '$THIS_FILE_NAME --help' for more information." >&2
-                exit 4
             fi
             ;;
 
