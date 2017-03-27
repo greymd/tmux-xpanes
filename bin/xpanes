@@ -407,9 +407,16 @@ __xpanes::execution() {
 }
 
 __xpanes::parse_options() {
-    # When this flag becomes 1,
-    # rest of the arguments are not
-    # handled as options.
+
+    # If there is any standard input from pipe,
+    # 1 line handled as 1 argument.
+    if [ ! -t 0 ]; then
+        while read line;
+        do
+            _XP_ARGS=("${_XP_ARGS[@]}" "$line")
+        done < <(cat)
+    fi
+
     while (( $# > 0 ))
     do
         case "$1" in
