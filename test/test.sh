@@ -490,9 +490,13 @@ test_start_separation() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+    # tmux 1.6 and 1.7 does not work properly with --no-attach option.
+    # Because window is not killed without attached.
+    # It is required to attach and detach after that.
+    _cmd="${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB"
     printf "\n $ $_cmd\n"
-    $_cmd
+    ${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB
+
     wait_panes_separation "$_socket_file" "AAAA" "2"
     # Number of window is 1
     assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
