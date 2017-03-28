@@ -46,15 +46,16 @@ is_less_than_or_equal_to() {
     # Simple numerical comparison does not work because there is the version like "1.9a".
     if [[ "$((echo "$(tmux_version_number)"; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
         return 0
+    else
+        return 1
     fi
-    return 1
 }
 
 # !!Run this function at first!!
 check_version() {
     ${BIN_DIR}${EXEC} --dry-run A
     # If tmux version is less than 1.6, skip rest of the tests.
-    if (is_less_than_or_equal_to "1.6") ;then
+    if is_less_than_or_equal_to "1.6" ;then
         echo "Skip rest of the tests." >&2
         echo "Because this version is out of support." >&2
         exit 0
@@ -499,7 +500,7 @@ test_start_separation() {
     local _cmd=""
 
     # Run this test if the version is more than 1.7 and there is tty.
-    if (is_less_than_or_equal_to "1.7") && ! (tty) ;then
+    if is_less_than_or_equal_to "1.7" && ! (tty) ;then
         echo "Skip this test for $(tmux -V) and inaccessible tty." >&2
         echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
     else
