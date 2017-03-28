@@ -499,7 +499,10 @@ test_start_separation() {
     local _cmd=""
 
     # Run this test if the version is more than 1.7 and there is tty.
-    if ! (is_less_than_or_equal_to "1.7") && (tty) ;then
+    if (is_less_than_or_equal_to "1.7") && ! (tty) ;then
+        echo "Skip this test for $(tmux -V) and inaccessible tty." >&2
+        echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
+    else
         # tmux 1.6 and 1.7 does not work properly with --no-attach option.
         # Because window cannot be killed without attached tmux session.
         # It is required to attach and detach after that.
@@ -511,9 +514,6 @@ test_start_separation() {
         # Number of window is 1
         assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
         close_tmux_session "$_socket_file"
-    else
-        echo "Skip this test for $(tmux -V) and inaccessible tty." >&2
-        echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
     fi
 
     # This case works on 1.6 and 1.7.
