@@ -53,7 +53,8 @@ $ chmod +x /usr/local/bin/xpanes
 
 # Usage
 
-There are two commands. `xpanes` and `tmux-xpanes` which is alias of `xpanes`.
+There are two commands. `xpanes` and `tmux-xpanes`.
+`tmux-xpanes` is alias of `xpanes`.
 
 ```
 $ xpanes --help
