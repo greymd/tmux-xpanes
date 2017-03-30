@@ -3,24 +3,27 @@ sudo: required
 
 matrix:
     include:
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.6
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.7
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.8
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9a
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.0
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.1
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.2
-        - os: linux
-          env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.3
+        # -------------------------
+        # Out of support
+        # -------------------------
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.6
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.7
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.8
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9a
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.0
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.1
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.2
+        # - os: linux
+        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.3
         - os: linux
           env: SH=bash SH_VERSION=3.2 TMUX_VERSION=1.6
         - os: linux

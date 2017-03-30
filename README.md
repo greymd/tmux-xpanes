@@ -13,7 +13,7 @@ Build and eXecute command lines on PANES.
 
 # Dependencies
 
-* `bash` (version 3.1 and more)
+* `bash` (version 3.2 and more)
 * `tmux` (version 1.6 and more)
 
 
@@ -39,7 +39,7 @@ Add those lines to `.zshrc`.
 zplug "greymd/tmux-xpanes", as:command, use:"bin/*"
 ```
 
-After that, `xpanes` and `tmssh` commands are yours.
+After that, `xpanes` command is yours.
 
 ## Manual Installation
 
@@ -48,48 +48,30 @@ If you are not using `zplug` (includeing bash users), execute following commands
 ```sh
 $ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
 $ chmod +x /usr/local/bin/xpanes
-
-# If you want to use `tmssh`, follow those lines also.
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/tmssh -O /usr/local/bin/tmssh
-$ chmod +x /usr/local/bin/tmssh
 ```
 
 
 # Usage
 
-There are two commands,
-
-`xpanes` and `tmssh`.
+There are two commands. `xpanes` and `tmux-xpanes`.
+`tmux-xpanes` is alias of `xpanes`.
 
 ```
 $ xpanes --help
 Usage:
   xpanes [OPTIONS] [argument ...]
 
-  -h --help                    Show this screen.
-  -V --version                 Show version.
-  -c utility                   Specify utility which is executed as a command in each panes. If utility is omitted, echo(1) is used.
-  -I replstr                   Replacing one or more occurrences of replstr in utility given by -c option.
-  -S socket-path               Specify a full alternative path to the server socket.
-  -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.xpanes-logs or given <directory>.
-     --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
-  -d --desync                  Make synchronize-panes option off on new window.
-```
-
-`tmssh` is the command which has more specific feature of `xpanes`.
-It executes `ssh` command to given arguments.
-
-```
-Usage:
-  tmssh [OPTIONS] [<USER NAME>@]<HOST NAME> [<USER NAME>@<HOST NAME> ...]
-
 OPTIONS:
-  -h --help                    Show this screen.
-  -v --version                 Show version.
-  -S socket-path               Specify a full alternative path to the server socket.
-  -l --log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.tmssh-logs or given <directory>.
+  -h,--help                    Show this screen.
+  -V,--version                 Show version.
+  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
+  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
+  -S,socket-path               Specify a full alternative path to the server socket.
+  -l,--log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.cache/xpanes/logs or given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
-  -d --desync                  Make synchronize-panes option off on new window.
+  -d,--desync                  Make synchronize-panes option off on new window.
+...
 ```
 
 # Simple example
@@ -130,10 +112,58 @@ $ echo 3                       │$ echo 4
 $ xpanes -c "ping {}" 192.168.1.5 192.168.1.6 192.168.1.7 192.168.1.8
 ```
 
+The result is like this.
+
+```
+$ ping 192.168.1.5             │$ ping 192.168.1.6
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+───────────────────────────────┼───────────────────────────────
+$ ping 192.168.1.7             │$ ping 192.168.1.8
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+```
+
 #### Monitor multiple files
 
 ```sh
 $ xpanes -c "tail -f {}" /var/log/apache/{error,access}.log /var/log/application/{error,access}.log
+```
+
+The result is like this.
+
+```
+$ tail -f /var/log/apache/error.log       │$ tail -f /var/log/apache/access.log
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+──────────────────────────────────────────┼──────────────────────────────────────────
+$ tail -f /var/log/application/error.log  │$ tail -f /var/log/application/access.log
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
 ```
 
 #### Connecting multiple hosts with ssh and **logging operations**.
@@ -142,10 +172,48 @@ $ xpanes -c "tail -f {}" /var/log/apache/{error,access}.log /var/log/application
 $ xpanes --log=~/operation_log -c "ssh {}" user1@host1 user2@host2
 ```
 
+The result is like this.
+
+```
+$ ssh user1@host1              │ $ ssh user2@host2
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+```
+
+In addition, log files will be created.
+
+```
+$ ls ~/operation_log/
+user1@host1-1.log.2017-03-15_21-30-07
+user2@host2-1.log.2017-03-15_21-30-07
+```
+
 #### Execute different commands on the different panes.
 
 ```sh
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
+```
+
+```
+$ top                          │$ vmstat 1
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+───────────────────────────────┴──────────────────────────────
+$ watch -n 1 free
+
+
+
+
+
+
 ```
 
 #### Create multiple windows and make each one devided into multiple panes.
@@ -167,7 +235,7 @@ Result will be this.
 
 #### Share terminal sessions with others.
 
- `~/.xpanes-socket` file will automatically be created when `xpanes` is used.
+ `~/.cache/xpanes/socket` file will automatically be created when `xpanes` is used.
 Importing this socket file, different users can share their screens each other.
 Off course, with you can specify file name with `-S` option.
 
