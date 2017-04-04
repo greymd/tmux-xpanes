@@ -41,12 +41,30 @@ tmux_version_number() {
     echo "$_tmux_version" | perl -anle 'printf $F[1]'
 }
 
+# Check whether the given version is less than current tmux version.
+# In case of tmux version is 1.7, the result will be like this.
+##  arg  -> result
+#   1.5  -> 1
+#   1.6  -> 1
+#   1.7  -> 1
+#   1.8  -> 0
+#   1.9  -> 0
+#   1.9a -> 0
+#   2.0  -> 0
+is_less_than() {
+    # Simple numerical comparison does not work because there is the version like "1.9a".
+    if [[ "$((echo "$(tmux_version_number)"; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # !!Run this function at first!!
 check_version() {
     ${BIN_DIR}${EXEC} --dry-run A
     # If tmux version is less than 1.6, skip rest of the tests.
-    if [[ "$((echo "$(tmux_version_number)"; echo "1.6") | sort -n | head -n 1)" != "1.6" ]];then
-        # Simple numerical comparison does not work because there is the version like "1.9a".
+    if is_less_than "1.6" ;then
         echo "Skip rest of the tests." >&2
         echo "Because this version is out of support." >&2
         exit 0
@@ -317,7 +335,7 @@ test_hyphen_and_option2() {
 
 test_desync_option() {
     # If tmux version is less than 1.9, skip this test.
-    if [[ "$((echo "$(tmux_version_number)"; echo "1.9") | sort -n | head -n 1)" != "1.9" ]];then
+    if (is_less_than "1.9");then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
         echo '"#{pane_synchronnized}" is not yet implemented.' >&2
@@ -490,14 +508,24 @@ test_start_separation() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
-    printf "\n $ $_cmd\n"
-    $_cmd
-    wait_panes_separation "$_socket_file" "AAAA" "2"
-    # Number of window is 1
-    assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
-    close_tmux_session "$_socket_file"
+    # Run this test if the version is more than 1.7 and there is tty.
+    if is_less_than "1.8" && ! (tty) ;then
+        echo "Skip this test for $(tmux -V) and inaccessible tty." >&2
+        echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
+    else
+        # It is required to attach and detach after that.
+        _cmd="${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB"
+        printf "\n $ $_cmd\n"
+        ${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB
 
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        # Number of window is 1
+        assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
+        close_tmux_session "$_socket_file"
+    fi
+
+    # This case works on 1.6 and 1.7.
+    # Because even --no-attach option exists, parent's tmux session is attached.
     : "In TMUX session" && {
         _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
         printf "\n $ TMUX($_cmd)\n"
