@@ -26,10 +26,12 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 # __xpanes::execution
 # __xpanes::pre_execution
 # __xpanes::parse_options
+# __xpanes::switch_xargs_mode
 # __xpanes::main
 : "Initialize options" && {
     _XP_OPTIONS=()
     _XP_ARGS=()
+    _XP_STDIN=()
     _XP_OPT_IS_SYNC=1
     _XP_KILL_WINDOW_NAME=""
     _XP_KILL_SESSION_NAME=""
@@ -41,7 +43,8 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_REPSTR="{}"
     _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
     _XP_NO_OPT=0
-    _XP_CMD_UTILITY="echo {} "
+    _XP_CMD_UTILITY=""
+    readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
     readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     readonly _XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
     readonly _XP_SUPPORT_TMUX_VERSION_UPPER="2.3"
@@ -341,13 +344,13 @@ __xpanes::check_env() {
 
     mkdir -p "$_XP_CACHE_HOME"
     if [ $? -eq 1 ];then
-        echo "warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
+        echo "Warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
     fi
 
     _XP_CURRENT_TMUX_VERSION="${_XP_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
     echo "$_XP_CURRENT_TMUX_VERSION" | grep -qE "$_XP_SUPPORT_TMUX_VERSIONS"
     if [ $? -eq 1 ];then
-        echo "warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
+        echo "Warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
         echo "         Current tmux version $_XP_CURRENT_TMUX_VERSION is out of support." >&2
         echo "         From version $_XP_SUPPORT_TMUX_VERSION_LOWER to $_XP_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
@@ -406,16 +409,31 @@ __xpanes::execution() {
     fi
 }
 
-__xpanes::parse_options() {
+# ----------------
+# Arrange options for xargs mode
+#  * argument -> command utility
+#  * stdin -> argument
+# ----------------
+__xpanes::switch_xargs_mode() {
+    while read line;
+    do
+        _XP_STDIN=("${_XP_STDIN[@]}" "$line")
+    done < <(cat)
 
-    # If there is any standard input from pipe,
-    # 1 line handled as 1 argument.
-    if [ ! -t 0 ]; then
-        while read line;
-        do
-            _XP_ARGS=("${_XP_ARGS[@]}" "$line")
-        done < <(cat)
+    if [ ! -z "${_XP_STDIN[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
+        echo "Error: Both stdin and '-c' option are given." >&2
+        exit 0
     fi
+
+    # Merge them into utility.
+    _XP_CMD_UTILITY=("$_XP_CMD_UTILITY" "${_XP_ARGS[@]}")
+    _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
+
+    # Deal with stdin as arguments.
+    _XP_ARGS=("${_XP_STDIN[@]}")
+}
+
+__xpanes::parse_options() {
 
     while (( $# > 0 ))
     do
@@ -589,12 +607,23 @@ __xpanes::parse_options() {
         esac
     done
 
+    # If there is any standard input from pipe,
+    # 1 line handled as 1 argument.
+    if [ ! -t 0 ]; then
+        __xpanes::switch_xargs_mode
+    fi
+
     # Check the number of given arguments
     if [ ${#_XP_ARGS[@]} -eq 0 ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
         exit 5
+    fi
+
+    # Set default value
+    if [ -z "$_XP_CMD_UTILITY" ];then
+        _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
     fi
 }
 
