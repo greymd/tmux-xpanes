@@ -1081,10 +1081,10 @@ test_log_format_option2() {
 
     # use -l option instead of --log option.
     # Remove single quotation for --log-format.
-    _cmd="${EXEC} -l=${_logdir} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
+    _cmd="_XP_LOG_DIR=${_tmpdir} ${EXEC} -l --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    ${EXEC} -l=${_logdir} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    _XP_LOG_DIR=${_tmpdir} ${EXEC} -l --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 

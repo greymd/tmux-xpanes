@@ -67,7 +67,8 @@ __xpanes::usage() {
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S,socket-path               Specify a full alternative path to the server socket."
-    echo "  -l,--log[=<directory>]       Enable logging and store log files to $_XP_LOG_DIR or given <directory>."
+    echo "  -l                           Enable logging and store log files to $_XP_LOG_DIR."
+    echo "     --log[=<directory>]       Enable logging and store log files to given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
     echo
@@ -415,15 +416,16 @@ __xpanes::execution() {
 #  * stdin -> argument
 # ----------------
 __xpanes::switch_xargs_mode() {
+
+    if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
+        echo "Error: Both arguments and '-c' option are given." >&2
+        exit 0
+    fi
+
     while read line;
     do
         _XP_STDIN=("${_XP_STDIN[@]}" "$line")
     done < <(cat)
-
-    if [ ! -z "${_XP_STDIN[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
-        echo "Error: Both stdin and '-c' option are given." >&2
-        exit 0
-    fi
 
     # Merge them into utility.
     _XP_CMD_UTILITY=("$_XP_CMD_UTILITY" "${_XP_ARGS[@]}")
@@ -574,9 +576,6 @@ __xpanes::parse_options() {
                 elif [[ "$1" =~ ^-l ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_OPT_LOG_STORE=1
-                    if [[ "$1" =~ ^-l=.+  ]]; then
-                        _XP_LOG_DIR="${1#-l=}"
-                    fi
                     shift
 
                 elif [[ "$1" =~ ^-d ]]; then
