@@ -59,6 +59,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 __xpanes::usage() {
     echo "Usage:"
     echo "  $_XP_THIS_FILE_NAME [OPTIONS] [argument ...]"
+    echo "  command ... | $_XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]"
     echo
     echo "OPTIONS:"
     echo "  -h,--help                    Show this screen."
