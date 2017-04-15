@@ -420,7 +420,7 @@ __xpanes::switch_xargs_mode() {
 
     if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
         echo "Error: Both arguments and '-c' option are given." >&2
-        exit 0
+        exit 1
     fi
 
     while read line;
