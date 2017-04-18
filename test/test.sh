@@ -202,7 +202,7 @@ between_plus_minus_1() {
 devide_two_panes_impl() {
     local _socket_file="$1"
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==2{print $1}' | head -n 1)
 
     # Window should be devided like this.
     # +---+---+
@@ -230,7 +230,7 @@ devide_two_panes_impl() {
 
 devide_three_panes_impl() {
     local _window_name=""
-    _window_name="$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)"
+    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==3{print $1}' | head -n 1)
 
     # Window should be devided like this.
     # +---+---+
@@ -262,7 +262,7 @@ devide_three_panes_impl() {
 
 devide_four_panes_impl() {
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==4{print $1}' | head -n 1)
 
     # Window should be devided like this.
     # +---+---+
@@ -298,7 +298,7 @@ devide_four_panes_impl() {
 
 devide_five_panes_impl() {
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep '^AAAA' | head -n 1)
+    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==5{print $1}' | head -n 1)
 
     # Window should be devided like this.
     # +---+---+
