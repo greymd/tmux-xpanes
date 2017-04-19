@@ -199,10 +199,22 @@ between_plus_minus_1() {
     echo "$(( ( $1 + 1 ) == $2 || $1 == $2 || ( $1 - 1 ) == $2 ))"
 }
 
+# Returns the index of the window and number of it's panes.
+# The reason why it does not use #{window_panes} is, tmux 1.6 does not support the format.
+get_window_having_panes() {
+    local _socket_file="$1"
+    local _pane_num="$2"
+    tmux  -S "$_socket_file" list-windows -F '#{window_index}' \
+        | while read idx;
+            do
+                echo -n "$idx "; tmux -S "$_socket_file" list-panes -t $idx -F '#{pane_index}' | grep -c .
+            done | awk '$2=='$_pane_num'{print $1}' | head -n 1
+}
+
 devide_two_panes_impl() {
     local _socket_file="$1"
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==2{print $1}' | head -n 1)
+    _window_name=$(get_window_having_panes "$_socket_file" "2")
 
     # Window should be devided like this.
     # +---+---+
@@ -230,7 +242,7 @@ devide_two_panes_impl() {
 
 devide_three_panes_impl() {
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==3{print $1}' | head -n 1)
+    _window_name=$(get_window_having_panes "$_socket_file" "3")
 
     # Window should be devided like this.
     # +---+---+
@@ -262,7 +274,7 @@ devide_three_panes_impl() {
 
 devide_four_panes_impl() {
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==4{print $1}' | head -n 1)
+    _window_name=$(get_window_having_panes "$_socket_file" "4")
 
     # Window should be devided like this.
     # +---+---+
@@ -298,7 +310,7 @@ devide_four_panes_impl() {
 
 devide_five_panes_impl() {
     local _window_name=""
-    _window_name=$(tmux -S $_socket_file list-windows -F '#{window_index} #{window_panes}' | awk '$2==5{print $1}' | head -n 1)
+    _window_name=$(get_window_having_panes "$_socket_file" "5")
 
     # Window should be devided like this.
     # +---+---+
