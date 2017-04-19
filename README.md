@@ -16,7 +16,6 @@ Build and eXecute command lines on PANES.
 * `bash` (version 3.2 and more)
 * `tmux` (version 1.6 and more)
 
-
 # Installation
 
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
@@ -57,9 +56,9 @@ There are two commands. `xpanes` and `tmux-xpanes`.
 `tmux-xpanes` is alias of `xpanes`.
 
 ```
-$ xpanes --help
 Usage:
   xpanes [OPTIONS] [argument ...]
+  command ... | xpanes [OPTIONS] [<utility> ...]
 
 OPTIONS:
   -h,--help                    Show this screen.
@@ -68,10 +67,12 @@ OPTIONS:
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
   -S,socket-path               Specify a full alternative path to the server socket.
-  -l,--log[=<directory>]       Enable logging and store log files to /Users/yasuhiro.yamada/.cache/xpanes/logs or given <directory>.
+  -l                           Enable logging and store log files to ~/.cache/xpanes/logs.
+     --log[=<directory>]       Enable logging and store log files to given <directory>.
      --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
   -d,--desync                  Make synchronize-panes option off on new window.
-...
+  --kill                       Close a pane itself after new window is created.
+  --no-attach                  Do not switch to new window.
 ```
 
 # Simple example

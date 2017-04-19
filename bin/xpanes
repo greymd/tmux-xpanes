@@ -72,6 +72,8 @@ __xpanes::usage() {
     echo "     --log[=<directory>]       Enable logging and store log files to given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
+    echo "  --kill                       Close a pane itself after new window is created."
+    echo "  --no-attach                  Do not switch to new window."
     echo
 }
 
@@ -493,6 +495,7 @@ __xpanes::parse_options() {
                     _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
                     shift
 
+                # For unit testing
                 elif [[ "$1" =~ ^--dry-run ]]; then
                     _XP_OPT_DRY_RUN=1
                     shift
@@ -501,7 +504,6 @@ __xpanes::parse_options() {
                     _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
                     shift
 
-                # For unit testing
                 elif [[ "$1" =~ ^--no-attach ]]; then
                     _XP_OPT_ATTACH=0
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
