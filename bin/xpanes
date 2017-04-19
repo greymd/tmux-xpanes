@@ -462,21 +462,21 @@ __xpanes::parse_options() {
                 _XP_ARGS=("${_XP_ARGS[@]}" "$1")
                 shift
             else
-                if   [[ "$1" =~ ^--help ]]; then
+                if   [[ "$1" =~ ^--help$ ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
 
-                elif [[ "$1" =~ ^--version ]]; then
+                elif [[ "$1" =~ ^--version$ ]]; then
                     __xpanes::version
                     exit 0
 
-                elif [[ "$1" =~ ^--desync ]]; then
+                elif [[ "$1" =~ ^--desync$ ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_OPT_IS_SYNC=0
                     shift
 
-                elif [[ "$1" =~ ^--log-format=.* ]]; then
+                elif [[ "$1" =~ ^--log-format=.*$ ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_OPT_LOG_STORE=1
                     _XP_LOG_FORMAT="${1#--log-format=}"
@@ -485,18 +485,18 @@ __xpanes::parse_options() {
                 elif [[ "$1" =~ ^--log.* ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_OPT_LOG_STORE=1
-                    if [[ "$1" =~ ^--log=  ]]; then
+                    if [[ "$1" =~ ^--log=.*$  ]]; then
                         _XP_LOG_DIR="${1#--log=}"
                     fi
                     shift
 
-                elif [[ "$1" =~ ^--ssh ]]; then
+                elif [[ "$1" =~ ^--ssh$ ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
                     shift
 
                 # For unit testing
-                elif [[ "$1" =~ ^--dry-run ]]; then
+                elif [[ "$1" =~ ^--dry-run$ ]]; then
                     _XP_OPT_DRY_RUN=1
                     shift
 
@@ -504,7 +504,7 @@ __xpanes::parse_options() {
                     _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
                     shift
 
-                elif [[ "$1" =~ ^--no-attach ]]; then
+                elif [[ "$1" =~ ^--no-attach$ ]]; then
                     _XP_OPT_ATTACH=0
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     shift
@@ -529,18 +529,29 @@ __xpanes::parse_options() {
                 _XP_ARGS=("${_XP_ARGS[@]}" "$1")
                 shift
             else
-                if   [[ "$1" =~ ^-h ]]; then
+                s_opts="[hVld]*"
+                if   [[ "$1" =~ h ]]; then
                     __xpanes::usage
                     __xpanes::usage_verbose
                     exit 0
-                elif [[ "$1" =~ ^-V ]]; then
+                elif [[ "$1" =~ V ]]; then
                     __xpanes::version
                     exit 0
 
-                elif [[ "$1" =~ ^-I ]]; then
-                    if [[ "$1" =~ ^-I.+ ]]; then
+                elif [[ "$1" =~ l ]]; then
+                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+                    _XP_OPT_LOG_STORE=1
+                    shift
+
+                elif [[ "$1" =~ d ]]; then
+                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+                    _XP_OPT_IS_SYNC=0
+                    shift
+
+                elif [[ "$1" =~ ^-${s_opts}I ]]; then
+                    if [[ "$1" =~ ^-${s_opts}I.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_REPSTR="${1#-I}"
+                        _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${s_opts}?I//")"
                     # Behavior like this.
                     # -IAAA         -- _XP_REPSTR="AAA"
                     # -I AAA BBB    -- _XP_REPSTR="AAA"
@@ -551,13 +562,15 @@ __xpanes::parse_options() {
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_REPSTR")
                         shift
                     fi
-                    # TODO : -I option without any repstr should be handled.
+                    if [ -z "$_XP_REPSTR" ];then
+                        echo "Error: '-I' option requires any arguments." >&2
+                    fi
                     shift
 
-                elif [[ "$1" =~ ^-c ]]; then
-                    if [[ "$1" =~ ^-c.+ ]]; then
+                elif [[ "$1" =~ ^-${s_opts}c ]]; then
+                    if [[ "$1" =~ ^-${s_opts}c.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_CMD_UTILITY="${1#-c}"
+                        _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${s_opts}?c//")"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         _XP_CMD_UTILITY="$2"
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_CMD_UTILITY")
@@ -565,25 +578,15 @@ __xpanes::parse_options() {
                     fi
                     shift
 
-                elif [[ "$1" =~ ^-S ]]; then
-                    if [[ "$1" =~ ^-S.+ ]]; then
+                elif [[ "$1" =~ ^-${s_opts}S ]]; then
+                    if [[ "$1" =~ ^-${s_opts}S.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_SOCKET_PATH="${1#-S}"
+                        _XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${s_opts}?S//")"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         _XP_SOCKET_PATH="$2"
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_SOCKET_PATH")
                         shift
                     fi
-                    shift
-
-                elif [[ "$1" =~ ^-l ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_LOG_STORE=1
-                    shift
-
-                elif [[ "$1" =~ ^-d ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_IS_SYNC=0
                     shift
 
                 # ----------------
