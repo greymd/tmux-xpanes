@@ -664,9 +664,9 @@ test_start_separation() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    # Run this test if the version is more than 1.7 and there is tty.
-    if is_less_than "1.8" && ! (tty) ;then
-        echo "Skip this test for $(tmux -V) and inaccessible tty." >&2
+    # Run this test if the version is more than 1.7.
+    if is_less_than "1.8" ;then
+        echo "Skip this test for $(tmux -V)." >&2
         echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
     else
         # It is required to attach and detach after that.
@@ -933,7 +933,7 @@ test_repstr_command_option_pipe() {
 }
 
 test_log_option() {
-    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
@@ -1019,7 +1019,7 @@ test_log_option() {
 }
 
 test_log_format_option() {
-    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
@@ -1116,7 +1116,7 @@ test_log_format_option() {
 }
 
 test_log_format_option2() {
-    if [ "$(tmux_version_number)" == "1.8" ] && ! (tty) ;then
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(tmux -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2

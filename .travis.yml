@@ -3,27 +3,6 @@ sudo: required
 
 matrix:
     include:
-        # -------------------------
-        # Out of support
-        # -------------------------
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.6
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.7
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.8
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=1.9a
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.0
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.1
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.2
-        # - os: linux
-        #   env: SH=bash SH_VERSION=3.1 TMUX_VERSION=2.3
         - os: linux
           env: SH=bash SH_VERSION=3.2 TMUX_VERSION=1.6
         - os: linux
@@ -148,24 +127,27 @@ matrix:
           env: SH=bash SH_VERSION=default TMUX_VERSION=1.4
         - os: linux
           env: SH=bash SH_VERSION=default TMUX_VERSION=1.5
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=1.6
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=1.7
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=1.8
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=1.9
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=1.9a
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=2.0
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=2.1
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=2.2
-        - os: osx
-          env: SH=bash SH_VERSION=default TMUX_VERSION=2.3
+        # -------------------------
+        # Skip tests (macOS on Travis does not have tty).
+        # -------------------------
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=1.6
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=1.7
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=1.8
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=1.9
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=1.9a
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=2.0
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=2.1
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=2.2
+        # - os: osx
+        #   env: SH=bash SH_VERSION=default TMUX_VERSION=2.3
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get -qq update && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl ;fi
