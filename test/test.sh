@@ -382,6 +382,14 @@ test_invalid_args() {
     assertEquals "4" "$?"
 }
 
+test_valid_and_invalid_args() {
+    local _cmd="${EXEC} -Zc @@@"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "4" "$?"
+}
+
 test_invalid_long_args() {
     local _cmd="${EXEC} --hogehoge"
     printf "\n $ $_cmd\n"
