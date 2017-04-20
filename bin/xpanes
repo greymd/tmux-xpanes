@@ -463,7 +463,7 @@ __xpanes::load_flag_options() {
 
 __xpanes::load_free_options() {
     # Extract flag options only.
-    __xpanes::load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and $&")" > /dev/null
+    __xpanes::load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
     if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I ]]; then
         if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I.+ ]]; then
             _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?I//")"
