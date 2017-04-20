@@ -482,7 +482,7 @@ __xpanes::parse_options() {
                     _XP_LOG_FORMAT="${1#--log-format=}"
                     shift
 
-                elif [[ "$1" =~ ^--log.* ]]; then
+                elif [[ "$1" =~ ^--log ]]; then
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
                     _XP_OPT_LOG_STORE=1
                     if [[ "$1" =~ ^--log=.*$  ]]; then
@@ -529,8 +529,9 @@ __xpanes::parse_options() {
                 _XP_ARGS=("${_XP_ARGS[@]}" "$1")
                 shift
             else
-                _s_opts="[hVld]*"
-                if [[ "$1" =~ ^-${_s_opts}  ]];then
+                _s_opts="[hVld]"
+                _m_opts="[ISc]"
+                if [[ "$1" =~ ^-${_s_opts}+  ]];then
                     if   [[ "$1" =~ h ]]; then
                         __xpanes::usage
                         __xpanes::usage_verbose
@@ -544,11 +545,10 @@ __xpanes::parse_options() {
                         _XP_OPT_IS_SYNC=0
                     fi
                     _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    shift
-                elif [[ "$1" =~ ^-[ld]$I ]]; then
-                    if [[ "$1" =~ ^-[ld]I.+ ]]; then
+                elif [[ "$1" =~ ^-${_s_opts}*I ]]; then
+                    if [[ "$1" =~ ^-${_s_opts}*I.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_s_opts}?I//")"
+                        _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_s_opts}*?I//")"
                     # Behavior like this.
                     # -IAAA         -- _XP_REPSTR="AAA"
                     # -I AAA BBB    -- _XP_REPSTR="AAA"
@@ -562,10 +562,10 @@ __xpanes::parse_options() {
                     fi
                     shift
 
-                elif [[ "$1" =~ ^-[ld]c ]]; then
-                    if [[ "$1" =~ ^-[ld]c.+ ]]; then
+                elif [[ "$1" =~ ^-${_s_opts}*c ]]; then
+                    if [[ "$1" =~ ^-${_s_opts}*c.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_s_opts}?c//")"
+                        _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_s_opts}*?c//")"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         _XP_CMD_UTILITY="$2"
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_CMD_UTILITY")
@@ -573,10 +573,10 @@ __xpanes::parse_options() {
                     fi
                     shift
 
-                elif [[ "$1" =~ ^-${_s_opts}S ]]; then
-                    if [[ "$1" =~ ^-${_s_opts}S.+ ]]; then
+                elif [[ "$1" =~ ^-${_s_opts}*S ]]; then
+                    if [[ "$1" =~ ^-${_s_opts}*S.+ ]]; then
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${_s_opts}?S//")"
+                        _XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${_s_opts}*?S//")"
                     elif ! [[ "$2" =~ ^-.* ]]; then
                         _XP_SOCKET_PATH="$2"
                         _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_SOCKET_PATH")
