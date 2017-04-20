@@ -1400,4 +1400,77 @@ test_log_format_and_desync_option() {
     }
 }
 
+test_log_format_and_desync_option_xargs() {
+    if (is_less_than "1.9");then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # use -l option instead of --log option.
+    # Remove single quotation for --log-format.
+    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dlS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
+    echo $'\n'" $ $_cmd"$'\n'
+
+    # xargs mod only works in the tmux session
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_BBBB_')
+
+        ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(ls ${_logdir} | grep -E "^CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
+
+        # Check synchronized or not
+        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        assertEquals 1 $?
+
+        close_tmux_session "$_socket_file"
+        rm -f ${_logdir}/*
+        rmdir ${_logdir}
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
+}
+
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
