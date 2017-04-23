@@ -36,6 +36,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_FREE_OPTIONS="[ISc]"
     _XP_ARGS=()
     _XP_STDIN=()
+    _XP_IS_XARGS_MODE=0
     _XP_OPT_IS_SYNC=1
     _XP_KILL_WINDOW_NAME=""
     _XP_KILL_SESSION_NAME=""
@@ -384,7 +385,16 @@ __xpanes::pre_execution() {
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
+        set +e
         tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME
+        if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
+            echo "Recovery: Execute below command line to re-attach the new session."
+            echo ""
+            echo "    tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME"
+            echo ""
+            exit 1
+        fi
+        set -e
     fi
 
 }
@@ -423,6 +433,10 @@ __xpanes::execution() {
 #  * stdin -> argument
 # ----------------
 __xpanes::switch_xargs_mode() {
+
+    if ! [ -n "$TMUX" ]; then
+        echo "Warning: 'xargs mode' requires attached session." >&2
+    fi
 
     if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
         echo "Error: Both arguments and '-c' option are given." >&2
@@ -632,6 +646,7 @@ __xpanes::parse_options() {
     # If there is any standard input from pipe,
     # 1 line handled as 1 argument.
     if [ ! -t 0 ]; then
+        _XP_IS_XARGS_MODE=1
         __xpanes::switch_xargs_mode
     fi
 
