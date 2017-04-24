@@ -9,7 +9,8 @@ _xpanes () {
         "($opts_omit -I --ssh)-I[Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.]:repstr:(@ % _REPLACE_ @@@)" \
         "($opts_omit -I -c --ssh)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]" \
         "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
-        "($opts_omit -l --log)"{-l=,--log=}"[Enable logging and store log files to ~/.xpanes-logs or given <directory>.]:dirs:_dir_list" \
+        "($opts_omit -l)-l[Enable logging and store log files to ~/.cache/xpanes/logs.]:dirs:_dir_list" \
+        "($opts_omit --log)--log=[Enable logging and store log files to given <directory>.]:dirs:_dir_list" \
         "($opts_omit --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
         "($opts_omit -d)"{-d,--desync}"[Make synchronize-panes option off on new window.]"
 }

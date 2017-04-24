@@ -26,10 +26,17 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 # __xpanes::execution
 # __xpanes::pre_execution
 # __xpanes::parse_options
+# __xpanes::switch_xargs_mode
 # __xpanes::main
 : "Initialize options" && {
     _XP_OPTIONS=()
+    # options which work indivisually.
+    _XP_FLAG_OPTIONS="[hVld]"
+    # options which requre arguments.
+    _XP_FREE_OPTIONS="[ISc]"
     _XP_ARGS=()
+    _XP_STDIN=()
+    _XP_IS_XARGS_MODE=0
     _XP_OPT_IS_SYNC=1
     _XP_KILL_WINDOW_NAME=""
     _XP_KILL_SESSION_NAME=""
@@ -41,7 +48,8 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_REPSTR="{}"
     _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
     _XP_NO_OPT=0
-    _XP_CMD_UTILITY="echo {} "
+    _XP_CMD_UTILITY=""
+    readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
     readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     readonly _XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
     readonly _XP_SUPPORT_TMUX_VERSION_UPPER="2.3"
@@ -56,6 +64,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 __xpanes::usage() {
     echo "Usage:"
     echo "  $_XP_THIS_FILE_NAME [OPTIONS] [argument ...]"
+    echo "  command ... | $_XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]"
     echo
     echo "OPTIONS:"
     echo "  -h,--help                    Show this screen."
@@ -64,9 +73,12 @@ __xpanes::usage() {
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S,socket-path               Specify a full alternative path to the server socket."
-    echo "  -l,--log[=<directory>]       Enable logging and store log files to $_XP_LOG_DIR or given <directory>."
+    echo "  -l                           Enable logging and store log files to $_XP_LOG_DIR."
+    echo "     --log[=<directory>]       Enable logging and store log files to given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
+    echo "  --kill                       Close a pane itself after new window is created."
+    echo "  --no-attach                  Do not switch to new window."
     echo
 }
 
@@ -341,13 +353,13 @@ __xpanes::check_env() {
 
     mkdir -p "$_XP_CACHE_HOME"
     if [ $? -eq 1 ];then
-        echo "warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
+        echo "Warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
     fi
 
     _XP_CURRENT_TMUX_VERSION="${_XP_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
     echo "$_XP_CURRENT_TMUX_VERSION" | grep -qE "$_XP_SUPPORT_TMUX_VERSIONS"
     if [ $? -eq 1 ];then
-        echo "warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
+        echo "Warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
         echo "         Current tmux version $_XP_CURRENT_TMUX_VERSION is out of support." >&2
         echo "         From version $_XP_SUPPORT_TMUX_VERSION_LOWER to $_XP_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
     fi
@@ -373,7 +385,16 @@ __xpanes::pre_execution() {
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
+        set +e
         tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME
+        if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
+            echo "Recovery: Execute below command line to re-attach the new session."
+            echo ""
+            echo "    tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME"
+            echo ""
+            exit 1
+        fi
+        set -e
     fi
 
 }
@@ -406,10 +427,144 @@ __xpanes::execution() {
     fi
 }
 
+# ----------------
+# Arrange options for xargs mode
+#  * argument -> command utility
+#  * stdin -> argument
+# ----------------
+__xpanes::switch_xargs_mode() {
+
+    if ! [ -n "$TMUX" ]; then
+        echo "Warning: 'xargs mode' requires attached session." >&2
+    fi
+
+    if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
+        echo "Error: Both arguments and '-c' option are given." >&2
+        exit 1
+    fi
+
+    while read line;
+    do
+        _XP_STDIN=("${_XP_STDIN[@]}" "$line")
+    done < <(cat)
+
+    # Merge them into utility.
+    _XP_CMD_UTILITY=("$_XP_CMD_UTILITY" "${_XP_ARGS[@]}")
+    _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
+
+    # Deal with stdin as arguments.
+    _XP_ARGS=("${_XP_STDIN[@]}")
+}
+
+__xpanes::load_flag_options() {
+    if   [[ "$1" =~ h ]]; then
+        __xpanes::usage
+        __xpanes::usage_verbose
+        exit 0
+    fi
+    if [[ "$1" =~ V ]]; then
+        __xpanes::version
+        exit 0
+    fi
+    if [[ "$1" =~ l ]]; then
+        _XP_OPT_LOG_STORE=1
+    fi
+    if [[ "$1" =~ d ]]; then
+        _XP_OPT_IS_SYNC=0
+    fi
+    return 1
+}
+
+__xpanes::load_free_options() {
+    # Extract flag options only.
+    __xpanes::load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+    if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I ]]; then
+        if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I.+ ]]; then
+            _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?I//")"
+            return 1
+        # Behavior like this.
+        # -IAAA         -- _XP_REPSTR="AAA"
+        # -I AAA BBB    -- _XP_REPSTR="AAA"
+        # -I"AAA BBB"   -- _XP_REPSTR="AAA BBB"
+        # -IAAA BBB     -- _XP_REPSTR="AAA", _XP_ARGS=("BBB")
+        # -I -d ...     -- _XP_REPSTR="{}"
+        elif ! [[ "$2" =~ ^-.* ]]; then
+            _XP_REPSTR="$2"
+            return 2
+        fi
+    elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
+        if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c.+ ]]; then
+            _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?c//")"
+            return 1
+        elif ! [[ "$2" =~ ^-.* ]]; then
+            _XP_CMD_UTILITY="$2"
+            return 2
+        fi
+    elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S ]]; then
+        if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S.+ ]]; then
+            _XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?S//")"
+            return 1
+        elif ! [[ "$2" =~ ^-.* ]]; then
+            _XP_SOCKET_PATH="$2"
+            return 2
+        fi
+    fi
+    return 0
+}
+
+__xpanes::enable_long_options() {
+    if   [[ "$1" =~ ^--help$ ]]; then
+        __xpanes::usage
+        __xpanes::usage_verbose
+        exit 0
+    elif [[ "$1" =~ ^--version$ ]]; then
+        __xpanes::version
+        exit 0
+    elif [[ "$1" =~ ^--desync$ ]]; then
+        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPT_IS_SYNC=0
+        return 1
+    elif [[ "$1" =~ ^--log-format=.*$ ]]; then
+        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPT_LOG_STORE=1
+        _XP_LOG_FORMAT="${1#--log-format=}"
+        return 1
+    elif [[ "$1" =~ ^--log ]]; then
+        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPT_LOG_STORE=1
+        if [[ "$1" =~ ^--log=.*$  ]]; then
+            _XP_LOG_DIR="${1#--log=}"
+        fi
+        return 1
+    elif [[ "$1" =~ ^--ssh$ ]]; then
+        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
+        return 1
+        # For unit testing
+    elif [[ "$1" =~ ^--dry-run$ ]]; then
+        _XP_OPT_DRY_RUN=1
+        return 1
+    elif [[ "$1" =~ ^--kill$ ]]; then
+        _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
+        return 1
+    elif [[ "$1" =~ ^--no-attach$ ]]; then
+        _XP_OPT_ATTACH=0
+        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        return 1
+
+    # ----------------
+    # Other options
+    # ----------------
+    else
+        echo "Invalid option -- '${1#--}'" >&2
+        __xpanes::usage
+        echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
+        exit 4
+    fi
+}
+
 __xpanes::parse_options() {
-    # When this flag becomes 1,
-    # rest of the arguments are not
-    # handled as options.
+
     while (( $# > 0 ))
     do
         case "$1" in
@@ -432,62 +587,12 @@ __xpanes::parse_options() {
                 _XP_ARGS=("${_XP_ARGS[@]}" "$1")
                 shift
             else
-                if   [[ "$1" =~ ^--help ]]; then
-                    __xpanes::usage
-                    __xpanes::usage_verbose
-                    exit 0
-
-                elif [[ "$1" =~ ^--version ]]; then
-                    __xpanes::version
-                    exit 0
-
-                elif [[ "$1" =~ ^--desync ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_IS_SYNC=0
-                    shift
-
-                elif [[ "$1" =~ ^--log-format=.* ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_LOG_STORE=1
-                    _XP_LOG_FORMAT="${1#--log-format=}"
-                    shift
-
-                elif [[ "$1" =~ ^--log.* ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_LOG_STORE=1
-                    if [[ "$1" =~ ^--log=  ]]; then
-                        _XP_LOG_DIR="${1#--log=}"
-                    fi
-                    shift
-
-                elif [[ "$1" =~ ^--ssh ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
-                    shift
-
-                elif [[ "$1" =~ ^--dry-run ]]; then
-                    _XP_OPT_DRY_RUN=1
-                    shift
-
-                elif [[ "$1" =~ ^--kill$ ]]; then
-                    _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
-                    shift
-
-                # For unit testing
-                elif [[ "$1" =~ ^--no-attach ]]; then
-                    _XP_OPT_ATTACH=0
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    shift
-
-                # ----------------
-                # Other options
-                # ----------------
-                else
-                    echo "Invalid option -- '${1#--}'" >&2
-                    __xpanes::usage
-                    echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-                    exit 4
-                fi
+                local _shift_count="0"
+                set +e
+                __xpanes::enable_long_options "$@"
+                _shift_count="$?"
+                set -e
+                [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
             fi
             ;;
 
@@ -499,65 +604,21 @@ __xpanes::parse_options() {
                 _XP_ARGS=("${_XP_ARGS[@]}" "$1")
                 shift
             else
-                if   [[ "$1" =~ ^-h ]]; then
-                    __xpanes::usage
-                    __xpanes::usage_verbose
-                    exit 0
-                elif [[ "$1" =~ ^-V ]]; then
-                    __xpanes::version
-                    exit 0
 
-                elif [[ "$1" =~ ^-I ]]; then
-                    if [[ "$1" =~ ^-I.+ ]]; then
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_REPSTR="${1#-I}"
-                    # Behavior like this.
-                    # -IAAA         -- _XP_REPSTR="AAA"
-                    # -I AAA BBB    -- _XP_REPSTR="AAA"
-                    # -I"AAA BBB"   -- _XP_REPSTR="AAA BBB"
-                    # -IAAA BBB     -- _XP_REPSTR="AAA", _XP_ARGS=("BBB")
-                    elif ! [[ "$2" =~ ^-.* ]]; then
-                        _XP_REPSTR="$2"
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_REPSTR")
-                        shift
-                    fi
-                    # TODO : -I option without any repstr should be handled.
-                    shift
-
-                elif [[ "$1" =~ ^-c ]]; then
-                    if [[ "$1" =~ ^-c.+ ]]; then
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_CMD_UTILITY="${1#-c}"
-                    elif ! [[ "$2" =~ ^-.* ]]; then
-                        _XP_CMD_UTILITY="$2"
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_CMD_UTILITY")
-                        shift
-                    fi
-                    shift
-
-                elif [[ "$1" =~ ^-S ]]; then
-                    if [[ "$1" =~ ^-S.+ ]]; then
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                        _XP_SOCKET_PATH="${1#-S}"
-                    elif ! [[ "$2" =~ ^-.* ]]; then
-                        _XP_SOCKET_PATH="$2"
-                        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$_XP_SOCKET_PATH")
-                        shift
-                    fi
-                    shift
-
-                elif [[ "$1" =~ ^-l ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_LOG_STORE=1
-                    if [[ "$1" =~ ^-l=.+  ]]; then
-                        _XP_LOG_DIR="${1#-l=}"
-                    fi
-                    shift
-
-                elif [[ "$1" =~ ^-d ]]; then
-                    _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
-                    _XP_OPT_IS_SYNC=0
-                    shift
+                local _shift_count="0"
+                if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*${_XP_FREE_OPTIONS}  ]];then
+                    set +e
+                    __xpanes::load_free_options "$@"
+                    _shift_count="$?"
+                    set -e
+                    [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
+                    [ "$_shift_count" = "2" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$2") && shift && shift
+                elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}+$  ]];then
+                    set +e
+                    __xpanes::load_flag_options "$1"
+                    _shift_count="$?"
+                    set -e
+                    [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
 
                 # ----------------
                 # Other options
@@ -582,12 +643,24 @@ __xpanes::parse_options() {
         esac
     done
 
+    # If there is any standard input from pipe,
+    # 1 line handled as 1 argument.
+    if [ ! -t 0 ]; then
+        _XP_IS_XARGS_MODE=1
+        __xpanes::switch_xargs_mode
+    fi
+
     # Check the number of given arguments
     if [ ${#_XP_ARGS[@]} -eq 0 ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
         exit 5
+    fi
+
+    # Set default value
+    if [ -z "$_XP_CMD_UTILITY" ];then
+        _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
     fi
 }
 
