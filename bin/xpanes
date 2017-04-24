@@ -3,7 +3,7 @@ set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly _XP_VERSION="1.3.0"
+readonly _XP_VERSION="2.0.0-alpha"
 
 trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
 
