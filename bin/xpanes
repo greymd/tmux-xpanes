@@ -5,7 +5,27 @@ set -e
 # @Filename xpanes
 readonly _XP_VERSION="2.0.0-alpha"
 
-trap "exit 130" SIGHUP SIGINT SIGQUIT SIGTERM
+# Error constants
+# ===============
+
+# Undefined or General errors
+readonly _XP_EUNDEF=1
+
+# Invalid option/argument
+readonly _XP_EINVAL=4
+
+# Could not open tty.
+readonly _XP_ETTY=5
+
+# Necessary commands are not found
+readonly _XP_ENOCMD=127
+
+# Terminated by Ctl-C
+readonly _XP_EINTR=130
+
+# ===============
+
+trap "exit $_XP_EINTR" SIGHUP SIGINT SIGQUIT SIGTERM
 
 # _XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly _XP_THIS_FILE_NAME="${0##*/}"
@@ -298,11 +318,18 @@ __xpanes::arrange_pane_location() {
     local _window_name="$1" ; shift
     local _hosts_num="$1"
 
+    # ----------------
+    # Default behavior
+    # ----------------
     if [ $_hosts_num -eq 1 ]; then
         tmux select-layout -t ${_window_name} even-horizontal
     elif [ $_hosts_num -gt 1 ]; then
         tmux select-layout -t ${_window_name} tiled
     fi
+    # ----------------
+    # TODO: User behavior
+    # ----------------
+    # tmux select-layout -t ${_window_name} even-vertical
 }
 
 #
@@ -347,7 +374,7 @@ __xpanes::check_env() {
         type $cmd > /dev/null 2>&1
         if [ $? -ne 0 ]; then
             echo "$cmd is required to work." >&2
-            exit 127
+            exit $_XP_ENOCMD
         fi
     done < <(echo "$_cmds" | tr ' ' '\n')
 
@@ -392,7 +419,7 @@ __xpanes::pre_execution() {
             echo ""
             echo "    tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME"
             echo ""
-            exit 1
+            exit $_XP_ETTY
         fi
         set -e
     fi
@@ -440,7 +467,7 @@ __xpanes::switch_xargs_mode() {
 
     if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
         echo "Error: Both arguments and '-c' option are given." >&2
-        exit 1
+        exit $_XP_EINVAL
     fi
 
     while read line;
@@ -559,7 +586,7 @@ __xpanes::enable_long_options() {
         echo "Invalid option -- '${1#--}'" >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-        exit 4
+        exit $_XP_EINVAL
     fi
 }
 
@@ -627,7 +654,7 @@ __xpanes::parse_options() {
                     echo "Invalid option -- '${1#-}'" >&2
                     __xpanes::usage
                     echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-                    exit 4
+                    exit $_XP_EINVAL
                 fi
             fi
             ;;
@@ -655,7 +682,7 @@ __xpanes::parse_options() {
         echo "No arguments are given." >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-        exit 5
+        exit $_XP_EINVAL
     fi
 
     # Set default value

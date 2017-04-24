@@ -407,7 +407,7 @@ test_no_args() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "5" "$?"
+    assertEquals "4" "$?"
 }
 
 test_hyphen_only() {
@@ -415,7 +415,7 @@ test_hyphen_only() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "5" "$?"
+    assertEquals "4" "$?"
 }
 
 test_hyphen_and_option1() {
