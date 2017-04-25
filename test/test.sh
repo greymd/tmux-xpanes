@@ -369,7 +369,7 @@ tearDown(){
 
 test_argument_and_utility_xargs() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
-    assertEquals "1" "$?"
+    assertEquals "4" "$?"
 }
 
 test_unsupported_version() {
@@ -628,6 +628,7 @@ test_desync_option_2() {
         close_tmux_session "$_socket_file"
     }
 }
+
 test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
