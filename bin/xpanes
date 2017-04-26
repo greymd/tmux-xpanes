@@ -68,10 +68,11 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_OPT_LOG_STORE=0
     _XP_LOG_DIR="${_XP_LOG_DIR:-$_XP_CACHE_HOME/logs}"
     _XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-    _XP_REPSTR="{}"
+    _XP_REPSTR=""
     _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
     _XP_NO_OPT=0
     _XP_CMD_UTILITY=""
+    readonly _XP_DEFAULT_REPSTR="{}"
     readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
     readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     readonly _XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
@@ -295,12 +296,12 @@ __xpanes::enable_logging() {
     local _hosts_num=$(($# - 1))
     # Generate log files from host list.
     local _logfiles=($(
-    for i in $(seq 0 $_hosts_num)
+    for i in $(seq 0 "$_hosts_num")
     do
         echo "${_hosts[i]}"
     done | __xpanes::log_filenames "$_log_format"
     ))
-    for i in $(seq 0 $_hosts_num)
+    for i in $(seq 0 "$_hosts_num")
     do
         # Start logging
         tmux pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" "cat >> '${_log_dir}/${_logfiles[i]}'"
@@ -486,6 +487,20 @@ __xpanes::switch_xargs_mode() {
     _XP_CMD_UTILITY+=("${_XP_ARGS[@]-}")
     _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
 
+    # If there is empty -I option or user does not assign the <repstr>,
+    # Append the space and <repstr> at the end of the <utility>
+    # This is same as the unix xargs command.
+    # i.e,
+    #     $ echo 10 | xargs seq
+    #       => seq 10
+    # Whith is same as
+    #     $ echo 10 | xargs -I@ seq @
+    #       => seq 10
+    if [ -z "$_XP_REPSTR" ]; then
+        _XP_REPSTR="$_XP_DEFAULT_REPSTR"
+        _XP_CMD_UTILITY="$_XP_CMD_UTILITY $_XP_REPSTR"
+    fi
+
     # Deal with stdin as arguments.
     _XP_ARGS=("${_XP_STDIN[@]-}")
 }
@@ -525,7 +540,7 @@ __xpanes::load_free_options() {
         # -I AAA BBB    -- _XP_REPSTR="AAA"
         # -I"AAA BBB"   -- _XP_REPSTR="AAA BBB"
         # -IAAA BBB     -- _XP_REPSTR="AAA", _XP_ARGS=("BBB")
-        # -I -d ...     -- _XP_REPSTR="{}"
+        # -I -d ...     -- _XP_REPSTR=""
         elif ! [[ "$2" =~ ^-.* ]]; then
             _XP_REPSTR="$2"
             return 2
@@ -700,6 +715,9 @@ __xpanes::parse_options() {
     # Set default value
     if [ -z "${_XP_CMD_UTILITY-}" ];then
         _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
+    fi
+    if [ -z "$_XP_REPSTR" ];then
+        _XP_REPSTR="$_XP_DEFAULT_REPSTR"
     fi
 }
 
