@@ -435,8 +435,8 @@ __xpanes::pre_execution() {
 
 __xpanes::execution() {
     local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
-    local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]}")
-    local _last_host_idx=$((${#_XP_ARGS[@]} - 1))
+    local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]-}")
+    local _last_host_idx=$((${#_XP_ARGS[@]-} - 1))
 
     __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
 
@@ -456,7 +456,7 @@ __xpanes::execution() {
     fi
 
     # Remove original window.
-    if [ ! -z "$_XP_KILL_WINDOW_NAME" ]; then
+    if [ ! -z "${_XP_KILL_WINDOW_NAME-}" ]; then
         tmux kill-window -t "$_XP_KILL_WINDOW_NAME"
     fi
 }
@@ -468,11 +468,11 @@ __xpanes::execution() {
 # ----------------
 __xpanes::switch_xargs_mode() {
 
-    if ! [ -n ${TMUX-} ]; then
+    if ! [ -n "${TMUX-}" ]; then
         echo "Warning: 'xargs mode' requires attached session." >&2
     fi
 
-    if [ ! -z ${_XP_ARGS[*]-} ] && [ ! -z ${_XP_CMD_UTILITY-} ]; then
+    if [ ! -z "${_XP_ARGS[*]-}" ] && [ ! -z "${_XP_CMD_UTILITY-}" ]; then
         echo "Error: Both arguments and '-c' option are given." >&2
         exit $_XP_EINVAL
     fi
@@ -487,7 +487,7 @@ __xpanes::switch_xargs_mode() {
     _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
 
     # Deal with stdin as arguments.
-    _XP_ARGS=("${_XP_STDIN[@]}")
+    _XP_ARGS=("${_XP_STDIN[@]-}")
 }
 
 __xpanes::load_flag_options() {
@@ -559,23 +559,23 @@ __xpanes::enable_long_options() {
         __xpanes::version
         exit 0
     elif [[ "$1" =~ ^--desync$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_IS_SYNC=0
         return 1
     elif [[ "$1" =~ ^--log-format=.*$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_LOG_STORE=1
         _XP_LOG_FORMAT="${1#--log-format=}"
         return 1
     elif [[ "$1" =~ ^--log ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_LOG_STORE=1
         if [[ "$1" =~ ^--log=.*$  ]]; then
             _XP_LOG_DIR="${1#--log=}"
         fi
         return 1
     elif [[ "$1" =~ ^--ssh$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
         return 1
         # For unit testing
@@ -587,7 +587,7 @@ __xpanes::enable_long_options() {
         return 1
     elif [[ "$1" =~ ^--no-attach$ ]]; then
         _XP_OPT_ATTACH=0
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         return 1
 
     # ----------------
@@ -689,6 +689,7 @@ __xpanes::parse_options() {
     fi
 
     # Check the number of given arguments
+    # When the array is empty, it returns 0.
     if [ ${#_XP_ARGS[@]-} -eq 0 ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
@@ -697,7 +698,7 @@ __xpanes::parse_options() {
     fi
 
     # Set default value
-    if [ -z ${_XP_CMD_UTILITY-} ];then
+    if [ -z "${_XP_CMD_UTILITY-}" ];then
         _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
     fi
 }
@@ -722,7 +723,7 @@ __xpanes::main() {
     #
     # If current shell is NOT in tmux session.
     #
-    if ! [ -n ${TMUX-} ]; then
+    if ! [ -n "${TMUX-}" ]; then
         __xpanes::pre_execution
 
     #
