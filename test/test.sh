@@ -663,7 +663,7 @@ test_non_writable_directory() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "22" "$?"
+    assertEquals "21" "$?"
 }
 
 test_insufficient_cmd() {
