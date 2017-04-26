@@ -3,7 +3,7 @@ set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly _XP_VERSION="2.0.0-alpha"
+readonly _XP_VERSION="2.0.0-alpha.1"
 
 # Error constants
 # ===============
@@ -94,7 +94,7 @@ __xpanes::usage() {
     echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
-    echo "  -S,socket-path               Specify a full alternative path to the server socket."
+    echo "  -S socket-path               Specify a full alternative path to the server socket."
     echo "  -l                           Enable logging and store log files to $_XP_LOG_DIR."
     echo "     --log[=<directory>]       Enable logging and store log files to given <directory>."
     echo "     --log-format=<FORMAT>     File name of log files follows given <FORMAT>."
