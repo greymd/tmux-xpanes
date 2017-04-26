@@ -369,7 +369,7 @@ tearDown(){
 
 test_argument_and_utility_xargs() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
-    assertEquals "1" "$?"
+    assertEquals "4" "$?"
 }
 
 test_unsupported_version() {
@@ -407,7 +407,7 @@ test_no_args() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "5" "$?"
+    assertEquals "4" "$?"
 }
 
 test_hyphen_only() {
@@ -415,7 +415,7 @@ test_hyphen_only() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "5" "$?"
+    assertEquals "4" "$?"
 }
 
 test_hyphen_and_option1() {
@@ -628,6 +628,7 @@ test_desync_option_2() {
         close_tmux_session "$_socket_file"
     }
 }
+
 test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
@@ -637,9 +638,10 @@ test_failed_creat_directory() {
     assertEquals "20" "$?"
 }
 
-test_use_file_insteadof_directory() {
-    local _log_dir="${SHUNIT_TMPDIR}/file"
-    echo "dummy" > $_log_dir
+test_directory_is_not_writable() {
+    local _log_dir="${SHUNIT_TMPDIR}/non_writable"
+    mkdir -p $_log_dir
+    chmod 666 $_log_dir
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\n $ $_cmd\n"
     # execute
@@ -661,7 +663,7 @@ test_non_writable_directory() {
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
-    assertEquals "22" "$?"
+    assertEquals "21" "$?"
 }
 
 test_insufficient_cmd() {
