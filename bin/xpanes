@@ -27,12 +27,7 @@ readonly _XP_ELOGWRITE=21
 # Necessary commands are not found
 readonly _XP_ENOCMD=127
 
-# Terminated by Ctl-C
-readonly _XP_EINTR=130
-
 # ===============
-
-trap "exit $_XP_EINTR" SIGHUP SIGINT SIGQUIT SIGTERM
 
 # _XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly _XP_THIS_FILE_NAME="${0##*/}"
