@@ -17,6 +17,13 @@ readonly _XP_EINVAL=4
 # Could not open tty.
 readonly _XP_ETTY=5
 
+# Log related exit status is 2x.
+## Could not create a directory.
+readonly _XP_ELOGDIR=20
+
+## Could not directory to store logs is not writable.
+readonly _XP_ELOGWRITE=21
+
 # Necessary commands are not found
 readonly _XP_ENOCMD=127
 
@@ -195,6 +202,7 @@ __xpanes::log_filenames () {
 #
 __xpanes::ensure_directory() {
     local _dir="$1"
+    local _checkfile="${_XP_THIS_FILE_NAME}.$$"
 
     # Remove end of slash '/'
     _dir="${_dir%/}"
@@ -203,23 +211,25 @@ __xpanes::ensure_directory() {
     _dir="${_dir/#~/$HOME}"
 
     # Check directory.
-    if [ ! -e "${_dir}" ]; then
+    if [ ! -d "${_dir}" ]; then
         # Create directory
         if mkdir "${_dir}"; then
             echo "${_dir} is created." >&2
         else
             echo "Failed to create ${_dir}" >&2
-            exit 20
+            exit $_XP_ELOGDIR
         fi
     fi
-    if [ ! -d "${_dir}" ]; then
-        echo "${_dir} is not directory." >&2
-        exit 21
-    fi
-    if [ ! -w "${_dir}" ]; then
+    # Try to create file.
+    #   Not only checking directory permission,
+    #   but also i-node and other misc situations.
+    touch "${_dir}/$_checkfile"
+    if [ $? -ne 0 ]; then
         echo "${_dir} is not writable." >&2
-        exit 22
+        rm -f "${_dir}/$_checkfile"
+        exit $_XP_ELOGWRITE
     fi
+    rm -f "${_dir}/$_checkfile"
 
     # Return absolute path
     echo "$(cd "$_XP_LOG_DIR" && pwd)"
