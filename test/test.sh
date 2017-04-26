@@ -418,6 +418,25 @@ test_hyphen_only() {
     assertEquals "4" "$?"
 }
 
+test_xargs_without_repstr() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    : "In TMUX session" && {
+        _cmd="seq 5 10 | xargs -n 2 | ${EXEC} seq"
+        # this executes following commands on panes.
+        #   $ seq 5 6
+        #   $ seq 7 8
+        #   $ seq 9 10
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "5" "3"
+        # check number of devided panes
+        devide_three_panes_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
 test_hyphen_and_option1() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
