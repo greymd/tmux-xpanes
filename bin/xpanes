@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ## -*- encoding: utf-8 -*- vim:expandtab:tabstop=4:shiftwidth=4
 set -u; set -e
 
