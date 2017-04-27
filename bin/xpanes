@@ -403,25 +403,25 @@ __xpanes::check_env() {
 
 __xpanes::pre_execution() {
     # Create new session.
-    tmux -S $_XP_SOCKET_PATH new-session -s $_XP_SESSION_NAME -n $_XP_TMP_WIN_NAME -d
+    tmux -S "$_XP_SOCKET_PATH" new-session -s "$_XP_SESSION_NAME" -n "$_XP_TMP_WIN_NAME" -d
 
     # Append -- flag.
     # Because any arugments may have `-`
     if [ $_XP_NO_OPT -eq 1 ]; then
-        _XP_ARGS=("--" "${_XP_ARGS[@]}")
+        _XP_ARGS=("--" "${_XP_ARGS[@]-}")
     fi
 
-    local _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
-    local _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
+    local _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]-}")
+    local _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]-}")
 
-    tmux -S $_XP_SOCKET_PATH send-keys -t $_XP_SESSION_NAME:$_XP_TMP_WIN_NAME \
+    tmux -S "$_XP_SOCKET_PATH" send-keys -t "$_XP_SESSION_NAME:$_XP_TMP_WIN_NAME" \
         "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
 
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
         set +e
-        tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME
+        tmux -S "$_XP_SOCKET_PATH" attach-session -t "$_XP_SESSION_NAME"
         if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
             echo "Recovery: Execute below command line to re-attach the new session."
             echo ""
@@ -437,23 +437,23 @@ __xpanes::pre_execution() {
 __xpanes::execution() {
     local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
     local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]-}")
-    local _last_host_idx=$((${#_XP_ARGS[@]-} - 1))
+    local _last_host_idx=$((${#_XP_ARGS[@]} - 1))
 
     __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
 
     if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]}"
+        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]-}"
     fi
 
     # Sending ssh opearations for each pane.
-    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]}"
+    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]-}"
 
     # This is just the author's preference (You can remove next statement.)
     __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
 
     # Enable broadcasting
     if [ $_XP_OPT_IS_SYNC -eq 1 ]; then
-        tmux set-window-option -t ${_window_name} synchronize-panes on
+        tmux set-window-option -t "${_window_name}" synchronize-panes on
     fi
 
     # Remove original window.
@@ -703,9 +703,8 @@ __xpanes::parse_options() {
         __xpanes::switch_xargs_mode
     fi
 
-    # Check the number of given arguments
-    # When the array is empty, it returns 0.
-    if [ ${#_XP_ARGS[@]-} -eq 0 ]; then
+    # When no argument arr given, exit.
+    if [ -z "${_XP_ARGS[*]-}" ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
