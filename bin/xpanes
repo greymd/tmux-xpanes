@@ -754,5 +754,5 @@ __xpanes::main() {
 }
 
 : "Entry point" && {
-    __xpanes::main "$@"
+    __xpanes::main "${1+$@}"
 }
