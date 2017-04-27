@@ -161,7 +161,7 @@ before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp
   - mkdir -p $TMPDIR
   - if [[ "$TMUX_VERSION" != "default" ]] ;then ( cd "$TMPDIR" && curl -L "https://github.com/tmux/tmux/releases/download/${TMUX_VERSION}/tmux-${TMUX_VERSION}.tar.gz" | tar zxv && cd tmux-${TMUX_VERSION} && ./configure; make && sudo make install ) ;fi # tmux 0.8 does not require ./configure
-  - if [[ "$SH" == "bash" && "$SH_VERSION" != "default" ]];then (cd "$TMPDIR" && curl "http://ftp.gnu.org/gnu/bash/bash-${SH_VERSION}.tar.gz" | tar xvz && cd bash* && ./configure; make && sudo make install && sudo cp ./bash /bin/bash && sudo cp ./bash /usr/bin/bash ) ;fi
+  - if [[ "$SH" == "bash" && "$SH_VERSION" != "default" ]];then (cd "$TMPDIR" && curl "http://ftp.gnu.org/gnu/bash/bash-${SH_VERSION}.tar.gz" | tar xvz && cd bash* && ./configure; make && sudo make install && sudo mv /bin/bash /bin/bash.old && sudo cp ./bash /bin/bash ) ;fi
   - if [[ "$SH" == "zsh"  && "$SH_VERSION" != "default" ]];then (cd "$TMPDIR" && curl -L "https://sourceforge.net/projects/zsh/files/zsh/${SH_VERSION}/zsh-${SH_VERSION}.tar.gz/download" | tar zxv && cd zsh* && ./configure; make && sudo make install ) ;fi
 
 script:
