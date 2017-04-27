@@ -422,7 +422,7 @@ test_xargs_without_repstr() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     : "In TMUX session" && {
-        _cmd="seq 5 10 | xargs -n 2 | ${EXEC} seq"
+        _cmd="seq 5 10 | xargs -n 2 | ${EXEC} -S $_socket_file seq"
         # this executes following commands on panes.
         #   $ seq 5 6
         #   $ seq 7 8
