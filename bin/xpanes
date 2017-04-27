@@ -484,8 +484,9 @@ __xpanes::switch_xargs_mode() {
     done < <(cat)
 
     # Merge them into utility.
-    _XP_CMD_UTILITY+=("${_XP_ARGS[@]-}")
-    _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
+    if [ ! -z "${_XP_ARGS[@]-}" ]; then
+        _XP_CMD_UTILITY="${_XP_ARGS[@]}"
+    fi
 
     # If there is empty -I option or user does not assign the <repstr>,
     # Append the space and <repstr> at the end of the <utility>
@@ -498,7 +499,9 @@ __xpanes::switch_xargs_mode() {
     #       => seq 10
     if [ -z "$_XP_REPSTR" ]; then
         _XP_REPSTR="$_XP_DEFAULT_REPSTR"
-        _XP_CMD_UTILITY="$_XP_CMD_UTILITY $_XP_REPSTR"
+        if [ ! -z "${_XP_CMD_UTILITY-}" ]; then
+            _XP_CMD_UTILITY="$_XP_CMD_UTILITY $_XP_REPSTR"
+        fi
     fi
 
     # Deal with stdin as arguments.
@@ -521,9 +524,9 @@ __xpanes::load_flag_options() {
     if [[ "$1" =~ d ]]; then
         _XP_OPT_IS_SYNC=0
     fi
-    # TODO: -e option
     # if [[ "$1" =~ e ]]; then
-    #     # do something
+    #     _XP_REPSTR="{}"
+    #     _XP_CMD_UTILITY="{}"
     # fi
     return 1
 }
