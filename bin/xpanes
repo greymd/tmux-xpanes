@@ -402,17 +402,21 @@ __xpanes::check_env() {
 }
 
 __xpanes::pre_execution() {
+    local _opts4args=""
+    local _args4args=""
     # Create new session.
     tmux -S "$_XP_SOCKET_PATH" new-session -s "$_XP_SESSION_NAME" -n "$_XP_TMP_WIN_NAME" -d
 
     # Append -- flag.
     # Because any arugments may have `-`
     if [ $_XP_NO_OPT -eq 1 ]; then
-        _XP_ARGS=("--" "${_XP_ARGS[@]-}")
+        _XP_ARGS=("--" "${_XP_ARGS[@]}")
     fi
 
-    local _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]-}")
-    local _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]-}")
+    if [ ! -z "${_XP_OPTIONS[@]-}" ]; then
+        _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
+    fi
+    _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
 
     tmux -S "$_XP_SOCKET_PATH" send-keys -t "$_XP_SESSION_NAME:$_XP_TMP_WIN_NAME" \
         "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
@@ -436,17 +440,17 @@ __xpanes::pre_execution() {
 
 __xpanes::execution() {
     local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
-    local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]-}")
+    local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]}")
     local _last_host_idx=$((${#_XP_ARGS[@]} - 1))
 
     __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
 
     if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]-}"
+        __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]}"
     fi
 
     # Sending ssh opearations for each pane.
-    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]-}"
+    __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]}"
 
     # This is just the author's preference (You can remove next statement.)
     __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
@@ -524,10 +528,10 @@ __xpanes::load_flag_options() {
     if [[ "$1" =~ d ]]; then
         _XP_OPT_IS_SYNC=0
     fi
-    # if [[ "$1" =~ e ]]; then
-    #     _XP_REPSTR="{}"
-    #     _XP_CMD_UTILITY="{}"
-    # fi
+    if [[ "$1" =~ e ]]; then
+        _XP_REPSTR="{}"
+        _XP_CMD_UTILITY="{}"
+    fi
     return 1
 }
 
