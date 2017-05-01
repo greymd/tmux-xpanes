@@ -249,8 +249,17 @@ __xpanes::arr2args() {
     fi
     for i in "$@" ;do
         _arg="$i"
-        # Escaping single quotation.
-        echo "$_arg" | sed "s/'/'\"'\"'/g" | sed "s/^/'/;s/$/' /" | tr -d '\n'
+        # Use 'printf' command instead of 'echo' to print option like '-e'.
+        printf "%s" "$_arg" \
+            | \
+            # Escaping single quotations.
+            sed "s/'/'\"'\"'/g" \
+            | \
+            # Surround argument with single quotations.
+            sed "s/^/'/;s/$/' /" \
+            | \
+            # Remove new lines
+            tr -d '\n'
     done
 }
 
