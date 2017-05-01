@@ -657,17 +657,6 @@ test_failed_creat_directory() {
     assertEquals "20" "$?"
 }
 
-test_directory_is_not_writable() {
-    local _log_dir="${SHUNIT_TMPDIR}/non_writable"
-    mkdir -p $_log_dir
-    chmod 666 $_log_dir
-    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
-    printf "\n $ $_cmd\n"
-    # execute
-    $_cmd > /dev/null
-    assertEquals "21" "$?"
-}
-
 test_non_writable_directory() {
     local _user=${USER:-$(whoami)}
     echo "USER:$_user"
