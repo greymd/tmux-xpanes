@@ -64,6 +64,7 @@ OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
+  -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
   -S,socket-path               Specify a full alternative path to the server socket.
