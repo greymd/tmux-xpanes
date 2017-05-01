@@ -71,6 +71,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_REPSTR=""
     _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
     _XP_NO_OPT=0
+    _XP_OPT_CMD_UTILITY=0
     _XP_CMD_UTILITY=""
     readonly _XP_DEFAULT_REPSTR="{}"
     readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -93,7 +94,7 @@ __xpanes::usage() {
     echo "OPTIONS:"
     echo "  -h,--help                    Show this screen."
     echo "  -V,--version                 Show version."
-    echo "  -e                           Execute argument as command lines."
+    echo "  -e                           Execute given arguments as is."
     echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
@@ -573,9 +574,11 @@ __xpanes::load_free_options() {
     elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
         if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c.+ ]]; then
             _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?c//")"
+            _XP_OPT_CMD_UTILITY=1
             return 1
         elif ! [[ "$2" =~ ^-.* ]]; then
             _XP_CMD_UTILITY="$2"
+            _XP_OPT_CMD_UTILITY=1
             return 2
         fi
     elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S ]]; then
@@ -736,13 +739,18 @@ __xpanes::parse_options() {
         exit $_XP_EINVAL
     fi
 
-    # Set default value
+    # Set default value in case of empty.
     if [ -z "${_XP_CMD_UTILITY-}" ];then
         _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
     fi
     if [ -z "$_XP_REPSTR" ];then
         _XP_REPSTR="$_XP_DEFAULT_REPSTR"
     fi
+
+    if [ $_XP_OPT_CMD_UTILITY -eq 0 ];then
+        _XP_OPTIONS+=("-c" "$_XP_CMD_UTILITY")
+    fi
+
 }
 
 __xpanes::main() {
