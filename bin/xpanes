@@ -746,7 +746,7 @@ __xpanes::parse_options() {
 }
 
 __xpanes::main() {
-    __xpanes::parse_options "$@"
+    __xpanes::parse_options ${1+"$@"}
     set +e
     __xpanes::check_env "$_XP_DEPENDENCIES"
     set -e
