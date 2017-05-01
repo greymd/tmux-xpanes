@@ -1,4 +1,5 @@
 language: generic
+dist: trusty
 sudo: required
 
 matrix:
@@ -153,9 +154,9 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get -qq update && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TMUX_VERSION" == "default" && ! $(which tmux) ]] ; then sudo apt-get install -y tmux ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$SH_VERSION"   == "default" && ! $(which $SH)  ]] ;then sudo apt-get install -y $SH ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ;then brew update ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   && "$TMUX_VERSION" == "default" && ! $(which tmux) ]] ; then brew install tmux ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx"   && "$SH_VERSION"   == "default" && ! $(which $SH)  ]] ;then brew install $SH ;fi
+#   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ;then brew update ;fi
+#   - if [[ "$TRAVIS_OS_NAME" == "osx"   && "$TMUX_VERSION" == "default" && ! $(which tmux) ]] ; then brew install tmux ;fi
+#   - if [[ "$TRAVIS_OS_NAME" == "osx"   && "$SH_VERSION"   == "default" && ! $(which $SH)  ]] ;then brew install $SH ;fi
 
 before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp
