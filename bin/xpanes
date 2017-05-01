@@ -165,7 +165,10 @@ __xpanes::get_tmux_version() {
 
 __xpanes::get_tmux_conf() {
     local _conf_name="$1"
-    tmux show-window-options -g | grep "^${1}" | head -n 1 | perl -anle 'print $F[1]'
+    tmux show-window-options -g \
+        | grep "^${1}" \
+        | head -n 1 \
+        | perl -anle 'print $F[1]'
 }
 
 #
@@ -186,11 +189,14 @@ __xpanes::get_tmux_conf() {
 __xpanes::log_filenames () {
     local _arg_fmt="$1"
     local _full_fmt="$(date '+'$_arg_fmt)"
-    cat | perl -nle 'print $_."-".(($h{$_}++)+1)' | while read host ; do
-        echo "$_full_fmt" | \
-        sed "s/\[:ARG:\]/$host/g" | \
-        sed "s/\[:PID:\]/$$/g"
-    done
+    cat \
+      | perl -nle 'print $_."-".(($h{$_}++)+1)' \
+      | while read host
+        do
+          echo "$_full_fmt" | \
+          sed "s/\[:ARG:\]/$host/g" | \
+          sed "s/\[:PID:\]/$$/g"
+        done
 }
 
 #
@@ -267,11 +273,14 @@ __xpanes::arr2args() {
 # ex, $1       =  aaa.bbb.ccc
 #     return   =  aaa-12345(PID)
 __xpanes::generate_window_name() {
-    echo "$1" | \
-        tr '.' ' ' | \
+    echo "$1" \
+        | tr '.' ' ' \
+        | \
         # coron must be replaced because tmux interprets it.
-        sed 's/:/;/g' | \
-        sed 's/-/_/g' | \
+        sed 's/:/;/g' \
+        | \
+        sed 's/-/_/g' \
+        | \
         perl -anle 'printf "$F[0]-'$$'"'
 }
 
