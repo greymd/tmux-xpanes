@@ -413,7 +413,7 @@ __xpanes::pre_execution() {
         _XP_ARGS=("--" "${_XP_ARGS[@]}")
     fi
 
-    if [ ! -z "${_XP_OPTIONS[@]-}" ]; then
+    if [ ! -z "${_XP_OPTIONS[*]-}" ]; then
         _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
     fi
     _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
@@ -488,7 +488,7 @@ __xpanes::switch_xargs_mode() {
     done < <(cat)
 
     # Merge them into utility.
-    if [ ! -z "${_XP_ARGS[@]-}" ]; then
+    if [ ! -z "${_XP_ARGS[*]-}" ]; then
         _XP_CMD_UTILITY="${_XP_ARGS[@]}"
     fi
 
@@ -760,5 +760,5 @@ __xpanes::main() {
 }
 
 : "Entry point" && {
-    __xpanes::main "${1+$@}"
+    __xpanes::main ${1+"$@"}
 }
