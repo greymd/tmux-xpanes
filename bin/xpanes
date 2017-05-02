@@ -4,7 +4,7 @@ set -u; set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly _XP_VERSION="2.0.0-alpha.1"
+readonly _XP_VERSION="2.0.0-alpha.2"
 
 # Error constants
 # ===============
