@@ -1,5 +1,6 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+## -*- encoding: utf-8 -*- vim:expandtab:tabstop=4:shiftwidth=4
+set -u; set -e
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
@@ -53,7 +54,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 : "Initialize options" && {
     _XP_OPTIONS=()
     # options which work indivisually.
-    _XP_FLAG_OPTIONS="[hVld]"
+    _XP_FLAG_OPTIONS="[hVlde]"
     # options which requre arguments.
     _XP_FREE_OPTIONS="[ISc]"
     _XP_ARGS=()
@@ -67,10 +68,12 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_OPT_LOG_STORE=0
     _XP_LOG_DIR="${_XP_LOG_DIR:-$_XP_CACHE_HOME/logs}"
     _XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-    _XP_REPSTR="{}"
+    _XP_REPSTR=""
     _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
     _XP_NO_OPT=0
+    _XP_OPT_CMD_UTILITY=0
     _XP_CMD_UTILITY=""
+    readonly _XP_DEFAULT_REPSTR="{}"
     readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
     readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
     readonly _XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
@@ -92,6 +95,7 @@ __xpanes::usage() {
     echo "  -h,--help                    Show this screen."
     echo "  -V,--version                 Show version."
     echo "  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used."
+    echo "  -e                           Execute given arguments as is."
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S socket-path               Specify a full alternative path to the server socket."
@@ -162,7 +166,10 @@ __xpanes::get_tmux_version() {
 
 __xpanes::get_tmux_conf() {
     local _conf_name="$1"
-    tmux show-window-options -g | grep "^${1}" | head -n 1 | perl -anle 'print $F[1]'
+    tmux show-window-options -g \
+        | grep "^${1}" \
+        | head -n 1 \
+        | perl -anle 'print $F[1]'
 }
 
 #
@@ -182,12 +189,15 @@ __xpanes::get_tmux_conf() {
 #
 __xpanes::log_filenames () {
     local _arg_fmt="$1"
-    local _full_fmt=$(date '+'$_arg_fmt)
-    cat | perl -nle 'print $_."-".(($h{$_}++)+1)' | while read host ; do
-        echo $_full_fmt | \
-        sed "s/\[:ARG:\]/$host/g" | \
-        sed "s/\[:PID:\]/$$/g"
-    done
+    local _full_fmt="$(date '+'$_arg_fmt)"
+    cat \
+      | perl -nle 'print $_."-".(($h{$_}++)+1)' \
+      | while read host
+        do
+          echo "$_full_fmt" | \
+          sed "s/\[:ARG:\]/$host/g" | \
+          sed "s/\[:PID:\]/$$/g"
+        done
 }
 
 #
@@ -246,8 +256,17 @@ __xpanes::arr2args() {
     fi
     for i in "$@" ;do
         _arg="$i"
-        # Escaping single quotation.
-        echo "$_arg" | sed "s/'/'\"'\"'/g" | sed "s/^/'/;s/$/' /" | tr -d '\n'
+        # Use 'printf' command instead of 'echo' to print option like '-e'.
+        printf "%s" "$_arg" \
+            | \
+            # Escaping single quotations.
+            sed "s/'/'\"'\"'/g" \
+            | \
+            # Surround argument with single quotations.
+            sed "s/^/'/;s/$/' /" \
+            | \
+            # Remove new lines
+            tr -d '\n'
     done
 }
 
@@ -255,11 +274,14 @@ __xpanes::arr2args() {
 # ex, $1       =  aaa.bbb.ccc
 #     return   =  aaa-12345(PID)
 __xpanes::generate_window_name() {
-    echo "$1" | \
-        tr '.' ' ' | \
+    echo "$1" \
+        | tr '.' ' ' \
+        | \
         # coron must be replaced because tmux interprets it.
-        sed 's/:/;/g' | \
-        sed 's/-/_/g' | \
+        sed 's/:/;/g' \
+        | \
+        sed 's/-/_/g' \
+        | \
         perl -anle 'printf "$F[0]-'$$'"'
 }
 
@@ -273,13 +295,13 @@ __xpanes::split_window() {
     local _hosts_num="$1"
     for i in $(seq 0 $_hosts_num)
     do
-        tmux split-window -t ${_window_name} -h -d
+        tmux split-window -t "${_window_name}" -h -d
         tmux select-layout even-horizontal
 
         # Restraining that size of pane's width becomes
         # less than the minimum size which is defined by tmux.
         if [ $i -ge 2 ]; then
-            tmux select-layout -t ${_window_name} tiled
+            tmux select-layout -t "${_window_name}" tiled
         fi
     done
 }
@@ -293,15 +315,15 @@ __xpanes::enable_logging() {
     local _hosts_num=$(($# - 1))
     # Generate log files from host list.
     local _logfiles=($(
-    for i in $(seq 0 $_hosts_num)
+    for i in $(seq 0 "$_hosts_num")
     do
         echo "${_hosts[i]}"
     done | __xpanes::log_filenames "$_log_format"
     ))
-    for i in $(seq 0 $_hosts_num)
+    for i in $(seq 0 "$_hosts_num")
     do
         # Start logging
-        tmux pipe-pane -t ${_window_name}.$(($i + ${_index_offset})) "cat >> '${_log_dir}/${_logfiles[i]}'"
+        tmux pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" "cat >> '${_log_dir}/${_logfiles[i]}'"
     done
 }
 
@@ -313,7 +335,7 @@ __xpanes::send_commands() {
     local _index=0
     for arg in "$@"
     do
-        tmux send-keys -t $_window_name.$(($_index + ${_index_offset})) "${_cmd//$_repstr/$arg}" C-m
+        tmux send-keys -t "$_window_name.$(($_index + ${_index_offset}))" "${_cmd//$_repstr/$arg}" C-m
         _index=$(($_index + 1))
     done
 }
@@ -327,14 +349,14 @@ __xpanes::arrange_pane_location() {
     # Default behavior
     # ----------------
     if [ $_hosts_num -eq 1 ]; then
-        tmux select-layout -t ${_window_name} even-horizontal
+        tmux select-layout -t "${_window_name}" even-horizontal
     elif [ $_hosts_num -gt 1 ]; then
-        tmux select-layout -t ${_window_name} tiled
+        tmux select-layout -t "${_window_name}" tiled
     fi
     # ----------------
     # TODO: User behavior
     # ----------------
-    # tmux select-layout -t ${_window_name} even-vertical
+    # tmux select-layout -t "${_window_name}" even-vertical
 }
 
 #
@@ -358,7 +380,7 @@ __xpanes::prepare_window()
     fi
 
     # specify a pane which has the youngest number of index.
-    tmux select-pane -t ${_window_name}.${_pane_base_index}
+    tmux select-pane -t "${_window_name}.${_pane_base_index}"
 
     # split window into multiple panes
     __xpanes::split_window "$_window_name" "$_pane_num"
@@ -366,17 +388,17 @@ __xpanes::prepare_window()
     ### If the first pane is still remaining,
     ### panes cannot be organized well.
     # Delete the first pane
-    tmux kill-pane -t ${_window_name}.${_pane_base_index}
+    tmux kill-pane -t "${_window_name}.${_pane_base_index}"
 
     # Select second pane
-    tmux select-pane -t ${_window_name}.${_pane_base_index}
+    tmux select-pane -t "${_window_name}.${_pane_base_index}"
 }
 
 # Check whether given command is in the PATH or not.
 __xpanes::check_env() {
     local _cmds="$1"
     while read cmd ; do
-        type $cmd > /dev/null 2>&1
+        type "$cmd" > /dev/null 2>&1
         if [ $? -ne 0 ]; then
             echo "$cmd is required to work." >&2
             exit $_XP_ENOCMD
@@ -399,8 +421,10 @@ __xpanes::check_env() {
 }
 
 __xpanes::pre_execution() {
+    local _opts4args=""
+    local _args4args=""
     # Create new session.
-    tmux -S $_XP_SOCKET_PATH new-session -s $_XP_SESSION_NAME -n $_XP_TMP_WIN_NAME -d
+    tmux -S "$_XP_SOCKET_PATH" new-session -s "$_XP_SESSION_NAME" -n "$_XP_TMP_WIN_NAME" -d
 
     # Append -- flag.
     # Because any arugments may have `-`
@@ -408,17 +432,19 @@ __xpanes::pre_execution() {
         _XP_ARGS=("--" "${_XP_ARGS[@]}")
     fi
 
-    local _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
-    local _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
+    if [ ! -z "${_XP_OPTIONS[*]-}" ]; then
+        _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
+    fi
+    _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
 
-    tmux -S $_XP_SOCKET_PATH send-keys -t $_XP_SESSION_NAME:$_XP_TMP_WIN_NAME \
+    tmux -S "$_XP_SOCKET_PATH" send-keys -t "$_XP_SESSION_NAME:$_XP_TMP_WIN_NAME" \
         "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
 
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
         set +e
-        tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME
+        tmux -S "$_XP_SOCKET_PATH" attach-session -t "$_XP_SESSION_NAME"
         if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
             echo "Recovery: Execute below command line to re-attach the new session."
             echo ""
@@ -450,11 +476,11 @@ __xpanes::execution() {
 
     # Enable broadcasting
     if [ $_XP_OPT_IS_SYNC -eq 1 ]; then
-        tmux set-window-option -t ${_window_name} synchronize-panes on
+        tmux set-window-option -t "${_window_name}" synchronize-panes on
     fi
 
     # Remove original window.
-    if [ ! -z "$_XP_KILL_WINDOW_NAME" ]; then
+    if [ ! -z "${_XP_KILL_WINDOW_NAME-}" ]; then
         tmux kill-window -t "$_XP_KILL_WINDOW_NAME"
     fi
 }
@@ -466,26 +492,43 @@ __xpanes::execution() {
 # ----------------
 __xpanes::switch_xargs_mode() {
 
-    if ! [ -n "$TMUX" ]; then
+    if ! [ -n "${TMUX-}" ]; then
         echo "Warning: 'xargs mode' requires attached session." >&2
     fi
 
-    if [ ! -z "${_XP_ARGS[*]}" ] && [ ! -z "$_XP_CMD_UTILITY" ]; then
+    if [ ! -z "${_XP_ARGS[*]-}" ] && [ ! -z "${_XP_CMD_UTILITY-}" ]; then
         echo "Error: Both arguments and '-c' option are given." >&2
         exit $_XP_EINVAL
     fi
 
     while read line;
     do
-        _XP_STDIN=("${_XP_STDIN[@]}" "$line")
+        _XP_STDIN+=("$line")
     done < <(cat)
 
     # Merge them into utility.
-    _XP_CMD_UTILITY=("$_XP_CMD_UTILITY" "${_XP_ARGS[@]}")
-    _XP_CMD_UTILITY="${_XP_CMD_UTILITY[@]}"
+    if [ ! -z "${_XP_ARGS[*]-}" ]; then
+        _XP_CMD_UTILITY="${_XP_ARGS[@]}"
+    fi
+
+    # If there is empty -I option or user does not assign the <repstr>,
+    # Append the space and <repstr> at the end of the <utility>
+    # This is same as the unix xargs command.
+    # i.e,
+    #     $ echo 10 | xargs seq
+    #       => seq 10
+    # Whith is same as
+    #     $ echo 10 | xargs -I@ seq @
+    #       => seq 10
+    if [ -z "$_XP_REPSTR" ]; then
+        _XP_REPSTR="$_XP_DEFAULT_REPSTR"
+        if [ ! -z "${_XP_CMD_UTILITY-}" ]; then
+            _XP_CMD_UTILITY="$_XP_CMD_UTILITY $_XP_REPSTR"
+        fi
+    fi
 
     # Deal with stdin as arguments.
-    _XP_ARGS=("${_XP_STDIN[@]}")
+    _XP_ARGS=("${_XP_STDIN[@]-}")
 }
 
 __xpanes::load_flag_options() {
@@ -504,6 +547,10 @@ __xpanes::load_flag_options() {
     if [[ "$1" =~ d ]]; then
         _XP_OPT_IS_SYNC=0
     fi
+    if [[ "$1" =~ e ]]; then
+        _XP_REPSTR="{}"
+        _XP_CMD_UTILITY="{}"
+    fi
     return 1
 }
 
@@ -519,7 +566,7 @@ __xpanes::load_free_options() {
         # -I AAA BBB    -- _XP_REPSTR="AAA"
         # -I"AAA BBB"   -- _XP_REPSTR="AAA BBB"
         # -IAAA BBB     -- _XP_REPSTR="AAA", _XP_ARGS=("BBB")
-        # -I -d ...     -- _XP_REPSTR="{}"
+        # -I -d ...     -- _XP_REPSTR=""
         elif ! [[ "$2" =~ ^-.* ]]; then
             _XP_REPSTR="$2"
             return 2
@@ -527,9 +574,11 @@ __xpanes::load_free_options() {
     elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
         if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c.+ ]]; then
             _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?c//")"
+            _XP_OPT_CMD_UTILITY=1
             return 1
         elif ! [[ "$2" =~ ^-.* ]]; then
             _XP_CMD_UTILITY="$2"
+            _XP_OPT_CMD_UTILITY=1
             return 2
         fi
     elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S ]]; then
@@ -553,23 +602,23 @@ __xpanes::enable_long_options() {
         __xpanes::version
         exit 0
     elif [[ "$1" =~ ^--desync$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_IS_SYNC=0
         return 1
     elif [[ "$1" =~ ^--log-format=.*$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_LOG_STORE=1
         _XP_LOG_FORMAT="${1#--log-format=}"
         return 1
     elif [[ "$1" =~ ^--log ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_OPT_LOG_STORE=1
         if [[ "$1" =~ ^--log=.*$  ]]; then
             _XP_LOG_DIR="${1#--log=}"
         fi
         return 1
     elif [[ "$1" =~ ^--ssh$ ]]; then
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
         return 1
         # For unit testing
@@ -581,7 +630,7 @@ __xpanes::enable_long_options() {
         return 1
     elif [[ "$1" =~ ^--no-attach$ ]]; then
         _XP_OPT_ATTACH=0
-        _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1")
+        _XP_OPTIONS+=("$1")
         return 1
 
     # ----------------
@@ -602,7 +651,7 @@ __xpanes::parse_options() {
         case "$1" in
             --)
             if [ $_XP_NO_OPT -eq 1 ]; then
-                _XP_ARGS=("${_XP_ARGS[@]}" "$1")
+                _XP_ARGS+=("$1")
                 shift
             else
                 # Disable any more options
@@ -616,7 +665,7 @@ __xpanes::parse_options() {
             # ----------------
             --*)
             if [ $_XP_NO_OPT -eq 1 ]; then
-                _XP_ARGS=("${_XP_ARGS[@]}" "$1")
+                _XP_ARGS+=("$1")
                 shift
             else
                 local _shift_count="0"
@@ -624,7 +673,7 @@ __xpanes::parse_options() {
                 __xpanes::enable_long_options "$@"
                 _shift_count="$?"
                 set -e
-                [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
+                [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
             fi
             ;;
 
@@ -633,7 +682,7 @@ __xpanes::parse_options() {
             # ----------------
             -*)
             if [ $_XP_NO_OPT -eq 1 ]; then
-                _XP_ARGS=("${_XP_ARGS[@]}" "$1")
+                _XP_ARGS+=("$1")
                 shift
             else
 
@@ -643,14 +692,14 @@ __xpanes::parse_options() {
                     __xpanes::load_free_options "$@"
                     _shift_count="$?"
                     set -e
-                    [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
-                    [ "$_shift_count" = "2" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1" "$2") && shift && shift
+                    [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
+                    [ "$_shift_count" = "2" ] && _XP_OPTIONS+=("$1" "$2") && shift && shift
                 elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}+$  ]];then
                     set +e
                     __xpanes::load_flag_options "$1"
                     _shift_count="$?"
                     set -e
-                    [ "$_shift_count" = "1" ] && _XP_OPTIONS=("${_XP_OPTIONS[@]}" "$1") && shift
+                    [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
 
                 # ----------------
                 # Other options
@@ -668,7 +717,7 @@ __xpanes::parse_options() {
             # Other arguments
             # ----------------
             *)
-            _XP_ARGS=("${_XP_ARGS[@]}" "$1")
+            _XP_ARGS+=("$1")
             shift
             ;;
 
@@ -682,22 +731,30 @@ __xpanes::parse_options() {
         __xpanes::switch_xargs_mode
     fi
 
-    # Check the number of given arguments
-    if [ ${#_XP_ARGS[@]} -eq 0 ]; then
+    # When no argument arr given, exit.
+    if [ -z "${_XP_ARGS[*]-}" ]; then
         echo "No arguments are given." >&2
         __xpanes::usage
         echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
         exit $_XP_EINVAL
     fi
 
-    # Set default value
-    if [ -z "$_XP_CMD_UTILITY" ];then
+    # Set default value in case of empty.
+    if [ -z "${_XP_CMD_UTILITY-}" ];then
         _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
+    fi
+    if [ -z "$_XP_REPSTR" ];then
+        _XP_REPSTR="$_XP_DEFAULT_REPSTR"
+    fi
+
+    # To set utility on pre_execution, set -c option manually.
+    if [ $_XP_OPT_CMD_UTILITY -eq 0 ];then
+        _XP_OPTIONS+=("-c" "$_XP_CMD_UTILITY")
     fi
 }
 
 __xpanes::main() {
-    __xpanes::parse_options "$@"
+    __xpanes::parse_options ${1+"$@"}
     set +e
     __xpanes::check_env "$_XP_DEPENDENCIES"
     set -e
@@ -716,7 +773,7 @@ __xpanes::main() {
     #
     # If current shell is NOT in tmux session.
     #
-    if ! [ -n "$TMUX" ]; then
+    if ! [ -n "${TMUX-}" ]; then
         __xpanes::pre_execution
 
     #
@@ -729,5 +786,5 @@ __xpanes::main() {
 }
 
 : "Entry point" && {
-    __xpanes::main "$@"
+    __xpanes::main ${1+"$@"}
 }

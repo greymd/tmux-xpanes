@@ -355,17 +355,154 @@ devide_five_panes_impl() {
 
 setUp(){
     cd ${BIN_DIR}
-    mkdir -p $THIS_DIR/test_tmp
+    mkdir -p $TEST_TMP
     echo ">>>>>>>>>>" >&2
 }
 
 tearDown(){
-    rm -rf $THIS_DIR/test_tmp
+    rm -rf $TEST_TMP
     echo "<<<<<<<<<<" >&2
     echo >&2
 }
 
 ###################### START TESTING ######################
+
+test_append_arg_to_utility_xargs() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    rm -rf $TEST_TMP/tmp{1,2,3,4}
+    mkdir $TEST_TMP/tmp{1,2,3,4}
+
+    _cmd="printf '$TEST_TMP/tmp1 $TEST_TMP/tmp2\n$TEST_TMP/tmp3 $TEST_TMP/tmp4\n' | ${EXEC} -S $_socket_file mv"
+    echo
+    echo "$ $_cmd"
+    echo
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "$TEST_TMP" "2"
+    devide_two_panes_impl "$_socket_file"
+
+    find $TEST_TMP
+    [ -e $TEST_TMP/tmp2/tmp1 ]
+    assertEquals "0" "$?"
+
+    [ -e $TEST_TMP/tmp4/tmp3 ]
+    assertEquals "0" "$?"
+
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        rm -rf $TEST_TMP/tmp{1,2,3,4}
+        mkdir $TEST_TMP/tmp{1,2,3,4}
+        _cmd="printf '$TEST_TMP/tmp1 $TEST_TMP/tmp2\n$TEST_TMP/tmp3 $TEST_TMP/tmp4\n' | ${EXEC} mv"
+        echo
+        echo " $ TMUX($_cmd)"
+        echo
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "$TEST_TMP" "2"
+        devide_two_panes_impl "$_socket_file"
+
+        find $TEST_TMP
+        [ -e $TEST_TMP/tmp2/tmp1 ]
+        assertEquals "0" "$?"
+
+        [ -e $TEST_TMP/tmp4/tmp3 ]
+        assertEquals "0" "$?"
+
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_execute_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} --no-attach -e -S $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
+    echo
+    echo "$ $_cmd"
+    echo
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "seq" "2"
+    devide_two_panes_impl "$_socket_file"
+    assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/1)"
+    assertEquals "$(echo Testing)" "$(cat $TEST_TMP/2)"
+    close_tmux_session "$_socket_file"
+
+    rm $TEST_TMP/{1,2}
+    # Use continuous option -eS.
+    _cmd="${EXEC} --no-attach -eS $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
+    echo
+    echo "$ $_cmd"
+    echo
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "seq" "2"
+    devide_two_panes_impl "$_socket_file"
+    assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/1)"
+    assertEquals "$(echo Testing)" "$(cat $TEST_TMP/2)"
+    close_tmux_session "$_socket_file"
+
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -e 'seq 5 15 > $TEST_TMP/3' 'echo Testing > $TEST_TMP/4'"
+        echo
+        echo " $ TMUX($_cmd)"
+        echo
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "seq" "2"
+        devide_two_panes_impl "$_socket_file"
+        assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/3)"
+        assertEquals "$(echo Testing)" "$(cat $TEST_TMP/4)"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_execute_option_xargs() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="printf '%s\n%s\n%s\n' 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2' 'yes | head -n 3 > $TEST_TMP/3' | ${EXEC} -e -S $_socket_file"
+    echo
+    echo "$ $_cmd"
+    echo
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "seq" "3"
+    devide_three_panes_impl "$_socket_file"
+    assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/1)"
+    assertEquals "$(echo Testing)" "$(cat $TEST_TMP/2)"
+    assertEquals "$(yes | head -n 3)" "$(cat $TEST_TMP/3)"
+    close_tmux_session "$_socket_file"
+
+    rm $TEST_TMP/{1,2,3}
+    # Use continuous option -eS
+    _cmd="printf '%s\n%s\n%s\n' 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2' 'yes | head -n 3 > $TEST_TMP/3' | ${EXEC} -eS $_socket_file"
+    echo
+    echo "$ $_cmd"
+    echo
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "seq" "3"
+    devide_three_panes_impl "$_socket_file"
+    assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/1)"
+    assertEquals "$(echo Testing)" "$(cat $TEST_TMP/2)"
+    assertEquals "$(yes | head -n 3)" "$(cat $TEST_TMP/3)"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="printf '%s\n%s\n%s\n' 'seq 5 15 > $TEST_TMP/4' 'echo Testing > $TEST_TMP/5' 'yes | head -n 3 > $TEST_TMP/6' | ${EXEC} -e"
+        echo
+        echo " $ TMUX($_cmd)"
+        echo
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "seq" "3"
+        devide_three_panes_impl "$_socket_file"
+        assertEquals "$(seq 5 15)" "$(cat $TEST_TMP/4)"
+        assertEquals "$(echo Testing)" "$(cat $TEST_TMP/5)"
+        assertEquals "$(yes | head -n 3)" "$(cat $TEST_TMP/6)"
+        close_tmux_session "$_socket_file"
+    }
+}
 
 test_argument_and_utility_xargs() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
@@ -416,6 +553,25 @@ test_hyphen_only() {
     # execute
     $_cmd > /dev/null
     assertEquals "4" "$?"
+}
+
+test_xargs_without_repstr() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    : "In TMUX session" && {
+        _cmd="seq 5 10 | xargs -n 2 | ${EXEC} -S $_socket_file seq"
+        # this executes following commands on panes.
+        #   $ seq 5 6
+        #   $ seq 7 8
+        #   $ seq 9 10
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "5" "3"
+        # check number of devided panes
+        devide_three_panes_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
 }
 
 test_hyphen_and_option1() {
@@ -638,17 +794,6 @@ test_failed_creat_directory() {
     assertEquals "20" "$?"
 }
 
-test_directory_is_not_writable() {
-    local _log_dir="${SHUNIT_TMPDIR}/non_writable"
-    mkdir -p $_log_dir
-    chmod 666 $_log_dir
-    local _cmd="${EXEC} --log=$_log_dir 1 2 3"
-    printf "\n $ $_cmd\n"
-    # execute
-    $_cmd > /dev/null
-    assertEquals "21" "$?"
-}
-
 test_non_writable_directory() {
     local _user=${USER:-$(whoami)}
     echo "USER:$_user"
@@ -840,7 +985,7 @@ test_devide_four_panes_xargs() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="echo  AAAA BBBB CCCC DDDD | xargs -n 1 | ${EXEC} -S $_socket_file --no-attach"
+    _cmd="echo  AAAA BBBB CCCC DDDD | xargs -n 1 | ${EXEC} -S $_socket_file"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -848,6 +993,7 @@ test_devide_four_panes_xargs() {
     close_tmux_session "$_socket_file"
 
     : "In TMUX session" && {
+        _cmd="echo  AAAA BBBB CCCC DDDD | xargs -n 1 | ${EXEC}"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -882,7 +1028,7 @@ test_devide_five_panes_xargs() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="echo AAAA BBBB CCCC DDDD EEEE | xargs -n 1 | ${EXEC} -S $_socket_file --no-attach"
+    _cmd="echo AAAA BBBB CCCC DDDD EEEE | xargs -n 1 | ${EXEC} -S $_socket_file"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "5"
@@ -891,6 +1037,7 @@ test_devide_five_panes_xargs() {
 
     : "In TMUX session" && {
         printf "\n $ TMUX($_cmd)\n"
+        _cmd="echo AAAA BBBB CCCC DDDD EEEE | xargs -n 1 | ${EXEC}"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AAAA" "5"

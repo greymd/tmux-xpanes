@@ -6,6 +6,7 @@ _xpanes () {
     _arguments "(: -)"{-h,--help}"[Show detailed usage.]" \
                "(: -)"{-V,--version}"[Show version.]" \
         "($opts_omit -c --ssh)-c[Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.]" \
+        "($opts_omit -e)-e[Execute given arguments as is.]" \
         "($opts_omit -I --ssh)-I[Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.]:repstr:(@ % _REPLACE_ @@@)" \
         "($opts_omit -I -c --ssh)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]" \
         "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
