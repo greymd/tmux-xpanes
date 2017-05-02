@@ -73,10 +73,10 @@ OPTIONS:
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
-  -S,socket-path               Specify a full alternative path to the server socket.
-  -l                           Enable logging and store log files to ~/.cache/xpanes/logs.
-     --log[=<directory>]       Enable logging and store log files to given <directory>.
-     --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
+  -S <socket-path>             Specify a full alternative path to the server socket.
+  -l                           Enable logging and store log files to .
+  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
+  --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   -d,--desync                  Make synchronize-panes option off on new window.
   --kill                       Close a pane itself after new window is created.
   --no-attach                  Do not switch to new window.
