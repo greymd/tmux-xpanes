@@ -213,6 +213,37 @@ get_window_having_panes() {
             done | awk '$2=='$_pane_num'{print $1}' | head -n 1
 }
 
+divide_two_panes_ev_impl() {
+    local _socket_file="$1"
+    local _window_name=""
+    _window_name=$(get_window_having_panes "$_socket_file" "2")
+
+    # Window should be devided like this.
+    # +-------+
+    # |   A   |
+    # +-------+
+    # |   B   |
+    # +-------+
+
+    echo "Check number of panes"
+    assertEquals 2 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+
+    echo "Check width"
+    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    echo "A:$a_width B:$b_width"
+    # true:1, false:0
+    # In this case, height must be same.
+    assertEquals 1 "$(( $a_width == $b_width ))"
+
+    echo "Check height"
+    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    echo "A:$a_height B:$b_height"
+    # a_height +- 1 is b_height
+    assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
+}
+
 devide_two_panes_impl() {
     local _socket_file="$1"
     local _window_name=""
@@ -385,6 +416,29 @@ test_invalid_layout_pipe() {
     # Option and arguments are separated.
     echo 1 2 3 | ${EXEC} -lmem
     assertEquals "6" "$?"
+}
+
+# divide window into two panes even-vertically
+test_divide_two_panes_ev() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -l ev -S $_socket_file --no-attach AAAA BBBB"
+    printf "\n $ $_cmd\n"
+    $_cmd
+    wait_panes_separation "$_socket_file" "AAAA" "2"
+    divide_two_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file -lev --no-attach AAAA BBBB"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        divide_two_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
 }
 
 test_append_arg_to_utility_xargs() {
