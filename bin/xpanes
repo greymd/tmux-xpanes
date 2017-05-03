@@ -372,8 +372,7 @@ xpns_arrange_pane_location() {
 # Usage:
 #    xpns_prepare_window <window name> <offset of index> <number of pane>
 #
-xpns_prepare_window()
-{
+xpns_prepare_window() {
   local _window_name="$1" ; shift
   local _pane_base_index="$1"; shift
   local _pane_num="$1"; shift
@@ -440,6 +439,7 @@ xpns_pre_execution() {
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
+  # Is there is any options, escape them.
   if [ ! -z "${XP_OPTIONS[*]-}" ]; then
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
@@ -450,7 +450,6 @@ xpns_pre_execution() {
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
-    # Go to another condition of this if statement.
     tmux -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME"
     if [ $? -ne 0 ] && [ $XP_IS_XARGS_MODE -eq 1 ]; then
       echo "Recovery: Execute below command line to re-attach the new session."
@@ -460,7 +459,6 @@ xpns_pre_execution() {
       exit $XP_ETTY
     fi
   fi
-
 }
 
 xpns_execution() {
@@ -498,7 +496,7 @@ xpns_execution() {
 ## ----------------
 xpns_switch_pipe_mode() {
 
-  if ! [ -n "${TMUX-}" ]; then
+  if [ -z "${TMUX-}" ]; then
     echo "Warning: 'pipe mode' requires attached session." >&2
   fi
 
@@ -799,7 +797,7 @@ xpns_main() {
   #
   # If current shell is NOT in tmux session.
   #
-  if ! [ -n "${TMUX-}" ]; then
+  if [ -z "${TMUX-}" ]; then
     xpns_pre_execution
 
   #
