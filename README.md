@@ -24,15 +24,22 @@ Ultimate terminal divider powered by tmux.
 
 # Installation
 
+
+## With `apt-get` (For Ubuntu users)
+
+```sh
+$ sudo add-apt-repository ppa:greymd/tmux-xpanes
+
+$ sudo apt-get update
+$ sudo apt-get install tmux-xpanes
+```
+
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
 
 ```sh
 # Install
 $ brew tap greymd/tools
 $ brew install tmux-xpanes
-
-# Uninstall
-$ brew uninstall tmux-xpanes
 ```
 
 ## With [zplug](https://zplug.sh) (for zsh users)
