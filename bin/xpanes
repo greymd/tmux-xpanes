@@ -52,7 +52,7 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 # __xpanes::execution
 # __xpanes::pre_execution
 # __xpanes::parse_options
-# __xpanes::switch_xargs_mode
+# __xpanes::switch_pipe_mode
 # __xpanes::main
 : "Initialize options" && {
     _XP_OPTIONS=()
@@ -496,14 +496,14 @@ __xpanes::execution() {
 }
 
 # ----------------
-# Arrange options for xargs mode
+# Arrange options for pipe mode
 #  * argument -> command utility
 #  * stdin -> argument
 # ----------------
-__xpanes::switch_xargs_mode() {
+__xpanes::switch_pipe_mode() {
 
     if ! [ -n "${TMUX-}" ]; then
-        echo "Warning: 'xargs mode' requires attached session." >&2
+        echo "Warning: 'pipe mode' requires attached session." >&2
     fi
 
     if [ ! -z "${_XP_ARGS[*]-}" ] && [ ! -z "${_XP_CMD_UTILITY-}" ]; then
@@ -758,7 +758,7 @@ __xpanes::parse_options() {
     # 1 line handled as 1 argument.
     if [ ! -t 0 ]; then
         _XP_IS_XARGS_MODE=1
-        __xpanes::switch_xargs_mode
+        __xpanes::switch_pipe_mode
     fi
 
     # When no argument arr given, exit.

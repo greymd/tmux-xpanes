@@ -639,7 +639,7 @@ test_divide_three_panes_eh() {
     }
 }
 
-test_append_arg_to_utility_xargs() {
+test_append_arg_to_utility_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -730,7 +730,7 @@ test_execute_option() {
     }
 }
 
-test_execute_option_xargs() {
+test_execute_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -776,7 +776,7 @@ test_execute_option_xargs() {
     }
 }
 
-test_argument_and_utility_xargs() {
+test_argument_and_utility_pipe() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
     assertEquals "4" "$?"
 }
@@ -827,7 +827,7 @@ test_hyphen_only() {
     assertEquals "4" "$?"
 }
 
-test_xargs_without_repstr() {
+test_pipe_without_repstr() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     : "In TMUX session" && {
@@ -1275,7 +1275,7 @@ test_divide_four_panes() {
     }
 }
 
-test_divide_four_panes_xargs() {
+test_divide_four_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1318,7 +1318,7 @@ test_divide_five_panes() {
     }
 }
 
-test_divide_five_panes_xargs() {
+test_divide_five_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1841,7 +1841,7 @@ test_log_format_and_desync_option() {
     }
 }
 
-test_log_format_and_desync_option_xargs() {
+test_log_format_and_desync_option_pipe() {
     if (is_less_than "1.9");then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
@@ -1868,7 +1868,7 @@ test_log_format_and_desync_option_xargs() {
     _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
     echo $'\n'" $ $_cmd"$'\n'
 
-    # xargs mod only works in the tmux session
+    # pipe mode only works in the tmux session
     : "In TMUX session" && {
         echo $'\n'" $ TMUX($_cmd)"$'\n'
         mkdir -p "${_tmpdir}/fin"
