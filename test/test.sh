@@ -206,37 +206,6 @@ get_window_having_panes() {
             done | awk '$2=='$_pane_num'{print $1}' | head -n 1
 }
 
-divide_two_panes_ev_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "$_socket_file" "2")
-
-    # Window should be divided like this.
-    # +-------+
-    # |   A   |
-    # +-------+
-    # |   B   |
-    # +-------+
-
-    echo "Check number of panes"
-    assertEquals 2 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
-
-    echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    echo "A:$a_width B:$b_width"
-    # true:1, false:0
-    # In this case, height must be same.
-    assertEquals 1 "$(( $a_width == $b_width ))"
-
-    echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    echo "A:$a_height B:$b_height"
-    # a_height +- 1 is b_height
-    assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
-}
-
 divide_two_panes_impl() {
     local _socket_file="$1"
     local _window_name=""
@@ -377,6 +346,111 @@ divide_five_panes_impl() {
     assertEquals 1 "$(between_plus_minus 2 $c_height $e_height)"
 }
 
+divide_two_panes_ev_impl() {
+    local _socket_file="$1"
+    local _window_name=""
+    _window_name=$(get_window_having_panes "$_socket_file" "2")
+
+    # Window should be divided like this.
+    # +-------+
+    # |   A   |
+    # +-------+
+    # |   B   |
+    # +-------+
+
+    echo "Check number of panes"
+    assertEquals 2 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+
+    echo "Check width"
+    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    echo "A:$a_width B:$b_width"
+    # true:1, false:0
+    # In this case, height must be same.
+    assertEquals 1 "$(( $a_width == $b_width ))"
+
+    echo "Check height"
+    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    echo "A:$a_height B:$b_height"
+    # a_height +- 1 is b_height
+    assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
+}
+
+divide_two_panes_eh_impl() {
+    divide_two_panes_impl "$1"
+}
+
+divide_three_panes_ev_impl() {
+    local _socket_file="$1"
+    local _window_name=""
+    _window_name=$(get_window_having_panes "$_socket_file" "3")
+
+    # Window should be divided like this.
+    # +-------+
+    # |   A   |
+    # +-------+
+    # |   B   |
+    # +-------+
+    # |   C   |
+    # +-------+
+
+    echo "Check number of panes"
+    assertEquals 3 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+
+    echo "Check width"
+    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    echo "A:$a_width B:$b_width C:$c_width"
+    # true:1, false:0
+    # In this case, height must be same.
+    assertEquals 1 "$(( $a_width == $b_width ))"
+    assertEquals 1 "$(( $b_width == $c_width ))"
+
+    echo "Check height"
+    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    echo "A:$a_height B:$b_height C:$c_height"
+
+    assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
+    assertEquals 1 "$(between_plus_minus 2 $b_height $c_height)"
+}
+
+divide_three_panes_eh_impl() {
+    local _socket_file="$1"
+    local _window_name=""
+    _window_name=$(get_window_having_panes "$_socket_file" "3")
+
+    # Window should be divided like this.
+    # +---+---+---+
+    # | A | B | C |
+    # +---+---+---+
+
+    echo "Check number of panes"
+    assertEquals 3 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+
+    echo "Check width"
+    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    echo "A:$a_width B:$b_width C:$c_width"
+    # true:1, false:0
+    # In this case, height must be same.
+    assertEquals 1 "$(between_plus_minus 1 $a_width $b_width)"
+    assertEquals 1 "$(between_plus_minus 2 $b_width $c_width)"
+
+    echo "Check height"
+    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    echo "A:$a_height B:$b_height C:$c_height"
+
+    assertEquals 1 "$(( $a_height == $b_height ))"
+    assertEquals 1 "$(( $b_height == $c_height ))"
+}
+
 setUp(){
     cd ${BIN_DIR}
     mkdir -p $TEST_TMP
@@ -424,12 +498,78 @@ test_divide_two_panes_ev() {
     close_tmux_session "$_socket_file"
 
     : "In TMUX session" && {
-        _cmd="${EXEC} -S $_socket_file -lev --no-attach AAAA BBBB"
+        _cmd="${EXEC} -S $_socket_file -lev AAAA BBBB"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AAAA" "2"
         divide_two_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_divide_two_panes_eh() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -l eh -S $_socket_file --no-attach AAAA BBBB"
+    printf "\n $ $_cmd\n"
+    $_cmd
+    wait_panes_separation "$_socket_file" "AAAA" "2"
+    divide_two_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file -leh AAAA BBBB"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        divide_two_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_divide_three_panes_ev() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -l ev -S $_socket_file --no-attach AAAA BBBB CCCC"
+    printf "\n $ $_cmd\n"
+    $_cmd
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    divide_three_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file -lev AAAA BBBB CCCC"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        divide_three_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_divide_three_panes_eh() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -l eh -S $_socket_file --no-attach AAAA BBBB CCCC"
+    printf "\n $ $_cmd\n"
+    $_cmd
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    divide_three_panes_eh_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file -leh AAAA BBBB CCCC"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        divide_three_panes_eh_impl "$_socket_file"
         close_tmux_session "$_socket_file"
     }
 }
