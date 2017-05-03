@@ -17,7 +17,7 @@ Ultimate terminal divider powered by tmux.
   + Normal terminal (out of tmux session).
   + In tmux session.
 
-# Dependencies
+# Requirements
 
 * `bash` (version 3.2 and more)
 * `tmux` (version 1.6 and more)
@@ -73,13 +73,18 @@ OPTIONS:
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
-  -S,socket-path               Specify a full alternative path to the server socket.
-  -l                           Enable logging and store log files to ~/.cache/xpanes/logs.
-     --log[=<directory>]       Enable logging and store log files to given <directory>.
-     --log-format=<FORMAT>     File name of log files follows given <FORMAT>.
+  -S <socket-path>             Specify a full alternative path to the server socket.
+  -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
+                               t    tiled (default)
+                               eh   even-horizontal
+                               ev   even-vertical
+                               mh   main-horizontal
+                               mv   main-vertical
+  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
+  --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   -d,--desync                  Make synchronize-panes option off on new window.
   --kill                       Close a pane itself after new window is created.
-  --no-attach                  Do not switch to new window.
+  --stay                       Do not switch to new window.
 ```
 
 # Simple example
@@ -101,8 +106,8 @@ $ echo 1                       │$ echo 2
                                │
                                │
                                │
-───────────────────────────────┼───────────────────────────────
-$ echo 3                       │$ echo 4 
+-------------------------------+-------------------------------
+$ echo 3                       │$ echo 4
                                │
                                │
                                │
@@ -131,7 +136,7 @@ $ ping 192.168.1.5             │$ ping 192.168.1.6
                                │
                                │
                                │
-───────────────────────────────┼───────────────────────────────
+-------------------------------+-------------------------------
 $ ping 192.168.1.7             │$ ping 192.168.1.8
                                │
                                │
@@ -161,7 +166,7 @@ $ tail -f /var/log/apache/error.log       │$ tail -f /var/log/apache/access.lo
                                           │
                                           │
                                           │
-──────────────────────────────────────────┼──────────────────────────────────────────
+------------------------------------------+------------------------------------------
 $ tail -f /var/log/application/error.log  │$ tail -f /var/log/application/access.log
                                           │
                                           │
@@ -214,7 +219,7 @@ $ top                          │$ vmstat 1
                                │
                                │
                                │
-───────────────────────────────┴──────────────────────────────
+-------------------------------┴------------------------------
 $ watch -n 1 free
 
 
