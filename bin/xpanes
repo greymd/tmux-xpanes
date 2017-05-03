@@ -18,6 +18,9 @@ readonly _XP_EINVAL=4
 # Could not open tty.
 readonly _XP_ETTY=5
 
+# Invalid layout.
+readonly _XP_ELAYOUT=6
+
 # Log related exit status is 2x.
 ## Could not create a directory.
 readonly _XP_ELOGDIR=20
@@ -54,9 +57,9 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 : "Initialize options" && {
     _XP_OPTIONS=()
     # options which work indivisually.
-    _XP_FLAG_OPTIONS="[hVlde]"
+    _XP_FLAG_OPTIONS="[hVde]"
     # options which requre arguments.
-    _XP_FREE_OPTIONS="[ISc]"
+    _XP_FREE_OPTIONS="[IScl]"
     _XP_ARGS=()
     _XP_STDIN=()
     _XP_IS_XARGS_MODE=0
@@ -73,6 +76,8 @@ readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
     _XP_NO_OPT=0
     _XP_OPT_CMD_UTILITY=0
     _XP_CMD_UTILITY=""
+    readonly _XP_DEFAULT_LAYOUT="tiled"
+    _XP_LAYOUT="$_XP_DEFAULT_LAYOUT"
     readonly _XP_DEFAULT_REPSTR="{}"
     readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
     readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
@@ -99,7 +104,12 @@ __xpanes::usage() {
     echo "  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}."
     echo "  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'."
     echo "  -S <socket-path>             Specify a full alternative path to the server socket."
-    echo "  -l                           Enable logging and store log files to $_XP_LOG_DIR."
+    echo "  -l <layout>                  Specify a layout for a window. Recognized layout arguments are:"
+    echo "                               t    tiled (default)"
+    echo "                               eh   even-horizontal"
+    echo "                               ev   even-vertical"
+    echo "                               mh   main-horizontal"
+    echo "                               mv   main-vertical"
     echo "  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>."
     echo "  --log-format=<FORMAT>        File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
@@ -354,9 +364,11 @@ __xpanes::arrange_pane_location() {
         tmux select-layout -t "${_window_name}" tiled
     fi
     # ----------------
-    # TODO: User behavior
+    # Update layout
     # ----------------
-    # tmux select-layout -t "${_window_name}" even-vertical
+    if [[ "$_XP_LAYOUT" != "$_XP_DEFAULT_LAYOUT" ]]; then
+        tmux select-layout -t "${_window_name}" "$_XP_LAYOUT"
+    fi
 }
 
 #
@@ -531,6 +543,25 @@ __xpanes::switch_xargs_mode() {
     _XP_ARGS=("${_XP_STDIN[@]-}")
 }
 
+__xpanes::layout_short2long() {
+    sed \
+        -e 's/^t$/tiled/' \
+        -e 's/^eh$/even-horizontal/' \
+        -e 's/^ev$/even-vertical/' \
+        -e 's/^mh$/main-horizontal/' \
+        -e 's/^mv$/main-vertical/' \
+        -e ';'
+}
+
+__xpanes::is_valid_layout() {
+    local _layout="$1"
+    echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
+    if [ $? -ne 0 ]; then
+        echo "Error: Invalid layout '$_layout'." >&2
+        exit $_XP_ELAYOUT
+    fi
+}
+
 __xpanes::load_flag_options() {
     if   [[ "$1" =~ h ]]; then
         __xpanes::usage
@@ -540,9 +571,6 @@ __xpanes::load_flag_options() {
     if [[ "$1" =~ V ]]; then
         __xpanes::version
         exit 0
-    fi
-    if [[ "$1" =~ l ]]; then
-        _XP_OPT_LOG_STORE=1
     fi
     if [[ "$1" =~ d ]]; then
         _XP_OPT_IS_SYNC=0
@@ -569,6 +597,16 @@ __xpanes::load_free_options() {
         # -I -d ...     -- _XP_REPSTR=""
         elif ! [[ "$2" =~ ^-.* ]]; then
             _XP_REPSTR="$2"
+            return 2
+        fi
+    elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l ]]; then
+        if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l.+ ]]; then
+            _XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?l//" | __xpanes::layout_short2long)"
+            __xpanes::is_valid_layout "$_XP_LAYOUT"
+            return 1
+        elif ! [[ "$2" =~ ^-.* ]]; then
+            _XP_LAYOUT="$(echo "$2" |  __xpanes::layout_short2long )"
+            __xpanes::is_valid_layout "$_XP_LAYOUT"
             return 2
         fi
     elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
