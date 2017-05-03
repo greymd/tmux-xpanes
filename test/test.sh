@@ -490,6 +490,7 @@ test_divide_two_panes_ev() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
+    # Run with normal mode
     _cmd="${EXEC} -l ev -S $_socket_file --no-attach AAAA BBBB"
     printf "\n $ $_cmd\n"
     $_cmd
@@ -497,8 +498,24 @@ test_divide_two_panes_ev() {
     divide_two_panes_ev_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
+    # Run with pipe mode
+    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --no-attach"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "2"
+    divide_two_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
     : "In TMUX session" && {
         _cmd="${EXEC} -S $_socket_file -lev AAAA BBBB"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        divide_two_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+
+        _cmd="echo  AAAA BBBB | xargs -n 1 | ${EXEC} -S $_socket_file -lev"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -512,11 +529,20 @@ test_divide_two_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
+    # Run with normal mode
     _cmd="${EXEC} -l eh -S $_socket_file --no-attach AAAA BBBB"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_ev_impl "$_socket_file"
+    divide_two_panes_eh_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    # Run with pipe mode
+    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --no-attach"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "2"
+    divide_two_panes_eh_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
     : "In TMUX session" && {
@@ -525,7 +551,15 @@ test_divide_two_panes_eh() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AAAA" "2"
-        divide_two_panes_ev_impl "$_socket_file"
+        divide_two_panes_eh_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+
+        _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -S $_socket_file -leh"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        divide_two_panes_eh_impl "$_socket_file"
         close_tmux_session "$_socket_file"
     }
 }
@@ -541,8 +575,23 @@ test_divide_three_panes_ev() {
     divide_three_panes_ev_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
+    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --no-attach"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    divide_three_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
     : "In TMUX session" && {
         _cmd="${EXEC} -S $_socket_file -lev AAAA BBBB CCCC"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        divide_three_panes_ev_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+
+        _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -S $_socket_file -lev"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -563,8 +612,24 @@ test_divide_three_panes_eh() {
     divide_three_panes_eh_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
+    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --no-attach"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    divide_three_panes_eh_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
     : "In TMUX session" && {
+
         _cmd="${EXEC} -S $_socket_file -leh AAAA BBBB CCCC"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        divide_three_panes_eh_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+
+        _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -S $_socket_file -leh"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
