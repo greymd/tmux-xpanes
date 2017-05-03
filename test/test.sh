@@ -367,6 +367,26 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_invalid_layout() {
+    # Option and arguments are continuous.
+    ${EXEC} -lmem 1 2 3
+    assertEquals "6" "$?"
+
+    # Option and arguments are separated.
+    ${EXEC} -l mem 1 2 3
+    assertEquals "6" "$?"
+}
+
+test_invalid_layout_pipe() {
+    # Option and arguments are continuous.
+    echo 1 2 3 | ${EXEC} -lmem
+    assertEquals "6" "$?"
+
+    # Option and arguments are separated.
+    echo 1 2 3 | ${EXEC} -lmem
+    assertEquals "6" "$?"
+}
+
 test_append_arg_to_utility_xargs() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
@@ -1179,10 +1199,10 @@ test_log_option() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="_XP_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    _cmd="_XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    _XP_LOG_DIR=${_tmpdir}/logs ${EXEC} -l -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    _XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
@@ -1364,12 +1384,11 @@ test_log_format_option2() {
     local _year="$(date +%Y)"
     mkdir -p "${_tmpdir}/fin"
 
-    # use -l option instead of --log option.
     # Remove single quotation for --log-format.
-    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} -l --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
+    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    _XP_LOG_DIR=${_logdir} ${EXEC} -l --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    _XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -1463,12 +1482,11 @@ test_log_format_and_desync_option() {
     local _year="$(date +%Y)"
     mkdir -p "${_tmpdir}/fin"
 
-    # use -l option instead of --log option.
     # Remove single quotation for --log-format.
-    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dlS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
+    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    _XP_LOG_DIR=${_logdir} ${EXEC} -dl --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -1572,9 +1590,8 @@ test_log_format_and_desync_option_xargs() {
     local _year="$(date +%Y)"
     mkdir -p "${_tmpdir}/fin"
 
-    # use -l option instead of --log option.
     # Remove single quotation for --log-format.
-    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dlS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
+    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
     echo $'\n'" $ $_cmd"$'\n'
 
     # xargs mod only works in the tmux session
