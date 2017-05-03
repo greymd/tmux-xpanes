@@ -3,95 +3,95 @@ set -u
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly _XP_VERSION="2.0.0-alpha.2"
+readonly XP_VERSION="2.0.0-alpha.2"
 
 # ===============
 # Error constants
 # ===============
 
 # Undefined or General errors
-readonly _XP_EUNDEF=1
+readonly XP_EUNDEF=1
 
 # Invalid option/argument
-readonly _XP_EINVAL=4
+readonly XP_EINVAL=4
 
 # Could not open tty.
-readonly _XP_ETTY=5
+readonly XP_ETTY=5
 
 # Invalid layout.
-readonly _XP_ELAYOUT=6
+readonly XP_ELAYOUT=6
 
 # Log related exit status is 2x.
 ## Could not create a directory.
-readonly _XP_ELOGDIR=20
+readonly XP_ELOGDIR=20
 
 ## Could not directory to store logs is not writable.
-readonly _XP_ELOGWRITE=21
+readonly XP_ELOGWRITE=21
 
 # Necessary commands are not found
-readonly _XP_ENOCMD=127
+readonly XP_ENOCMD=127
 
 # ===============
 
-# _XP_THIS_FILE_NAME is supposed to be "xpanes".
-readonly _XP_THIS_FILE_NAME="${0##*/}"
-readonly _XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-readonly _XP_ABS_THIS_FILE_NAME="$_XP_THIS_DIR/$_XP_THIS_FILE_NAME"
+# XP_THIS_FILE_NAME is supposed to be "xpanes".
+readonly XP_THIS_FILE_NAME="${0##*/}"
+readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
+readonly XP_ABS_THIS_FILE_NAME="$XP_THIS_DIR/$XP_THIS_FILE_NAME"
 
 # Prevent cache directory being created under root / dir in any case.
 # This is quite rare case (but it can be happened).
-readonly _XP_USER_HOME="${HOME:-/etc}"
+readonly XP_USER_HOME="${HOME:-/etc}"
 
 # Basically xpanes follows XDG Base Direcotry Specification.
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html
-XDG_CACHE_HOME="${XDG_CACHE_HOME:-$_XP_USER_HOME/.cache}"
-readonly _XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
+XDG_CACHE_HOME="${XDG_CACHE_HOME:-$XP_USER_HOME/.cache}"
+readonly XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 
 # This is supposed to be xpanes-12345(PID)
-readonly _XP_SESSION_NAME="$_XP_THIS_FILE_NAME-$$"
+readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
 # Temporary window name is tmp-12345(PID)
-readonly _XP_TMP_WIN_NAME="tmp-$$"
+readonly XP_TMP_WIN_NAME="tmp-$$"
 
-readonly _XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
-readonly _XP_SUPPORT_TMUX_VERSION_UPPER="2.3"
-readonly _XP_SUPPORT_TMUX_VERSIONS="${_XP_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
-readonly _XP_DEPENDENCIES="${_XP_DEPENDENCIES:-tmux perl}"
+readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
+readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.3"
+readonly XP_SUPPORT_TMUX_VERSIONS="${XP_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
 
 : "Initialize options" && {
   # options which work indivisually.
-  readonly _XP_FLAG_OPTIONS="[hVde]"
+  readonly XP_FLAG_OPTIONS="[hVde]"
   # options which requre arguments.
-  readonly _XP_FREE_OPTIONS="[IScl]"
-  readonly _XP_DEFAULT_LAYOUT="tiled"
-  readonly _XP_DEFAULT_REPSTR="{}"
-  readonly _XP_DEFAULT_CMD_UTILITY="echo {} "
-  readonly _XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
-  _XP_OPTIONS=()
-  _XP_ARGS=()
-  _XP_STDIN=()
-  _XP_IS_XARGS_MODE=0
-  _XP_OPT_IS_SYNC=1
-  _XP_KILL_WINDOW_NAME=""
-  _XP_KILL_SESSION_NAME=""
-  _XP_OPT_DRY_RUN=0
-  _XP_OPT_ATTACH=1
-  _XP_OPT_LOG_STORE=0
-  _XP_LOG_DIR="${_XP_LOG_DIR:-$_XP_CACHE_HOME/logs}"
-  _XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-  _XP_REPSTR=""
-  _XP_SOCKET_PATH="${_XP_SOCKET_PATH:-$_XP_CACHE_HOME/socket}"
-  _XP_NO_OPT=0
-  _XP_OPT_CMD_UTILITY=0
-  _XP_CMD_UTILITY=""
-  _XP_LAYOUT="$_XP_DEFAULT_LAYOUT"
+  readonly XP_FREE_OPTIONS="[IScl]"
+  readonly XP_DEFAULT_LAYOUT="tiled"
+  readonly XP_DEFAULT_REPSTR="{}"
+  readonly XP_DEFAULT_CMD_UTILITY="echo {} "
+  readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+  XP_OPTIONS=()
+  XP_ARGS=()
+  XP_STDIN=()
+  XP_IS_XARGS_MODE=0
+  XP_OPT_IS_SYNC=1
+  XP_KILL_WINDOW_NAME=""
+  XP_KILL_SESSION_NAME=""
+  XP_OPT_DRY_RUN=0
+  XP_OPT_ATTACH=1
+  XP_OPT_LOG_STORE=0
+  XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
+  XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+  XP_REPSTR=""
+  XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
+  XP_NO_OPT=0
+  XP_OPT_CMD_UTILITY=0
+  XP_CMD_UTILITY=""
+  XP_LAYOUT="$XP_DEFAULT_LAYOUT"
 }
 
 xpns_usage() {
   cat << _EOS_
 Usage:
-  $_XP_THIS_FILE_NAME [OPTIONS] [argument ...]
-  command ... | $_XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]
+  $XP_THIS_FILE_NAME [OPTIONS] [argument ...]
+  command ... | $XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
@@ -118,7 +118,7 @@ _EOS_
 xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
-    Default value is \"$_XP_LOG_FORMAT\"
+    Default value is \"$XP_LOG_FORMAT\"
     Interpreted sequences are:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
@@ -133,20 +133,20 @@ FORMAT:
     Other sequences are available. Please refer to date(1) manual.
 
 Examples:
-    $ $_XP_THIS_FILE_NAME arg1 arg2 arg3 arg4
+    $ $XP_THIS_FILE_NAME arg1 arg2 arg3 arg4
     New window is created and then, it will be separated into four panes.
 
-    $ $_XP_THIS_FILE_NAME arg{1..4}
+    $ $XP_THIS_FILE_NAME arg{1..4}
     Brace expansion is useful.
     Four panes will be created.
 
-    $ $_XP_THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1
+    $ $XP_THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1
     New window is created and it will be separated into two panes.
-    And also $_XP_LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log
-    and      $_XP_LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log
+    And also $XP_LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log
+    and      $XP_LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log
     will be created as their log files.
 
-    $ $_XP_THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2
+    $ $XP_THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2
     Following files will be created.
     /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log
     /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log
@@ -157,7 +157,7 @@ _EOS_
 
 # Show version number
 xpns_version() {
-  echo "$_XP_THIS_FILE_NAME $_XP_VERSION"
+  echo "$XP_THIS_FILE_NAME $XP_VERSION"
 }
 
 # Get version number for tmux
@@ -216,7 +216,7 @@ xpns_log_filenames () {
 #
 xpns_ensure_directory() {
   local _dir="$1"
-  local _checkfile="${_XP_THIS_FILE_NAME}.$$"
+  local _checkfile="${XP_THIS_FILE_NAME}.$$"
 
   # Remove end of slash '/'
   _dir="${_dir%/}"
@@ -231,7 +231,7 @@ xpns_ensure_directory() {
       echo "${_dir} is created." >&2
     else
       echo "Failed to create ${_dir}" >&2
-      exit $_XP_ELOGDIR
+      exit $XP_ELOGDIR
     fi
   fi
   # Try to create file.
@@ -241,7 +241,7 @@ xpns_ensure_directory() {
   if [ $? -ne 0 ]; then
     echo "${_dir} is not writable." >&2
     rm -f "${_dir}/$_checkfile"
-    exit $_XP_ELOGWRITE
+    exit $XP_ELOGWRITE
   fi
   rm -f "${_dir}/$_checkfile"
 }
@@ -362,8 +362,8 @@ xpns_arrange_pane_location() {
   ## ----------------
   # Update layout
   ## ----------------
-  if [[ "$_XP_LAYOUT" != "$_XP_DEFAULT_LAYOUT" ]]; then
-    tmux select-layout -t "${_window_name}" "$_XP_LAYOUT"
+  if [[ "$XP_LAYOUT" != "$XP_DEFAULT_LAYOUT" ]]; then
+    tmux select-layout -t "${_window_name}" "$XP_LAYOUT"
   fi
 }
 
@@ -409,21 +409,21 @@ xpns_check_env() {
     type "$cmd" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
       echo "$cmd is required to work." >&2
-      exit $_XP_ENOCMD
+      exit $XP_ENOCMD
     fi
   done < <(echo "$_cmds" | tr ' ' '\n')
 
-  mkdir -p "$_XP_CACHE_HOME"
+  mkdir -p "$XP_CACHE_HOME"
   if [ $? -eq 1 ];then
-    echo "Warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
+    echo "Warning: failed to create cache directory '${XP_CACHE_HOME}'." >&2
   fi
 
-  _XP_CURRENT_TMUX_VERSION="${_XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
-  echo "$_XP_CURRENT_TMUX_VERSION" | grep -qE "$_XP_SUPPORT_TMUX_VERSIONS"
+  XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
+  echo "$XP_CURRENT_TMUX_VERSION" | grep -qE "$XP_SUPPORT_TMUX_VERSIONS"
   if [ $? -eq 1 ];then
-    echo "Warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
-    echo "         Current tmux version $_XP_CURRENT_TMUX_VERSION is out of support." >&2
-    echo "         From version $_XP_SUPPORT_TMUX_VERSION_LOWER to $_XP_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
+    echo "Warning: '$XP_THIS_FILE_NAME' may not work properly!" >&2
+    echo "         Current tmux version $XP_CURRENT_TMUX_VERSION is out of support." >&2
+    echo "         From version $XP_SUPPORT_TMUX_VERSION_LOWER to $XP_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
   fi
   return 0
 }
@@ -432,32 +432,32 @@ xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
   # Create new session.
-  tmux -S "$_XP_SOCKET_PATH" new-session -s "$_XP_SESSION_NAME" -n "$_XP_TMP_WIN_NAME" -d
+  tmux -S "$XP_SOCKET_PATH" new-session -s "$XP_SESSION_NAME" -n "$XP_TMP_WIN_NAME" -d
 
   # Append -- flag.
   # Because any arugments may have `-`
-  if [ $_XP_NO_OPT -eq 1 ]; then
-    _XP_ARGS=("--" "${_XP_ARGS[@]}")
+  if [ $XP_NO_OPT -eq 1 ]; then
+    XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
-  if [ ! -z "${_XP_OPTIONS[*]-}" ]; then
-    _opts4args=$(xpns_arr2args "${_XP_OPTIONS[@]}")
+  if [ ! -z "${XP_OPTIONS[*]-}" ]; then
+    _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
-  _args4args=$(xpns_arr2args "${_XP_ARGS[@]}")
+  _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  tmux -S "$_XP_SOCKET_PATH" send-keys -t "$_XP_SESSION_NAME:$_XP_TMP_WIN_NAME" \
-    "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
+  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
+    "$XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
 
   # Avoid attaching (for unit testing).
-  if [ $_XP_OPT_ATTACH -eq 1 ]; then
+  if [ $XP_OPT_ATTACH -eq 1 ]; then
     # Go to another condition of this if statement.
-    tmux -S "$_XP_SOCKET_PATH" attach-session -t "$_XP_SESSION_NAME"
-    if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
+    tmux -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME"
+    if [ $? -ne 0 ] && [ $XP_IS_XARGS_MODE -eq 1 ]; then
       echo "Recovery: Execute below command line to re-attach the new session."
       echo ""
-      echo "    tmux -S $_XP_SOCKET_PATH attach-session -t $_XP_SESSION_NAME"
+      echo "    tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME"
       echo ""
-      exit $_XP_ETTY
+      exit $XP_ETTY
     fi
   fi
 
@@ -465,29 +465,29 @@ xpns_pre_execution() {
 
 xpns_execution() {
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(xpns_generate_window_name "${_XP_ARGS[0]}")
-  local _last_host_idx=$((${#_XP_ARGS[@]} - 1))
+  local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
+  local _last_host_idx=$((${#XP_ARGS[@]} - 1))
 
-  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
+  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$XP_OPT_ATTACH"
 
-  if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-    xpns_enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]}"
+  if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+    xpns_enable_logging  "$_window_name" "$_pane_base_index" "$XP_LOG_DIR" "$XP_LOG_FORMAT" "${XP_ARGS[@]}"
   fi
 
   # Sending ssh opearations for each pane.
-  xpns_send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]}"
+  xpns_send_commands "$_window_name" "$_pane_base_index" "$XP_REPSTR" "$XP_CMD_UTILITY" "${XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
   xpns_arrange_pane_location "$_window_name" $_last_host_idx
 
   # Enable broadcasting
-  if [ $_XP_OPT_IS_SYNC -eq 1 ]; then
+  if [ $XP_OPT_IS_SYNC -eq 1 ]; then
     tmux set-window-option -t "${_window_name}" synchronize-panes on
   fi
 
   # Remove original window.
-  if [ ! -z "${_XP_KILL_WINDOW_NAME-}" ]; then
-    tmux kill-window -t "$_XP_KILL_WINDOW_NAME"
+  if [ ! -z "${XP_KILL_WINDOW_NAME-}" ]; then
+    tmux kill-window -t "$XP_KILL_WINDOW_NAME"
   fi
 }
 
@@ -502,19 +502,19 @@ xpns_switch_pipe_mode() {
     echo "Warning: 'pipe mode' requires attached session." >&2
   fi
 
-  if [ ! -z "${_XP_ARGS[*]-}" ] && [ ! -z "${_XP_CMD_UTILITY-}" ]; then
+  if [ ! -z "${XP_ARGS[*]-}" ] && [ ! -z "${XP_CMD_UTILITY-}" ]; then
     echo "Error: Both arguments and '-c' option are given." >&2
-    exit $_XP_EINVAL
+    exit $XP_EINVAL
   fi
 
   while read line;
   do
-    _XP_STDIN+=("$line")
+    XP_STDIN+=("$line")
   done < <(cat)
 
   # Merge them into utility.
-  if [ ! -z "${_XP_ARGS[*]-}" ]; then
-    _XP_CMD_UTILITY="${_XP_ARGS[@]}"
+  if [ ! -z "${XP_ARGS[*]-}" ]; then
+    XP_CMD_UTILITY="${XP_ARGS[@]}"
   fi
 
   # If there is empty -I option or user does not assign the <repstr>,
@@ -526,15 +526,15 @@ xpns_switch_pipe_mode() {
   # Whith is same as
   #   $ echo 10 | xargs -I@ seq @
   #     => seq 10
-  if [ -z "$_XP_REPSTR" ]; then
-    _XP_REPSTR="$_XP_DEFAULT_REPSTR"
-    if [ ! -z "${_XP_CMD_UTILITY-}" ]; then
-      _XP_CMD_UTILITY="$_XP_CMD_UTILITY $_XP_REPSTR"
+  if [ -z "$XP_REPSTR" ]; then
+    XP_REPSTR="$XP_DEFAULT_REPSTR"
+    if [ ! -z "${XP_CMD_UTILITY-}" ]; then
+      XP_CMD_UTILITY="$XP_CMD_UTILITY $XP_REPSTR"
     fi
   fi
 
   # Deal with stdin as arguments.
-  _XP_ARGS=("${_XP_STDIN[@]-}")
+  XP_ARGS=("${XP_STDIN[@]-}")
 }
 
 xpns_layout_short2long() {
@@ -552,7 +552,7 @@ xpns_is_valid_layout() {
   echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
   if [ $? -ne 0 ]; then
     echo "Error: Invalid layout '$_layout'." >&2
-    exit $_XP_ELAYOUT
+    exit $XP_ELAYOUT
   fi
 }
 
@@ -567,58 +567,58 @@ xpns_load_flag_options() {
     exit 0
   fi
   if [[ "$1" =~ d ]]; then
-    _XP_OPT_IS_SYNC=0
+    XP_OPT_IS_SYNC=0
   fi
   if [[ "$1" =~ e ]]; then
-    _XP_REPSTR="{}"
-    _XP_CMD_UTILITY="{}"
+    XP_REPSTR="{}"
+    XP_CMD_UTILITY="{}"
   fi
   return 1
 }
 
 xpns_load_free_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
-  if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I ]]; then
-    if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I.+ ]]; then
-      _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?I//")"
+  xpns_load_flag_options "$(echo "$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+  if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
+      XP_REPSTR="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
       return 1
     # Behavior like this.
-    # -IAAA       -- _XP_REPSTR="AAA"
-    # -I AAA BBB  -- _XP_REPSTR="AAA"
-    # -I"AAA BBB" -- _XP_REPSTR="AAA BBB"
-    # -IAAA BBB   -- _XP_REPSTR="AAA", _XP_ARGS=("BBB")
-    # -I -d ...   -- _XP_REPSTR=""
+    # -IAAA       -- XP_REPSTR="AAA"
+    # -I AAA BBB  -- XP_REPSTR="AAA"
+    # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
+    # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
+    # -I -d ...   -- XP_REPSTR=""
     elif ! [[ "$2" =~ ^-.* ]]; then
-      _XP_REPSTR="$2"
+      XP_REPSTR="$2"
       return 2
     fi
-  elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l ]]; then
-    if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l.+ ]]; then
-      _XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
-      xpns_is_valid_layout "$_XP_LAYOUT"
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
+      XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+      xpns_is_valid_layout "$XP_LAYOUT"
       return 1
     elif ! [[ "$2" =~ ^-.* ]]; then
-      _XP_LAYOUT="$(echo "$2" |  xpns_layout_short2long )"
-      xpns_is_valid_layout "$_XP_LAYOUT"
+      XP_LAYOUT="$(echo "$2" |  xpns_layout_short2long )"
+      xpns_is_valid_layout "$XP_LAYOUT"
       return 2
     fi
-  elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
-    if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c.+ ]]; then
-      _XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?c//")"
-      _XP_OPT_CMD_UTILITY=1
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
+      XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+      XP_OPT_CMD_UTILITY=1
       return 1
     elif ! [[ "$2" =~ ^-.* ]]; then
-      _XP_CMD_UTILITY="$2"
-      _XP_OPT_CMD_UTILITY=1
+      XP_CMD_UTILITY="$2"
+      XP_OPT_CMD_UTILITY=1
       return 2
     fi
-  elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S ]]; then
-    if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*S.+ ]]; then
-      _XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?S//")"
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
+      XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
       return 1
     elif ! [[ "$2" =~ ^-.* ]]; then
-      _XP_SOCKET_PATH="$2"
+      XP_SOCKET_PATH="$2"
       return 2
     fi
   fi
@@ -634,35 +634,35 @@ xpns_enable_long_options() {
     xpns_version
     exit 0
   elif [[ "$1" =~ ^--desync$ ]]; then
-    _XP_OPTIONS+=("$1")
-    _XP_OPT_IS_SYNC=0
+    XP_OPTIONS+=("$1")
+    XP_OPT_IS_SYNC=0
     return 1
   elif [[ "$1" =~ ^--log-format=.*$ ]]; then
-    _XP_OPTIONS+=("$1")
-    _XP_OPT_LOG_STORE=1
-    _XP_LOG_FORMAT="${1#--log-format=}"
+    XP_OPTIONS+=("$1")
+    XP_OPT_LOG_STORE=1
+    XP_LOG_FORMAT="${1#--log-format=}"
     return 1
   elif [[ "$1" =~ ^--log ]]; then
-    _XP_OPTIONS+=("$1")
-    _XP_OPT_LOG_STORE=1
+    XP_OPTIONS+=("$1")
+    XP_OPT_LOG_STORE=1
     if [[ "$1" =~ ^--log=.*$  ]]; then
-      _XP_LOG_DIR="${1#--log=}"
+      XP_LOG_DIR="${1#--log=}"
     fi
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
-    _XP_OPTIONS+=("$1")
-    _XP_CMD_UTILITY="$_XP_SSH_CMD_UTILITY"
+    XP_OPTIONS+=("$1")
+    XP_CMD_UTILITY="$XP_SSH_CMD_UTILITY"
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
-    _XP_OPT_DRY_RUN=1
+    XP_OPT_DRY_RUN=1
     return 1
   elif [[ "$1" =~ ^--kill$ ]]; then
-    _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
+    XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
     return 1
   elif [[ "$1" =~ ^--stay$ ]]; then
-    _XP_OPT_ATTACH=0
-    _XP_OPTIONS+=("$1")
+    XP_OPT_ATTACH=0
+    XP_OPTIONS+=("$1")
     return 1
 
   # ----------------
@@ -671,8 +671,8 @@ xpns_enable_long_options() {
   else
     echo "Invalid option -- '${1#--}'" >&2
     xpns_usage
-    echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-    exit $_XP_EINVAL
+    echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
+    exit $XP_EINVAL
   fi
 }
 
@@ -682,12 +682,12 @@ xpns_parse_options() {
   do
     case "$1" in
       --)
-      if [ $_XP_NO_OPT -eq 1 ]; then
-        _XP_ARGS+=("$1")
+      if [ $XP_NO_OPT -eq 1 ]; then
+        XP_ARGS+=("$1")
         shift
       else
         # Disable any more options
-        _XP_NO_OPT=1
+        XP_NO_OPT=1
         shift
       fi
       ;;
@@ -696,14 +696,14 @@ xpns_parse_options() {
       # Long options
       # ----------------
       --*)
-      if [ $_XP_NO_OPT -eq 1 ]; then
-        _XP_ARGS+=("$1")
+      if [ $XP_NO_OPT -eq 1 ]; then
+        XP_ARGS+=("$1")
         shift
       else
         local _shift_count="0"
         xpns_enable_long_options "$@"
         _shift_count="$?"
-        [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
+        [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
       fi
       ;;
 
@@ -711,21 +711,21 @@ xpns_parse_options() {
       # Short options
       # ----------------
       -*)
-      if [ $_XP_NO_OPT -eq 1 ]; then
-        _XP_ARGS+=("$1")
+      if [ $XP_NO_OPT -eq 1 ]; then
+        XP_ARGS+=("$1")
         shift
       else
 
         local _shift_count="0"
-        if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*${_XP_FREE_OPTIONS}  ]];then
+        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_FREE_OPTIONS}  ]];then
           xpns_load_free_options "$@"
           _shift_count="$?"
-          [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
-          [ "$_shift_count" = "2" ] && _XP_OPTIONS+=("$1" "$2") && shift && shift
-        elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}+$  ]];then
+          [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
+          [ "$_shift_count" = "2" ] && XP_OPTIONS+=("$1" "$2") && shift && shift
+        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
           xpns_load_flag_options "$1"
           _shift_count="$?"
-          [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
+          [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
 
         # ----------------
         # Other options
@@ -733,8 +733,8 @@ xpns_parse_options() {
         else
           echo "Invalid option -- '${1#-}'" >&2
           xpns_usage
-          echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-          exit $_XP_EINVAL
+          echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
+          exit $XP_EINVAL
         fi
       fi
       ;;
@@ -743,7 +743,7 @@ xpns_parse_options() {
       # Other arguments
       # ----------------
       *)
-      _XP_ARGS+=("$1")
+      XP_ARGS+=("$1")
       shift
       ;;
 
@@ -753,46 +753,46 @@ xpns_parse_options() {
   # If there is any standard input from pipe,
   # 1 line handled as 1 argument.
   if [ ! -t 0 ]; then
-    _XP_IS_XARGS_MODE=1
+    XP_IS_XARGS_MODE=1
     xpns_switch_pipe_mode
   fi
 
   # When no argument arr given, exit.
-  if [ -z "${_XP_ARGS[*]-}" ]; then
+  if [ -z "${XP_ARGS[*]-}" ]; then
     echo "No arguments are given." >&2
     xpns_usage
-    echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
-    exit $_XP_EINVAL
+    echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
+    exit $XP_EINVAL
   fi
 
   # Set default value in case of empty.
-  if [ -z "${_XP_CMD_UTILITY-}" ];then
-    _XP_CMD_UTILITY="$_XP_DEFAULT_CMD_UTILITY"
+  if [ -z "${XP_CMD_UTILITY-}" ];then
+    XP_CMD_UTILITY="$XP_DEFAULT_CMD_UTILITY"
   fi
-  if [ -z "$_XP_REPSTR" ];then
-    _XP_REPSTR="$_XP_DEFAULT_REPSTR"
+  if [ -z "$XP_REPSTR" ];then
+    XP_REPSTR="$XP_DEFAULT_REPSTR"
   fi
 
   # To set utility on pre_execution, set -c option manually.
-  if [ $_XP_OPT_CMD_UTILITY -eq 0 ];then
-    _XP_OPTIONS+=("-c" "$_XP_CMD_UTILITY")
+  if [ $XP_OPT_CMD_UTILITY -eq 0 ];then
+    XP_OPTIONS+=("-c" "$XP_CMD_UTILITY")
   fi
 }
 
 xpns_main() {
   xpns_parse_options ${1+"$@"}
-  xpns_check_env "$_XP_DEPENDENCIES"
+  xpns_check_env "$XP_DEPENDENCIES"
 
   : "Parameter validation" && {
     # Validate log directory.
     # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-    if [ $_XP_OPT_DRY_RUN -eq 1 ]; then
+    if [ $XP_OPT_DRY_RUN -eq 1 ]; then
       return 0
     fi
-    if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-      xpns_ensure_directory "$_XP_LOG_DIR"
+    if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+      xpns_ensure_directory "$XP_LOG_DIR"
       # Store absolute path
-      _XP_LOG_DIR="$(cd "$_XP_LOG_DIR" && pwd)"
+      XP_LOG_DIR="$(cd "$XP_LOG_DIR" && pwd)"
     fi
   }
 

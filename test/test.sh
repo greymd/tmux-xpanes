@@ -782,7 +782,7 @@ test_argument_and_utility_pipe() {
 }
 
 test_unsupported_version() {
-    _XP_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
+    XP_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "out of support."
     assertEquals "0" "$?"
 }
 
@@ -1084,7 +1084,7 @@ test_non_writable_directory() {
 }
 
 test_insufficient_cmd() {
-    _XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
+    XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
     assertEquals "127" "$?"
 }
 
@@ -1473,10 +1473,10 @@ test_log_option() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="_XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    _cmd="XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    _XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
@@ -1659,10 +1659,10 @@ test_log_format_option2() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
+    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    _XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -1757,10 +1757,10 @@ test_log_format_and_desync_option() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="_XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
+    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -1865,7 +1865,7 @@ test_log_format_and_desync_option_pipe() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | _XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
+    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
     echo $'\n'" $ $_cmd"$'\n'
 
     # pipe mode only works in the tmux session
