@@ -79,7 +79,7 @@ OPTIONS:
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   -d,--desync                  Make synchronize-panes option off on new window.
   --kill                       Close a pane itself after new window is created.
-  --no-attach                  Do not switch to new window.
+  --stay                       Do not switch to new window.
 ```
 
 # Simple example

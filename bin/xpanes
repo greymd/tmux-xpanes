@@ -114,7 +114,7 @@ __xpanes::usage() {
     echo "  --log-format=<FORMAT>        File name of log files follows given <FORMAT>."
     echo "  -d,--desync                  Make synchronize-panes option off on new window."
     echo "  --kill                       Close a pane itself after new window is created."
-    echo "  --no-attach                  Do not switch to new window."
+    echo "  --stay                       Do not switch to new window."
     echo
 }
 
@@ -664,7 +664,7 @@ __xpanes::enable_long_options() {
     elif [[ "$1" =~ ^--kill$ ]]; then
         _XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
         return 1
-    elif [[ "$1" =~ ^--no-attach$ ]]; then
+    elif [[ "$1" =~ ^--stay$ ]]; then
         _XP_OPT_ATTACH=0
         _XP_OPTIONS+=("$1")
         return 1

@@ -491,7 +491,7 @@ test_divide_two_panes_ev() {
     local _cmd=""
 
     # Run with normal mode
-    _cmd="${EXEC} -l ev -S $_socket_file --no-attach AAAA BBBB"
+    _cmd="${EXEC} -l ev -S $_socket_file --stay AAAA BBBB"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "2"
@@ -499,7 +499,7 @@ test_divide_two_panes_ev() {
     close_tmux_session "$_socket_file"
 
     # Run with pipe mode
-    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --no-attach"
+    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --stay"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
@@ -530,7 +530,7 @@ test_divide_two_panes_eh() {
     local _cmd=""
 
     # Run with normal mode
-    _cmd="${EXEC} -l eh -S $_socket_file --no-attach AAAA BBBB"
+    _cmd="${EXEC} -l eh -S $_socket_file --stay AAAA BBBB"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "2"
@@ -538,7 +538,7 @@ test_divide_two_panes_eh() {
     close_tmux_session "$_socket_file"
 
     # Run with pipe mode
-    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --no-attach"
+    _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --stay"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
@@ -568,14 +568,14 @@ test_divide_three_panes_ev() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -l ev -S $_socket_file --no-attach AAAA BBBB CCCC"
+    _cmd="${EXEC} -l ev -S $_socket_file --stay AAAA BBBB CCCC"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "3"
     divide_three_panes_ev_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
-    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --no-attach"
+    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --stay"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
@@ -605,14 +605,14 @@ test_divide_three_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -l eh -S $_socket_file --no-attach AAAA BBBB CCCC"
+    _cmd="${EXEC} -l eh -S $_socket_file --stay AAAA BBBB CCCC"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "3"
     divide_three_panes_eh_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
-    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --no-attach"
+    _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --stay"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
@@ -690,7 +690,7 @@ test_execute_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} --no-attach -e -S $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
+    _cmd="${EXEC} --stay -e -S $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
     echo
     echo "$ $_cmd"
     echo
@@ -703,7 +703,7 @@ test_execute_option() {
 
     rm $TEST_TMP/{1,2}
     # Use continuous option -eS.
-    _cmd="${EXEC} --no-attach -eS $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
+    _cmd="${EXEC} --stay -eS $_socket_file 'seq 5 15 > $TEST_TMP/1' 'echo Testing > $TEST_TMP/2'"
     echo
     echo "$ $_cmd"
     echo
@@ -851,9 +851,9 @@ test_hyphen_and_option1() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -l -V -h -Z"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -l -V -h -Z
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
     # hyphen "-" in the window name will be replacet with "_".
     wait_panes_separation "$_socket_file" "_l" "4"
     wait_all_files_creation ${_tmpdir}/{-l,-V,-h,-Z}.result
@@ -892,9 +892,9 @@ test_hyphen_and_option2() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --no-attach -- -- AA --Z BB"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -- AA --Z BB"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --no-attach -- -- AA --Z BB
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -- AA --Z BB
     # hyphen "-" in the window name will be replacet with "_".
     wait_panes_separation "$_socket_file" "__" "4"
     wait_all_files_creation ${_tmpdir}/{--,AA,--Z,BB}.result
@@ -942,10 +942,10 @@ test_desync_option_1() {
     local _cmd=""
 
     # synchronize-panes on
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
-    # ${EXEC} -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    # ${EXEC} -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     wait_panes_separation "$_socket_file" "AA" "4"
     echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
     tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
@@ -954,10 +954,10 @@ test_desync_option_1() {
     close_tmux_session "$_socket_file"
 
     # synchronize-panes off
-    _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
     printf "\n $ $_cmd\n"
     eval "$_cmd"
-    # ${EXEC} -d -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    # ${EXEC} -d -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     wait_panes_separation "$_socket_file" "AA" "4"
     echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
     tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
@@ -967,7 +967,7 @@ test_desync_option_1() {
 
     : "In TMUX session" && {
         # synchronize-panes on
-        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -979,7 +979,7 @@ test_desync_option_1() {
         close_tmux_session "$_socket_file"
 
         # synchronize-panes off
-        _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        _cmd="${EXEC} -d -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -1007,9 +1007,9 @@ test_desync_option_2() {
     local _cmd=""
 
     # synchronize-panes on
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
     printf "\n $ $_cmd\n"
-    # ${EXEC} -I@ -S $_socket_file -c "echo @" --no-attach -- AA BB CC DD
+    # ${EXEC} -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AA" "4"
     echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
@@ -1019,9 +1019,9 @@ test_desync_option_2() {
     close_tmux_session "$_socket_file"
 
     # synchronize-panes off
-    _cmd="${EXEC} -I@ -S $_socket_file -dc \"echo @\" --no-attach -- AA BB CC DD"
+    _cmd="${EXEC} -I@ -S $_socket_file -dc \"echo @\" --stay -- AA BB CC DD"
     printf "\n $ $_cmd\n"
-    # ${EXEC} -I@ -S $_socket_file -dc "echo @" --no-attach -- AA BB CC DD
+    # ${EXEC} -I@ -S $_socket_file -dc "echo @" --stay -- AA BB CC DD
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AA" "4"
     echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
@@ -1032,7 +1032,7 @@ test_desync_option_2() {
 
     : "In TMUX session" && {
         # synchronize-panes on
-        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        _cmd="${EXEC} -I@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -1044,7 +1044,7 @@ test_desync_option_2() {
         close_tmux_session "$_socket_file"
 
         # synchronize-panes off
-        _cmd="${EXEC} -dI@ -S $_socket_file -c \"echo @\" --no-attach -- AA BB CC DD"
+        _cmd="${EXEC} -dI@ -S $_socket_file -c \"echo @\" --stay -- AA BB CC DD"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -1177,9 +1177,9 @@ test_start_separation() {
     fi
 
     # This case works on 1.6 and 1.7.
-    # Because even --no-attach option exists, parent's tmux session is attached.
+    # Because even --stay option exists, parent's tmux session is attached.
     : "In TMUX session" && {
-        _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+        _cmd="${EXEC} -S $_socket_file --stay AAAA BBBB"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -1194,7 +1194,7 @@ test_divide_two_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB"
+    _cmd="${EXEC} -S $_socket_file --stay AAAA BBBB"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "2"
@@ -1215,7 +1215,7 @@ test_divide_three_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB CCCC"
+    _cmd="${EXEC} -S $_socket_file --stay AAAA BBBB CCCC"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "3"
@@ -1236,7 +1236,7 @@ test_divide_three_panes_tiled() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file -lt --no-attach AAAA BBBB CCCC"
+    _cmd="${EXEC} -S $_socket_file -lt --stay AAAA BBBB CCCC"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "3"
@@ -1244,7 +1244,7 @@ test_divide_three_panes_tiled() {
     close_tmux_session "$_socket_file"
 
     : "In TMUX session" && {
-        _cmd="${EXEC} -S $_socket_file -l t --no-attach AAAA BBBB CCCC"
+        _cmd="${EXEC} -S $_socket_file -l t --stay AAAA BBBB CCCC"
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
@@ -1258,7 +1258,7 @@ test_divide_four_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB CCCC DDDD"
+    _cmd="${EXEC} -S $_socket_file --stay AAAA BBBB CCCC DDDD"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -1301,7 +1301,7 @@ test_divide_five_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
-    _cmd="${EXEC} -S $_socket_file --no-attach AAAA BBBB CCCC DDDD EEEE"
+    _cmd="${EXEC} -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE"
     printf "\n $ $_cmd\n"
     $_cmd
     wait_panes_separation "$_socket_file" "AAAA" "5"
@@ -1345,9 +1345,9 @@ test_command_option() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -S $_socket_file -c 'seq {} > ${_tmpdir}/{}.result' --no-attach 3 4 5"
+    _cmd="${EXEC} -S $_socket_file -c 'seq {} > ${_tmpdir}/{}.result' --stay 3 4 5"
     printf "\n $ $_cmd\n"
-    ${EXEC} -S $_socket_file -c "seq {} > ${_tmpdir}/{}.result" --no-attach 3 4 5
+    ${EXEC} -S $_socket_file -c "seq {} > ${_tmpdir}/{}.result" --stay 3 4 5
     wait_panes_separation "$_socket_file" "3" "3"
     wait_all_files_creation ${_tmpdir}/{3,4,5}.result
     diff "${_tmpdir}/3.result" <(seq 3)
@@ -1381,9 +1381,9 @@ test_repstr_command_option() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I@ -S $_socket_file -c \"seq @ > ${_tmpdir}/@.result\" --no-attach 3 4 5 6"
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"seq @ > ${_tmpdir}/@.result\" --stay 3 4 5 6"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I@ -S $_socket_file -c "seq @ > ${_tmpdir}/@.result" --no-attach 3 4 5 6
+    ${EXEC} -I@ -S $_socket_file -c "seq @ > ${_tmpdir}/@.result" --stay 3 4 5 6
     wait_panes_separation "$_socket_file" "3" "4"
     wait_all_files_creation ${_tmpdir}/{3,4,5,6}.result
     diff "${_tmpdir}/3.result" <(seq 3)
@@ -1421,9 +1421,9 @@ test_repstr_command_option_pipe() {
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
 
-    _cmd="${EXEC} -I GE -S $_socket_file -c\"seq GE 10 | tail > ${_tmpdir}/GE.result\" --no-attach 3 4 5"
+    _cmd="${EXEC} -I GE -S $_socket_file -c\"seq GE 10 | tail > ${_tmpdir}/GE.result\" --stay 3 4 5"
     printf "\n $ $_cmd\n"
-    ${EXEC} -I GE -S $_socket_file -c"seq GE 10 | tail > ${_tmpdir}/GE.result" --no-attach 3 4 5
+    ${EXEC} -I GE -S $_socket_file -c"seq GE 10 | tail > ${_tmpdir}/GE.result" --stay 3 4 5
     wait_panes_separation "$_socket_file" "3" "3"
     wait_all_files_creation ${_tmpdir}/{3,4,5}.result
     diff "${_tmpdir}/3.result" <(seq 3 10 | tail)
