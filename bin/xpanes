@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## -*- encoding: utf-8 -*- vim:expandtab:tabstop=4:shiftwidth=4
-set -u; set -e
+set -u
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
@@ -455,7 +455,6 @@ __xpanes::pre_execution() {
     # Avoid attaching (for unit testing).
     if [ $_XP_OPT_ATTACH -eq 1 ]; then
         # Go to another condition of this if statement.
-        set +e
         tmux -S "$_XP_SOCKET_PATH" attach-session -t "$_XP_SESSION_NAME"
         if [ $? -ne 0 ] && [ $_XP_IS_XARGS_MODE -eq 1 ]; then
             echo "Recovery: Execute below command line to re-attach the new session."
@@ -464,7 +463,6 @@ __xpanes::pre_execution() {
             echo ""
             exit $_XP_ETTY
         fi
-        set -e
     fi
 
 }
@@ -707,10 +705,8 @@ __xpanes::parse_options() {
                 shift
             else
                 local _shift_count="0"
-                set +e
                 __xpanes::enable_long_options "$@"
                 _shift_count="$?"
-                set -e
                 [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
             fi
             ;;
@@ -726,17 +722,13 @@ __xpanes::parse_options() {
 
                 local _shift_count="0"
                 if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*${_XP_FREE_OPTIONS}  ]];then
-                    set +e
                     __xpanes::load_free_options "$@"
                     _shift_count="$?"
-                    set -e
                     [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
                     [ "$_shift_count" = "2" ] && _XP_OPTIONS+=("$1" "$2") && shift && shift
                 elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}+$  ]];then
-                    set +e
                     __xpanes::load_flag_options "$1"
                     _shift_count="$?"
-                    set -e
                     [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
 
                 # ----------------
@@ -793,9 +785,7 @@ __xpanes::parse_options() {
 
 __xpanes::main() {
     __xpanes::parse_options ${1+"$@"}
-    set +e
     __xpanes::check_env "$_XP_DEPENDENCIES"
-    set -e
 
     : "Parameter validation" && {
         # Validate log directory.
