@@ -3,7 +3,7 @@ set -u
 
 # @Author yasuhiro.yamada
 # @Filename xpanes
-readonly XP_VERSION="2.0.0-alpha.2"
+readonly XP_VERSION="2.0.0-alpha.3"
 
 # ===============
 # Error constants
