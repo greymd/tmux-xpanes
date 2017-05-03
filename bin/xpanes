@@ -5,6 +5,7 @@ set -u
 # @Filename xpanes
 readonly _XP_VERSION="2.0.0-alpha.2"
 
+# ===============
 # Error constants
 # ===============
 
@@ -86,7 +87,7 @@ readonly _XP_DEPENDENCIES="${_XP_DEPENDENCIES:-tmux perl}"
   _XP_LAYOUT="$_XP_DEFAULT_LAYOUT"
 }
 
-__xpanes::usage() {
+xpns_usage() {
   cat << _EOS_
 Usage:
   $_XP_THIS_FILE_NAME [OPTIONS] [argument ...]
@@ -114,7 +115,7 @@ OPTIONS:
 _EOS_
 }
 
-__xpanes::usage_verbose() {
+xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
     Default value is \"$_XP_LOG_FORMAT\"
@@ -155,12 +156,12 @@ _EOS_
 }
 
 # Show version number
-__xpanes::version() {
+xpns_version() {
   echo "$_XP_THIS_FILE_NAME $_XP_VERSION"
 }
 
 # Get version number for tmux
-__xpanes::get_tmux_version() {
+xpns_get_tmux_version() {
   local _tmux_version=""
   tmux -V &> /dev/null
   if [ $? -ne 0 ]; then
@@ -172,7 +173,7 @@ __xpanes::get_tmux_version() {
   echo "$_tmux_version" | perl -anle 'printf $F[1]'
 }
 
-__xpanes::get_tmux_conf() {
+xpns_get_tmux_conf() {
   local _conf_name="$1"
   tmux show-window-options -g \
     | grep "^${1}" \
@@ -183,7 +184,7 @@ __xpanes::get_tmux_conf() {
 #
 # Generate log file names from given arguments.
 # Usage:
-#        echo <host1> <host2> ... | __xpanes::log_filenames <FORMAT>
+#        echo <host1> <host2> ... | xpns_log_filenames <FORMAT>
 # Return:
 #        File names.
 # Example:
@@ -195,7 +196,7 @@ __xpanes::get_tmux_conf() {
 #        ccc-2_1234_20160101.log
 #        ccc-3_1234_20160101.log
 #
-__xpanes::log_filenames () {
+xpns_log_filenames () {
   local _arg_fmt="$1"
   local _full_fmt="$(date '+'$_arg_fmt)"
   cat \
@@ -211,9 +212,9 @@ __xpanes::log_filenames () {
 #
 # Ensure existance of given directory
 # Usage:
-#        __xpanes::ensure_directory <direname>
+#        xpns_ensure_directory <direname>
 #
-__xpanes::ensure_directory() {
+xpns_ensure_directory() {
   local _dir="$1"
   local _checkfile="${_XP_THIS_FILE_NAME}.$$"
 
@@ -243,20 +244,17 @@ __xpanes::ensure_directory() {
     exit $_XP_ELOGWRITE
   fi
   rm -f "${_dir}/$_checkfile"
-
-  # Return absolute path
-  echo "$(cd "$_XP_LOG_DIR" && pwd)"
 }
 
 # Convert array to string which is can be used as command line argument.
 # Usage:
-#       __xpanes::arr2args <array object>
+#       xpns_arr2args <array object>
 # Example:
 #       array=(aaa bbb "ccc ddd" eee "f'f")
-#       __xpanes::arr2args "${array[@]}"
+#       xpns_arr2args "${array[@]}"
 #       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
 # Result:
-__xpanes::arr2args() {
+xpns_arr2args() {
   local _arg=""
   # If there is no argument, usage will be shown.
   if [ $# -lt 1 ]; then
@@ -281,7 +279,7 @@ __xpanes::arr2args() {
 # Extract first field separated by dot '.'
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
-__xpanes::generate_window_name() {
+xpns_generate_window_name() {
   echo "$1" \
     | tr '.' ' ' \
     | \
@@ -298,7 +296,7 @@ __xpanes::generate_window_name() {
 # Usage:
 #        run_split <window name> <num of pane>
 #
-__xpanes::split_window() {
+xpns_split_window() {
   local _window_name="$1" ; shift
   local _hosts_num="$1"
   for i in $(seq 0 $_hosts_num)
@@ -314,7 +312,7 @@ __xpanes::split_window() {
   done
 }
 
-__xpanes::enable_logging() {
+xpns_enable_logging() {
   local _window_name="$1" ; shift
   local _index_offset="$1" ; shift
   local _log_dir="$1" ; shift
@@ -326,7 +324,7 @@ __xpanes::enable_logging() {
   for i in $(seq 0 "$_hosts_num")
   do
     echo "${_hosts[i]}"
-  done | __xpanes::log_filenames "$_log_format"
+  done | xpns_log_filenames "$_log_format"
   ))
   for i in $(seq 0 "$_hosts_num")
   do
@@ -335,7 +333,7 @@ __xpanes::enable_logging() {
   done
 }
 
-__xpanes::send_commands() {
+xpns_send_commands() {
   local _window_name="$1" ; shift
   local _index_offset="$1" ; shift
   local _repstr="$1" ; shift
@@ -349,21 +347,21 @@ __xpanes::send_commands() {
 }
 
 # Serarate window vertically, when the number of panes is 1 or 2.
-__xpanes::arrange_pane_location() {
+xpns_arrange_pane_location() {
   local _window_name="$1" ; shift
   local _hosts_num="$1"
 
-  # ----------------
+  ## ----------------
   # Default behavior
-  # ----------------
+  ## ----------------
   if [ $_hosts_num -eq 1 ]; then
     tmux select-layout -t "${_window_name}" even-horizontal
   elif [ $_hosts_num -gt 1 ]; then
     tmux select-layout -t "${_window_name}" tiled
   fi
-  # ----------------
+  ## ----------------
   # Update layout
-  # ----------------
+  ## ----------------
   if [[ "$_XP_LAYOUT" != "$_XP_DEFAULT_LAYOUT" ]]; then
     tmux select-layout -t "${_window_name}" "$_XP_LAYOUT"
   fi
@@ -372,9 +370,9 @@ __xpanes::arrange_pane_location() {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#    __xpanes::prepare_window <window name> <offset of index> <number of pane>
+#    xpns_prepare_window <window name> <offset of index> <number of pane>
 #
-__xpanes::prepare_window()
+xpns_prepare_window()
 {
   local _window_name="$1" ; shift
   local _pane_base_index="$1"; shift
@@ -393,7 +391,7 @@ __xpanes::prepare_window()
   tmux select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  __xpanes::split_window "$_window_name" "$_pane_num"
+  xpns_split_window "$_window_name" "$_pane_num"
 
   ### If the first pane is still remaining,
   ### panes cannot be organized well.
@@ -405,7 +403,7 @@ __xpanes::prepare_window()
 }
 
 # Check whether given command is in the PATH or not.
-__xpanes::check_env() {
+xpns_check_env() {
   local _cmds="$1"
   while read cmd ; do
     type "$cmd" > /dev/null 2>&1
@@ -420,7 +418,7 @@ __xpanes::check_env() {
     echo "Warning: failed to create cache directory '${_XP_CACHE_HOME}'." >&2
   fi
 
-  _XP_CURRENT_TMUX_VERSION="${_XP_CURRENT_TMUX_VERSION:-$(__xpanes::get_tmux_version)}"
+  _XP_CURRENT_TMUX_VERSION="${_XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   echo "$_XP_CURRENT_TMUX_VERSION" | grep -qE "$_XP_SUPPORT_TMUX_VERSIONS"
   if [ $? -eq 1 ];then
     echo "Warning: '$_XP_THIS_FILE_NAME' may not work properly!" >&2
@@ -430,7 +428,7 @@ __xpanes::check_env() {
   return 0
 }
 
-__xpanes::pre_execution() {
+xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
   # Create new session.
@@ -443,9 +441,9 @@ __xpanes::pre_execution() {
   fi
 
   if [ ! -z "${_XP_OPTIONS[*]-}" ]; then
-    _opts4args=$(__xpanes::arr2args "${_XP_OPTIONS[@]}")
+    _opts4args=$(xpns_arr2args "${_XP_OPTIONS[@]}")
   fi
-  _args4args=$(__xpanes::arr2args "${_XP_ARGS[@]}")
+  _args4args=$(xpns_arr2args "${_XP_ARGS[@]}")
 
   tmux -S "$_XP_SOCKET_PATH" send-keys -t "$_XP_SESSION_NAME:$_XP_TMP_WIN_NAME" \
     "$_XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
@@ -465,22 +463,22 @@ __xpanes::pre_execution() {
 
 }
 
-__xpanes::execution() {
-  local _pane_base_index=$(__xpanes::get_tmux_conf 'pane-base-index')
-  local _window_name=$(__xpanes::generate_window_name "${_XP_ARGS[0]}")
+xpns_execution() {
+  local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
+  local _window_name=$(xpns_generate_window_name "${_XP_ARGS[0]}")
   local _last_host_idx=$((${#_XP_ARGS[@]} - 1))
 
-  __xpanes::prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
+  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$_XP_OPT_ATTACH"
 
   if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-    __xpanes::enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]}"
+    xpns_enable_logging  "$_window_name" "$_pane_base_index" "$_XP_LOG_DIR" "$_XP_LOG_FORMAT" "${_XP_ARGS[@]}"
   fi
 
   # Sending ssh opearations for each pane.
-  __xpanes::send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]}"
+  xpns_send_commands "$_window_name" "$_pane_base_index" "$_XP_REPSTR" "$_XP_CMD_UTILITY" "${_XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
-  __xpanes::arrange_pane_location "$_window_name" $_last_host_idx
+  xpns_arrange_pane_location "$_window_name" $_last_host_idx
 
   # Enable broadcasting
   if [ $_XP_OPT_IS_SYNC -eq 1 ]; then
@@ -493,12 +491,12 @@ __xpanes::execution() {
   fi
 }
 
-# ----------------
+## ----------------
 # Arrange options for pipe mode
 #  * argument -> command utility
 #  * stdin -> argument
-# ----------------
-__xpanes::switch_pipe_mode() {
+## ----------------
+xpns_switch_pipe_mode() {
 
   if ! [ -n "${TMUX-}" ]; then
     echo "Warning: 'pipe mode' requires attached session." >&2
@@ -539,7 +537,7 @@ __xpanes::switch_pipe_mode() {
   _XP_ARGS=("${_XP_STDIN[@]-}")
 }
 
-__xpanes::layout_short2long() {
+xpns_layout_short2long() {
   sed \
     -e 's/^t$/tiled/' \
     -e 's/^eh$/even-horizontal/' \
@@ -549,7 +547,7 @@ __xpanes::layout_short2long() {
     -e ';'
 }
 
-__xpanes::is_valid_layout() {
+xpns_is_valid_layout() {
   local _layout="$1"
   echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
   if [ $? -ne 0 ]; then
@@ -558,14 +556,14 @@ __xpanes::is_valid_layout() {
   fi
 }
 
-__xpanes::load_flag_options() {
+xpns_load_flag_options() {
   if   [[ "$1" =~ h ]]; then
-    __xpanes::usage
-    __xpanes::usage_verbose
+    xpns_usage
+    xpns_usage_verbose
     exit 0
   fi
   if [[ "$1" =~ V ]]; then
-    __xpanes::version
+    xpns_version
     exit 0
   fi
   if [[ "$1" =~ d ]]; then
@@ -578,9 +576,9 @@ __xpanes::load_flag_options() {
   return 1
 }
 
-__xpanes::load_free_options() {
+xpns_load_free_options() {
   # Extract flag options only.
-  __xpanes::load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+  xpns_load_flag_options "$(echo "$1" | perl -nle "/^-$_XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
   if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I ]]; then
     if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*I.+ ]]; then
       _XP_REPSTR="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?I//")"
@@ -597,12 +595,12 @@ __xpanes::load_free_options() {
     fi
   elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l ]]; then
     if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*l.+ ]]; then
-      _XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?l//" | __xpanes::layout_short2long)"
-      __xpanes::is_valid_layout "$_XP_LAYOUT"
+      _XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${_XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+      xpns_is_valid_layout "$_XP_LAYOUT"
       return 1
     elif ! [[ "$2" =~ ^-.* ]]; then
-      _XP_LAYOUT="$(echo "$2" |  __xpanes::layout_short2long )"
-      __xpanes::is_valid_layout "$_XP_LAYOUT"
+      _XP_LAYOUT="$(echo "$2" |  xpns_layout_short2long )"
+      xpns_is_valid_layout "$_XP_LAYOUT"
       return 2
     fi
   elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*c ]]; then
@@ -627,13 +625,13 @@ __xpanes::load_free_options() {
   return 0
 }
 
-__xpanes::enable_long_options() {
+xpns_enable_long_options() {
   if   [[ "$1" =~ ^--help$ ]]; then
-    __xpanes::usage
-    __xpanes::usage_verbose
+    xpns_usage
+    xpns_usage_verbose
     exit 0
   elif [[ "$1" =~ ^--version$ ]]; then
-    __xpanes::version
+    xpns_version
     exit 0
   elif [[ "$1" =~ ^--desync$ ]]; then
     _XP_OPTIONS+=("$1")
@@ -672,13 +670,13 @@ __xpanes::enable_long_options() {
   # ----------------
   else
     echo "Invalid option -- '${1#--}'" >&2
-    __xpanes::usage
+    xpns_usage
     echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
     exit $_XP_EINVAL
   fi
 }
 
-__xpanes::parse_options() {
+xpns_parse_options() {
 
   while (( $# > 0 ))
   do
@@ -703,7 +701,7 @@ __xpanes::parse_options() {
         shift
       else
         local _shift_count="0"
-        __xpanes::enable_long_options "$@"
+        xpns_enable_long_options "$@"
         _shift_count="$?"
         [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
       fi
@@ -720,12 +718,12 @@ __xpanes::parse_options() {
 
         local _shift_count="0"
         if [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}*${_XP_FREE_OPTIONS}  ]];then
-          __xpanes::load_free_options "$@"
+          xpns_load_free_options "$@"
           _shift_count="$?"
           [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
           [ "$_shift_count" = "2" ] && _XP_OPTIONS+=("$1" "$2") && shift && shift
         elif [[ "$1" =~ ^-${_XP_FLAG_OPTIONS}+$  ]];then
-          __xpanes::load_flag_options "$1"
+          xpns_load_flag_options "$1"
           _shift_count="$?"
           [ "$_shift_count" = "1" ] && _XP_OPTIONS+=("$1") && shift
 
@@ -734,7 +732,7 @@ __xpanes::parse_options() {
         # ----------------
         else
           echo "Invalid option -- '${1#-}'" >&2
-          __xpanes::usage
+          xpns_usage
           echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
           exit $_XP_EINVAL
         fi
@@ -756,13 +754,13 @@ __xpanes::parse_options() {
   # 1 line handled as 1 argument.
   if [ ! -t 0 ]; then
     _XP_IS_XARGS_MODE=1
-    __xpanes::switch_pipe_mode
+    xpns_switch_pipe_mode
   fi
 
   # When no argument arr given, exit.
   if [ -z "${_XP_ARGS[*]-}" ]; then
     echo "No arguments are given." >&2
-    __xpanes::usage
+    xpns_usage
     echo "Try '$_XP_THIS_FILE_NAME --help' for more information." >&2
     exit $_XP_EINVAL
   fi
@@ -781,9 +779,9 @@ __xpanes::parse_options() {
   fi
 }
 
-__xpanes::main() {
-  __xpanes::parse_options ${1+"$@"}
-  __xpanes::check_env "$_XP_DEPENDENCIES"
+xpns_main() {
+  xpns_parse_options ${1+"$@"}
+  xpns_check_env "$_XP_DEPENDENCIES"
 
   : "Parameter validation" && {
     # Validate log directory.
@@ -792,7 +790,9 @@ __xpanes::main() {
       return 0
     fi
     if [ $_XP_OPT_LOG_STORE -eq 1 ]; then
-      _XP_LOG_DIR="$(__xpanes::ensure_directory "$_XP_LOG_DIR")"
+      xpns_ensure_directory "$_XP_LOG_DIR"
+      # Store absolute path
+      _XP_LOG_DIR="$(cd "$_XP_LOG_DIR" && pwd)"
     fi
   }
 
@@ -800,17 +800,17 @@ __xpanes::main() {
   # If current shell is NOT in tmux session.
   #
   if ! [ -n "${TMUX-}" ]; then
-    __xpanes::pre_execution
+    xpns_pre_execution
 
   #
   # If current shell is already in tmux session.
   #
   else
-    __xpanes::execution
+    xpns_execution
   fi
   exit 0
 }
 
 : "Entry point" && {
-  __xpanes::main ${1+"$@"}
+  xpns_main ${1+"$@"}
 }
