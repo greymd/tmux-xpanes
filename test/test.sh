@@ -1232,6 +1232,28 @@ test_divide_three_panes() {
     }
 }
 
+test_divide_three_panes_tiled() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -S $_socket_file -lt --no-attach AAAA BBBB CCCC"
+    printf "\n $ $_cmd\n"
+    $_cmd
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    divide_three_panes_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file -l t --no-attach AAAA BBBB CCCC"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        divide_three_panes_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
 test_divide_four_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
