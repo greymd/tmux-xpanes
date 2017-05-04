@@ -8,6 +8,9 @@
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
   <a href="https://tmux.github.io/"><img src="https://img.shields.io/badge/powered_by-tmux-green.svg" alt="tmux" /></a>
 </p>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie.gif" alt="Introduction Git Animation" />
+</p>
 
 # Features
 * Split tmux's window into multiple panes.
@@ -42,14 +45,12 @@ $ brew install tmux-xpanes
 
 ## With Zsh plugin managers (like [zplug](https://zplug.sh), [Antigen](https://github.com/zsh-users/antigen))
 
-If you are using zplug, add those lines to `.zshrc`.
-In addition, zsh completion for `xpanes` command is activated.
+If you are using zplug and other Zsh plugin managers, add this line to `.zshrc`.
+In addition, zsh completion for `xpanes` command is activated as well.
 
 ```sh
 zplug "greymd/tmux-xpanes"
 ```
-
-After that, `xpanes` command is yours.
 
 ## Manual Installation
 
