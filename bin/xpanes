@@ -203,9 +203,9 @@ xpns_log_filenames () {
     | perl -nle 'print $_."-".(($h{$_}++)+1)' \
     | while read _arg
     do
-      echo "$_full_fmt" | \
-      sed "s/\[:ARG:\]/$_arg/g" | \
-      sed "s/\[:PID:\]/$$/g"
+      echo "$_full_fmt" \
+        | sed "s/\[:ARG:\]/$_arg/g" \
+        | sed "s/\[:PID:\]/$$/g"
     done
 }
 
@@ -276,7 +276,8 @@ xpns_arr2args() {
   done
 }
 
-# Extract first field separated by dot '.'
+# Extract first field to generate window name.
+# Dot '.' is also interepreted as a filed separator.
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
@@ -764,12 +765,8 @@ xpns_parse_options() {
   fi
 
   # Set default value in case of empty.
-  if [ -z "${XP_CMD_UTILITY-}" ];then
-    XP_CMD_UTILITY="$XP_DEFAULT_CMD_UTILITY"
-  fi
-  if [ -z "$XP_REPSTR" ];then
-    XP_REPSTR="$XP_DEFAULT_REPSTR"
-  fi
+  XP_CMD_UTILITY="${XP_CMD_UTILITY:-$XP_DEFAULT_CMD_UTILITY}"
+  XP_REPSTR="${XP_REPSTR:-$XP_DEFAULT_REPSTR}"
 
   # To set utility on pre_execution, set -c option manually.
   if [ $XP_OPT_CMD_UTILITY -eq 0 ];then
