@@ -513,7 +513,8 @@ xpns_switch_pipe_mode() {
 
   # Merge them into utility.
   if [ ! -z "${XP_ARGS[*]-}" ]; then
-    XP_CMD_UTILITY="${XP_ARGS[@]}"
+    # Attention: It might be wrong result if IFS is changed.
+    XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
 
   # If there is empty -I option or user does not assign the <repstr>,
@@ -527,8 +528,8 @@ xpns_switch_pipe_mode() {
   #     => seq 10
   if [ -z "$XP_REPSTR" ]; then
     XP_REPSTR="$XP_DEFAULT_REPSTR"
-    if [ ! -z "${XP_CMD_UTILITY-}" ]; then
-      XP_CMD_UTILITY="$XP_CMD_UTILITY $XP_REPSTR"
+    if [ ! -z "${XP_ARGS[*]-}" ]; then
+      XP_CMD_UTILITY="${XP_ARGS[*]-} $XP_REPSTR"
     fi
   fi
 
