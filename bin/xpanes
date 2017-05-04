@@ -62,7 +62,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   # options which work indivisually.
   readonly XP_FLAG_OPTIONS="[hVde]"
   # options which requre arguments.
-  readonly XP_FREE_OPTIONS="[IScl]"
+  readonly XP_ARG_OPTIONS="[IScl]"
   readonly XP_DEFAULT_LAYOUT="tiled"
   readonly XP_DEFAULT_REPSTR="{}"
   readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -70,7 +70,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   XP_OPTIONS=()
   XP_ARGS=()
   XP_STDIN=()
-  XP_IS_XARGS_MODE=0
+  XP_IS_PIPE_MODE=0
   XP_OPT_IS_SYNC=1
   XP_KILL_WINDOW_NAME=""
   XP_KILL_SESSION_NAME=""
@@ -184,7 +184,7 @@ xpns_get_tmux_conf() {
 #
 # Generate log file names from given arguments.
 # Usage:
-#        echo <host1> <host2> ... | xpns_log_filenames <FORMAT>
+#        echo <arg1> <arg2> ... | xpns_log_filenames <FORMAT>
 # Return:
 #        File names.
 # Example:
@@ -201,11 +201,11 @@ xpns_log_filenames () {
   local _full_fmt="$(date '+'$_arg_fmt)"
   cat \
     | perl -nle 'print $_."-".(($h{$_}++)+1)' \
-    | while read host
+    | while read _arg
     do
-      echo "$_full_fmt" | \
-      sed "s/\[:ARG:\]/$host/g" | \
-      sed "s/\[:PID:\]/$$/g"
+      echo "$_full_fmt" \
+        | sed "s/\[:ARG:\]/$_arg/g" \
+        | sed "s/\[:PID:\]/$$/g"
     done
 }
 
@@ -276,7 +276,8 @@ xpns_arr2args() {
   done
 }
 
-# Extract first field separated by dot '.'
+# Extract first field to generate window name.
+# Dot '.' is also interepreted as a filed separator.
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
@@ -298,8 +299,8 @@ xpns_generate_window_name() {
 #
 xpns_split_window() {
   local _window_name="$1" ; shift
-  local _hosts_num="$1"
-  for i in $(seq 0 $_hosts_num)
+  local _args_num="$1"
+  for i in $(seq 0 $_args_num)
   do
     tmux split-window -t "${_window_name}" -h -d
     tmux select-layout even-horizontal
@@ -317,16 +318,16 @@ xpns_enable_logging() {
   local _index_offset="$1" ; shift
   local _log_dir="$1" ; shift
   local _log_format="$1" ; shift
-  local _hosts=($@)
-  local _hosts_num=$(($# - 1))
-  # Generate log files from host list.
+  local _args=($@)
+  local _args_num=$(($# - 1))
+  # Generate log files from arguments.
   local _logfiles=($(
-  for i in $(seq 0 "$_hosts_num")
+  for i in $(seq 0 "$_args_num")
   do
-    echo "${_hosts[i]}"
+    echo "${_args[i]}"
   done | xpns_log_filenames "$_log_format"
   ))
-  for i in $(seq 0 "$_hosts_num")
+  for i in $(seq 0 "$_args_num")
   do
     # Start logging
     tmux pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" "cat >> '${_log_dir}/${_logfiles[i]}'"
@@ -349,14 +350,14 @@ xpns_send_commands() {
 # Serarate window vertically, when the number of panes is 1 or 2.
 xpns_arrange_pane_location() {
   local _window_name="$1" ; shift
-  local _hosts_num="$1"
+  local _args_num="$1"
 
   ## ----------------
   # Default behavior
   ## ----------------
-  if [ $_hosts_num -eq 1 ]; then
+  if [ $_args_num -eq 1 ]; then
     tmux select-layout -t "${_window_name}" even-horizontal
-  elif [ $_hosts_num -gt 1 ]; then
+  elif [ $_args_num -gt 1 ]; then
     tmux select-layout -t "${_window_name}" tiled
   fi
   ## ----------------
@@ -451,7 +452,7 @@ xpns_pre_execution() {
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
     tmux -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME"
-    if [ $? -ne 0 ] && [ $XP_IS_XARGS_MODE -eq 1 ]; then
+    if [ $? -ne 0 ] && [ $XP_IS_PIPE_MODE -eq 1 ]; then
       echo "Recovery: Execute below command line to re-attach the new session."
       echo ""
       echo "    tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME"
@@ -464,9 +465,9 @@ xpns_pre_execution() {
 xpns_execution() {
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
   local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
-  local _last_host_idx=$((${#XP_ARGS[@]} - 1))
+  local _last_args_idx=$((${#XP_ARGS[@]} - 1))
 
-  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_host_idx" "$XP_OPT_ATTACH"
+  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_args_idx" "$XP_OPT_ATTACH"
 
   if [ $XP_OPT_LOG_STORE -eq 1 ]; then
     xpns_enable_logging  "$_window_name" "$_pane_base_index" "$XP_LOG_DIR" "$XP_LOG_FORMAT" "${XP_ARGS[@]}"
@@ -476,7 +477,7 @@ xpns_execution() {
   xpns_send_commands "$_window_name" "$_pane_base_index" "$XP_REPSTR" "$XP_CMD_UTILITY" "${XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
-  xpns_arrange_pane_location "$_window_name" $_last_host_idx
+  xpns_arrange_pane_location "$_window_name" $_last_args_idx
 
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
@@ -512,7 +513,8 @@ xpns_switch_pipe_mode() {
 
   # Merge them into utility.
   if [ ! -z "${XP_ARGS[*]-}" ]; then
-    XP_CMD_UTILITY="${XP_ARGS[@]}"
+    # Attention: It might be wrong result if IFS is changed.
+    XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
 
   # If there is empty -I option or user does not assign the <repstr>,
@@ -526,8 +528,8 @@ xpns_switch_pipe_mode() {
   #     => seq 10
   if [ -z "$XP_REPSTR" ]; then
     XP_REPSTR="$XP_DEFAULT_REPSTR"
-    if [ ! -z "${XP_CMD_UTILITY-}" ]; then
-      XP_CMD_UTILITY="$XP_CMD_UTILITY $XP_REPSTR"
+    if [ ! -z "${XP_ARGS[*]-}" ]; then
+      XP_CMD_UTILITY="${XP_ARGS[*]-} $XP_REPSTR"
     fi
   fi
 
@@ -574,7 +576,7 @@ xpns_load_flag_options() {
   return 1
 }
 
-xpns_load_free_options() {
+xpns_load_arg_options() {
   # Extract flag options only.
   xpns_load_flag_options "$(echo "$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
@@ -715,8 +717,8 @@ xpns_parse_options() {
       else
 
         local _shift_count="0"
-        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_FREE_OPTIONS}  ]];then
-          xpns_load_free_options "$@"
+        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}  ]];then
+          xpns_load_arg_options "$@"
           _shift_count="$?"
           [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
           [ "$_shift_count" = "2" ] && XP_OPTIONS+=("$1" "$2") && shift && shift
@@ -751,7 +753,7 @@ xpns_parse_options() {
   # If there is any standard input from pipe,
   # 1 line handled as 1 argument.
   if [ ! -t 0 ]; then
-    XP_IS_XARGS_MODE=1
+    XP_IS_PIPE_MODE=1
     xpns_switch_pipe_mode
   fi
 
@@ -764,12 +766,8 @@ xpns_parse_options() {
   fi
 
   # Set default value in case of empty.
-  if [ -z "${XP_CMD_UTILITY-}" ];then
-    XP_CMD_UTILITY="$XP_DEFAULT_CMD_UTILITY"
-  fi
-  if [ -z "$XP_REPSTR" ];then
-    XP_REPSTR="$XP_DEFAULT_REPSTR"
-  fi
+  XP_CMD_UTILITY="${XP_CMD_UTILITY:-$XP_DEFAULT_CMD_UTILITY}"
+  XP_REPSTR="${XP_REPSTR:-$XP_DEFAULT_REPSTR}"
 
   # To set utility on pre_execution, set -c option manually.
   if [ $XP_OPT_CMD_UTILITY -eq 0 ];then

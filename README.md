@@ -1,14 +1,13 @@
-<p align="center">
+<h1 align="center">
   <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/xpanes_logo_1.png" height="206" width="208" />
-</p>
+  <h4 align="center">Ultimate terminal divider powered by tmux.</h2>
+</h1>
 <p align="center">
   <a href="https://github.com/greymd/tmux-xpanes/releases/latest"><img src="https://img.shields.io/github/release/greymd/tmux-xpanes.svg" alt="Latest version" /></a>
   <a href="https://travis-ci.org/greymd/tmux-xpanes"><img src="https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master" alt="Build Status" /></a>
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
   <a href="https://tmux.github.io/"><img src="https://img.shields.io/badge/powered_by-tmux-green.svg" alt="tmux" /></a>
 </p>
-
-Ultimate terminal divider powered by tmux.
 
 # Features
 * Split tmux's window into multiple panes.
@@ -23,7 +22,6 @@ Ultimate terminal divider powered by tmux.
 * `tmux` (version 1.6 and more)
 
 # Installation
-
 
 ## With `apt-get` (For Ubuntu users)
 
@@ -42,13 +40,13 @@ $ brew tap greymd/tools
 $ brew install tmux-xpanes
 ```
 
-## With [zplug](https://zplug.sh) (for zsh users)
+## With Zsh plugin managers (like [zplug](https://zplug.sh), [Antigen](https://github.com/zsh-users/antigen))
 
-If you are using zplug, it is easy and recommended way.
-Add those lines to `.zshrc`.
+If you are using zplug, add those lines to `.zshrc`.
+In addition, zsh completion for `xpanes` command is activated.
 
 ```sh
-zplug "greymd/tmux-xpanes", as:command, use:"bin/*"
+zplug "greymd/tmux-xpanes"
 ```
 
 After that, `xpanes` command is yours.
@@ -62,6 +60,13 @@ $ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O
 $ chmod +x /usr/local/bin/xpanes
 ```
 
+#### Use without messing up `PATH`
+
+`xpanes` command is portable command. Even if PATH does not include `xpanes` file, it works.
+
+```sh
+$ ./xpanes ARG1 ARG2 ARG3 ...
+```
 
 # Usage
 
@@ -214,8 +219,10 @@ user2@host2-1.log.2017-03-15_21-30-07
 
 #### Execute different commands on the different panes.
 
+`-e` option executes given argument as it is.
+
 ```sh
-$ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
+$ xpanes -e "top" "vmstat 1" "watch -n 1 free"
 ```
 
 ```
@@ -236,10 +243,16 @@ $ watch -n 1 free
 
 ```
 
+This is same as here.
+
+```sh
+$ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
+```
+
 #### Create multiple windows and make each one devided into multiple panes.
 
 ```sh
-$ xpanes -c "xpanes  -I@ -c 'echo @' {}" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
+$ xpanes -c "xpanes  --kill -I@ -c 'echo @' {}" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
 ```
 
 Result will be this.
@@ -274,14 +287,7 @@ Off course, with you can specify file name with `-S` option.
 ... then, user1 and user2 can share their screen each other.
 
 
-#### Use without messing up `PATH`
-
-`xpanes` command is portable command. Even if PATH does not include `xpanes` file, it works.
-
-```sh
-$ ./xpanes ARG1 ARG2 ARG3 ...
-```
-
 # License
 
 The scripts is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+
