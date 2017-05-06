@@ -96,20 +96,20 @@ OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
+  -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
-  -S <socket-path>             Specify a full alternative path to the server socket.
   -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
                                t    tiled (default)
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
+  -S <socket-path>             Specify a full alternative path to the server socket.
+  --kill                       Close a pane itself after new window is created.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  --kill                       Close a pane itself after new window is created.
+  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
   --stay                       Do not switch to new window.
 
 _EOS_

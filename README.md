@@ -78,31 +78,30 @@ There are two commands. `xpanes` and `tmux-xpanes`.
 Usage:
   xpanes [OPTIONS] [argument ...]
   command ... | xpanes [OPTIONS] [<utility> ...]
-
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
+  -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
-  -S <socket-path>             Specify a full alternative path to the server socket.
   -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
                                t    tiled (default)
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
+  -S <socket-path>             Specify a full alternative path to the server socket.
+  --kill                       Close a pane itself after new window is created.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  --kill                       Close a pane itself after new window is created.
+  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
   --stay                       Do not switch to new window.
 ```
 
 # Simple example
 
-Try it.
+Try this command line.
 
 ```sh
 $ xpanes 1 2 3 4
@@ -112,7 +111,7 @@ You will get the screen like this.
 
 ```
 $ echo 1                       │$ echo 2
-                               │
+1                              │2
                                │
                                │
                                │
@@ -121,6 +120,29 @@ $ echo 1                       │$ echo 2
                                │
 -------------------------------+-------------------------------
 $ echo 3                       │$ echo 4
+3                              │4
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+```
+
+Oh, you are not familiar with key bindings of tmux?
+Do not worry. Type `exit` and "Enter" key to close the panes.
+
+```
+$ exit                         │$ exit
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+-------------------------------+-------------------------------
+$ exit                         │$ exit
                                │
                                │
                                │
@@ -130,7 +152,50 @@ $ echo 3                       │$ echo 4
                                │
 ```
 
-# Examples
+`-c` option allow to execute original command line.
+For example, try this one.
+
+```sh
+$ xpanes -c 'seq {}' 1 2 3 4
+```
+
+You will get this screen like this.
+
+```
+$ seq 1                        │$ seq 2
+1                              │1
+                               │2
+                               │
+                               │
+                               │
+                               │
+                               │
+-------------------------------+-------------------------------
+$ seq 3                        │$ seq 4
+1                              │1
+2                              │2
+3                              │3
+                               │4
+                               │
+                               │
+                               │
+```
+
+`seq` command which generates sequencial numbers is specified by `-c`.
+As you can see, `{}` is replaced each arguments. This placeholder can be changed by `-I` option like this.
+
+```sh
+$ xpanes -I@ -c 'seq @' 1 2 3 4
+```
+
+[Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is quite useful to generate sequential numbers or alphabetical characters.
+
+```
+# Same as $ xpanes 1 2 3 4
+$ xpanes {1..4}
+```
+
+# Further Examples
 
 #### Ping multiple hosts
 
