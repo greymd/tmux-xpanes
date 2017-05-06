@@ -8,7 +8,7 @@ _xpanes () {
     "($opts_omit -c --ssh -e)-c[Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.]" \
     "($opts_omit -e -c -I --ssh)-e[Execute given arguments as is.]" \
     "($opts_omit -I --ssh -e)-I[Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.]:repstr:(@ % _REPLACE_ @@@)" \
-    "($opts_omit --ssh -I -c -e)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]" \
+    "($opts_omit --ssh -I -c -e)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]:hosts:__xpanes-ssh_hosts" \
     "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
     "($opts_omit -l)-l[Specify a layout for a window.]:layout:__xpanes-layout" \
     "($opts_omit --log)--log=[Enable logging and store log files to given <directory>.]:dirs:_dir_list" \
@@ -16,6 +16,10 @@ _xpanes () {
     "($opts_omit --kill)--kill[Close a pane itself after new window is created.]" \
     "($opts_omit --stay)--stay[Do not switch to new window.]" \
     "($opts_omit -d)"{-d,--desync}"[Make synchronize-panes option off on new window.]"
+}
+
+_tmux-xpanes() {
+  _xpanes "$@"
 }
 
 __xpanes-layout() {
@@ -28,9 +32,74 @@ __xpanes-layout() {
   _describe -t args 'args' args
 }
 
-_tmux-xpanes() {
-  _xpanes "$@"
+# __xpanes-ssh_hosts function
+# ==============================================================
+# This function is modified version of _ssh_hosts function which is distributed with MIT-like license.
+# (from: https://github.com/zsh-users/zsh/blob/aa8157b463c18489b378da322f46574bd9ab8dbb/Completion/Unix/Command/_ssh#L665)
+# Here is the original copyright.
+# ---
+# The Z Shell is copyright (c) 1992-2017 Paul Falstad, Richard Coleman,
+# Zoltán Hidvégi, Andrew Main, Peter Stephenson, Sven Wischnowsky, and
+# others.  All rights reserved.  Individual authors, whether or not
+# specifically named, retain copyright in all changes; in what follows, they
+# are referred to as `the Zsh Development Group'.  This is for convenience
+# only and this body has no legal status.  The Z shell is distributed under
+# the following licence; any provisions made in individual files take
+# precedence.
+#
+# Permission is hereby granted, without written agreement and without
+# licence or royalty fees, to use, copy, modify, and distribute this
+# software and to distribute modified versions of this software for any
+# purpose, provided that the above copyright notice and the following
+# two paragraphs appear in all copies of this software.
+#
+# In no event shall the Zsh Development Group be liable to any party for
+# direct, indirect, special, incidental, or consequential damages arising out
+# of the use of this software and its documentation, even if the Zsh
+# Development Group have been advised of the possibility of such damage.
+#
+# The Zsh Development Group specifically disclaim any warranties, including,
+# but not limited to, the implied warranties of merchantability and fitness
+# for a particular purpose.  The software provided hereunder is on an "as is"
+# basis, and the Zsh Development Group have no obligation to provide
+# maintenance, support, updates, enhancements, or modifications.
+# ---
+__xpanes-ssh_hosts () {
+  local -a config_hosts
+  local config
+  integer ind
+
+  # If users-hosts matches, we shouldn't complete anything else.
+  if [[ "$IPREFIX" == *@ ]]; then
+    _combination -s '[:@]' my-accounts users-hosts "users=${IPREFIX/@}" hosts "$@" && return
+  else
+    _combination -s '[:@]' my-accounts users-hosts \
+      ${opt_args[-l]:+"users=${opt_args[-l]:q}"} hosts "$@" && return
+  fi
+  if (( ind = ${words[(I)-F]} )); then
+    config=${~words[ind+1]}
+  else
+    config="$HOME/.ssh/config"
+  fi
+  if [[ -r $config ]]; then
+    local key hosts host
+    while IFS=$'=\t ' read -r key hosts; do
+      if [[ "$key" == (#i)host ]]; then
+         for host in ${(z)hosts}; do
+            case $host in
+            (*[*?]*) ;;
+            (*) config_hosts+=("$host") ;;
+            esac
+         done
+      fi
+    done < "$config"
+    if (( ${#config_hosts} )); then
+      _wanted hosts expl 'remote host name' \
+        compadd -M 'm:{a-zA-Z}={A-Za-z} r:|.=* r:|=*' "$@" $config_hosts
+    fi
+  fi
 }
+# ==============================================================
 
 # Local Variables:
 # mode: Shell-Script
