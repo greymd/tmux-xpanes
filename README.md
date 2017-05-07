@@ -28,13 +28,15 @@
 
 # Installation
 
-## With `apt-get` (For Ubuntu users)
+Please refer to [wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation) in further details. Here is the some examples for installing.
+
+## With `apt` (For Ubuntu users)
 
 ```sh
 $ sudo add-apt-repository ppa:greymd/tmux-xpanes
 
-$ sudo apt-get update
-$ sudo apt-get install tmux-xpanes
+$ sudo apt update
+$ sudo apt install tmux-xpanes
 ```
 
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
@@ -44,10 +46,10 @@ $ brew tap greymd/tools
 $ brew install tmux-xpanes
 ```
 
-## With Zsh plugin managers (like [zplug](https://zplug.sh), [Antigen](https://github.com/zsh-users/antigen))
 
-If you are using Zsh plugin managers like zplug, add this line to `.zshrc`.
-In addition, zsh completion for `xpanes` command is activated as well.
+## With Zsh plugin managers
+
+Add this line to `~/.zshrc` in case of [zplug](https://zplug.sh).
 
 ```sh
 zplug "greymd/tmux-xpanes"
@@ -55,40 +57,19 @@ zplug "greymd/tmux-xpanes"
 
 ## Manual Installation
 
-If you cannot choose any above ways, execute following commands.
+**Attention:** With this way, please install tmux manually.
 
-Clone the source code.
-```
-$ git clone https://github.com/greymd/tmux-xpanes.git /path/to/tmux-xpanes
-```
+```bash:Terminal
+# Download with wget
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O ./xpanes
 
-Add this line to `~/.bashrc`.
-
-```
-source /path/to/tmux-xpanes/activate.sh
-```
-
-#### Use without messing up `PATH`
-
-`xpanes` command is portable command. Even if PATH does not include `xpanes` file, it works.
-
-```sh
-# Download from Github
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
-
-# Let it be executable.
-$ chmod +x /usr/local/bin/xpanes
-```
-
-```sh
-# Execute
-$ ./xpanes ARG1 ARG2 ARG3 ...
+# Put it under PATH and make it executable.
+$ sudo install -m 0755 xpanes /usr/local/bin/xpanes
 ```
 
 # Usage
 
-There are two commands. `xpanes` and `tmux-xpanes`.
-`tmux-xpanes` is alias of `xpanes`.
+Two commands `xpanes` and `tmux-xpanes` are installed. They are same commands (`tmux-xpanes` is alias of `xpanes`). Please use as you like.
 
 ```
 Usage:
@@ -114,7 +95,7 @@ OPTIONS:
   --stay                       Do not switch to new window.
 ```
 
-# Simple example
+## Simple examples
 
 Try this command line.
 
@@ -167,6 +148,7 @@ $ exit                         │$ exit
                                │
 ```
 
+### `-c` option and `-I` option.
 `-c` option allow to execute original command line.
 For example, try this one.
 
@@ -212,7 +194,32 @@ $ xpanes -I@ -c 'seq @' 1 2 3 4
 $ xpanes {1..4}
 ```
 
-# Further Examples
+## Modes of behavior.
+
+Basic usages are explained as shown above. Before showing applicable usages, it is good to know behavior modes of `xpanes`  command.
+
+### Behavior out of the tmux session.
+
+If the tmux is not being opened and `xpanes` command executed on the normal terminal, the command would follow following behavior.
+
+The command newly creates a tmux session and new window on the session.
+In addition, it separates the window into multiple panes. Finally, the session will be attached.
+
+### Behavior in the tmux session.
+
+If the tmux is already being opened and `xpanes` command is executed on the tmux, the command's behavior follows follwing.
+
+The command newly creates a window **on the exisging active session**.
+In addition, it separates the window into multiple panes.
+Finally, the window will be active window.
+
+### [Pipe mode] Behavior in the tmux session & Accepting standard input.
+
+If the tmux is already being opened and `xpanes` command is executed on the tmux (same as above).
+And, when the command is accepting standard input ( the command followed by any commands and pipe `|`),
+the command's follows "Pipe mode". "Pipe mode" will be instructed later.
+
+## Further Examples
 
 #### Ping multiple hosts
 
@@ -300,6 +307,10 @@ user1@host1-1.log.2017-03-15_21-30-07
 user2@host2-1.log.2017-03-15_21-30-07
 ```
 
+File name format for log file can be specified with `--log-format` option. Please refer to `xpanes --help`.
+
+**Attention:** Logging feature does not work properly with specific tmux version. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
+
 #### Execute different commands on the different panes.
 
 `-e` option executes given argument as it is.
@@ -366,6 +377,39 @@ Off course, with you can specify file name with `-S` option.
 
 ... then, user1 and user2 can share their screen each other.
 
+## Pipe mode
+
+Pipe mode is activated when `xpanes` command is accepting standard input.
+With this mode, `xpanes` behaves like UNIX `xargs`.
+
+```bash:tmux_session
+# Pipe mode
+$ seq 3 | xpanes
+```
+
+```
+$ echo 1                                  │$ echo 2
+1                                         │2
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+------------------------------------------+------------------------------------------
+$ echo 3
+3                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+```
 
 # License
 
