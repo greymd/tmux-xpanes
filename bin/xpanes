@@ -106,7 +106,6 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -S <socket-path>             Specify a full alternative path to the server socket.
-  --kill                       Close a pane itself after new window is created.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
@@ -447,7 +446,7 @@ xpns_pre_execution() {
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
   tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
-    "$XP_ABS_THIS_FILE_NAME --kill $_opts4args $_args4args" C-m
+    "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args && exit" C-m
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
@@ -482,11 +481,6 @@ xpns_execution() {
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
     tmux set-window-option -t "${_window_name}" synchronize-panes on
-  fi
-
-  # Remove original window.
-  if [ ! -z "${XP_KILL_WINDOW_NAME-}" ]; then
-    tmux kill-window -t "$XP_KILL_WINDOW_NAME"
   fi
 }
 
@@ -656,9 +650,6 @@ xpns_enable_long_options() {
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
     XP_OPT_DRY_RUN=1
-    return 1
-  elif [[ "$1" =~ ^--kill$ ]]; then
-    XP_KILL_WINDOW_NAME="$(tmux display-message -p "#I")"
     return 1
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
