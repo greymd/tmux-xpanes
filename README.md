@@ -194,18 +194,18 @@ $ xpanes -I@ -c 'seq @' 1 2 3 4
 $ xpanes {1..4}
 ```
 
-## Modes of behavior.
+## Behavior modes.
 
 Basic usages are explained as shown above. Before showing applicable usages, it is good to know behavior modes of `xpanes`  command.
 
-### Behavior out of the tmux session.
+### [Normal mode1] Behavior out of the tmux session.
 
 If the tmux is not being opened and `xpanes` command executed on the normal terminal, the command would follow following behavior.
 
 The command newly creates a tmux session and new window on the session.
 In addition, it separates the window into multiple panes. Finally, the session will be attached.
 
-### Behavior in the tmux session.
+### [Normal mode2] Behavior in the tmux session.
 
 If the tmux is already being opened and `xpanes` command is executed on the tmux, the command's behavior follows follwing.
 
@@ -382,10 +382,12 @@ Off course, with you can specify file name with `-S` option.
 Pipe mode is activated when `xpanes` command is accepting standard input.
 With this mode, `xpanes` behaves like UNIX `xargs`.
 
-```bash:tmux_session
+```bash
 # Pipe mode
 $ seq 3 | xpanes
 ```
+
+With this command line, the output would be like this.
 
 ```
 $ echo 1                                  │$ echo 2
@@ -401,6 +403,129 @@ $ echo 1                                  │$ echo 2
 ------------------------------------------+------------------------------------------
 $ echo 3
 3                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+```
+
+Pipe mode has two features.
+
+1. Inputted one line is corresponding to the single pane's command line (this is corresponding to one argument when Normal mode is running).
+1. `xpanes` command's argument will be the basic command line which will be used within all panes (this is corresponding to the `-c` option's argument when Normal mode is running).
+
+
+```bash:tmux_session
+# The command line generates some numbers.
+$ echo "2 4 6 8" | xargs -n 1
+2
+4
+6
+8
+
+# Add those numbers to xpanes command.
+$ echo "2 4 6 8" | xargs -n 1 | xpanes seq
+```
+
+The result will be like this.
+
+```
+$ seq 2                                   │$ seq 4
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+------------------------------------------+------------------------------------------
+$ seq 6                                   │$ seq 8
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+```
+
+Off-course, `-c` and `-I` options are available.
+
+```bash:tmux_session
+$ echo "2 4 6 8" | xargs -n 1 | xpanes -c 'seq {}'
+## xpanes seq
+##    and
+## xpanes -c 'seq {}'
+##    are same.
+```
+
+However, giving `-c` and arguments causes error.
+
+```bash:tmux_session
+$ echo test | xpanes -c 'echo {}' echo
+# Error: Both arguments and '-c' option are given.
+```
+
+### Logging in to multiple hosts given by `~/.ssh/config`
+
+For example, let's prepare the `~/.ssh/config` file like this.
+
+```text
+Host host1
+    User user1
+    HostName 192.168.0.2
+    IdentityFile ~/.ssh/id_rsa
+
+Host host2
+    User user2
+    HostName 192.168.0.3
+    IdentityFile ~/.ssh/id_rsa
+
+Host host3
+    User user3
+    HostName 192.168.0.4
+    IdentityFile ~/.ssh/id_rsa
+```
+
+Parse host name with some UNIX commands.
+
+```bash:Terminal
+$ cat ~/.ssh/config | awk '$1=="Host"{print $2}'
+host1
+host2
+host3
+```
+
+Giving the result to `xpanes ssh` command.
+
+```bash:Terminal
+$ cat ~/.ssh/config | awk '$1=="Host"{print $2}' | xpanes ssh
+```
+
+The results would be like this.
+
+```
+$ ssh host1                               │$ ssh host2 
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+                                          │
+------------------------------------------+------------------------------------------
+$ ssh host3
+                                          
                                           
                                           
                                           
