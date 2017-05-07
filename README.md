@@ -92,7 +92,6 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -S <socket-path>             Specify a full alternative path to the server socket.
-  --kill                       Close a pane itself after new window is created.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
@@ -318,7 +317,7 @@ $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 #### Create multiple windows and make each one devided into multiple panes.
 
 ```sh
-$ xpanes -c "xpanes  --kill -I@ -c 'echo @' {}" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
+$ xpanes -c "xpanes -I@ -c 'echo @' {} && exit" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
 ```
 
 Result will be this.
