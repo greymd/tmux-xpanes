@@ -91,7 +91,10 @@ xpns_usage() {
   cat << _EOS_
 Usage:
   $XP_THIS_FILE_NAME [OPTIONS] [argument ...]
+
+Usage(pipe mode):
   command ... | $XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]
+
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
@@ -122,7 +125,7 @@ FORMAT:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
 
-    In addition, sequences same as date(1) command are available.'
+    In addition, sequences same as date(1) command are available.
 
     For example:
     %Y   year  (e.g, 1960)
@@ -130,26 +133,6 @@ FORMAT:
     %d   date  (e.g, 31)
     And etc.
     Other sequences are available. Please refer to date(1) manual.
-
-Examples:
-    $ $XP_THIS_FILE_NAME arg1 arg2 arg3 arg4
-    New window is created and then, it will be separated into four panes.
-
-    $ $XP_THIS_FILE_NAME arg{1..4}
-    Brace expansion is useful.
-    Four panes will be created.
-
-    $ $XP_THIS_FILE_NAME -l -c 'ssh {}' user1@host1 user1@host1
-    New window is created and it will be separated into two panes.
-    And also $XP_LOG_DIR/user1@host1-1.log.2016-01-31_23-59-59.log
-    and      $XP_LOG_DIR/user1@host1-2.log.2016-01-31_23-59-59.log
-    will be created as their log files.
-
-    $ $XP_THIS_FILE_NAME -l --log=/tmp/logs -c 'ssh {}' user1@host1 user2@host2
-    Following files will be created.
-    /tmp/logs/user1@host1-1.log.2016-01-31_23-59-59.log
-    /tmp/logs/user2@host2-1.log.2016-01-31_23-59-59.log
-    will be created as their log files.
 
 _EOS_
 }
