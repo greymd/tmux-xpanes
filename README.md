@@ -59,7 +59,7 @@ zplug "greymd/tmux-xpanes"
 
 **Attention:** With this way, please install tmux manually.
 
-```bash:Terminal
+```sh
 # Download with wget
 $ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O ./xpanes
 
@@ -74,7 +74,10 @@ Two commands `xpanes` and `tmux-xpanes` are installed. They are same commands (`
 ```
 Usage:
   xpanes [OPTIONS] [argument ...]
+
+Usage(pipe mode):
   command ... | xpanes [OPTIONS] [<utility> ...]
+
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
@@ -189,7 +192,7 @@ $ xpanes -I@ -c 'seq @' 1 2 3 4
 
 [Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is quite useful to generate sequential numbers or alphabetical characters.
 
-```
+```sh
 # Same as $ xpanes 1 2 3 4
 $ xpanes {1..4}
 ```
@@ -343,10 +346,52 @@ This is same as here.
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 ```
 
+#### Changing layout of panes.
+
+To change the layout of panes, put some arguments followed by `-l` option.
+This is the example lines up some panes vertically.
+
+`ev` means `even-vertical`.
+
+```bash
+$ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
+```
+
+It would be like this.
+
+```
+top
+
+
+
+
+-------------------------------------------------------------
+vmstat 1
+
+
+
+
+-------------------------------------------------------------
+watch -n 1 df
+
+
+
+
+```
+
+Same way, `eh` (short expression of `even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available.
+Please refer to `xpanes --help` in further details.
+
 #### Create multiple windows and make each one devided into multiple panes.
 
+As it was mentioned above, `xpanes` command creates a new window when it runs on the tmux session.
+Utilizing this behavior, it is possible to create multiple windows easily.
+
 ```sh
-$ xpanes -c "xpanes -I@ -c 'echo @' {} && exit" "groupA-host1 groupA-host2" "groupB-host1 groupB-host2 groupB-host3" "groupC-host1 groupC-host2"
+$ xpanes -c "xpanes -I@ -c 'echo @' {} && exit" \
+  "groupA-host1 groupA-host2" \
+  "groupB-host1 groupB-host2 groupB-host3" \
+  "groupC-host1 groupC-host2"
 ```
 
 Result will be this.
@@ -382,7 +427,7 @@ Off course, with you can specify file name with `-S` option.
 Pipe mode is activated when `xpanes` command is accepting standard input.
 With this mode, `xpanes` behaves like UNIX `xargs`.
 
-```bash
+```sh
 # Pipe mode
 $ seq 3 | xpanes
 ```
@@ -459,7 +504,7 @@ $ seq 6                                   │$ seq 8
 
 Off-course, `-c` and `-I` options are available.
 
-```bash:tmux_session
+```sh
 $ echo "2 4 6 8" | xargs -n 1 | xpanes -c 'seq {}'
 ## xpanes seq
 ##    and
@@ -497,7 +542,7 @@ Host host3
 
 Parse host name with some UNIX commands.
 
-```bash:Terminal
+```sh
 $ cat ~/.ssh/config | awk '$1=="Host"{print $2}'
 host1
 host2
@@ -506,7 +551,7 @@ host3
 
 Giving the result to `xpanes ssh` command.
 
-```bash:Terminal
+```sh
 $ cat ~/.ssh/config | awk '$1=="Host"{print $2}' | xpanes ssh
 ```
 
