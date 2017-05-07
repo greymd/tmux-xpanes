@@ -15,9 +15,11 @@
 # Features
 * Split tmux's window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
-* It works on both situations.
-  + Normal terminal (out of tmux session).
-  + In tmux session.
+* Runable from tmux session.
+* Runnable within tmux session.
+* Operation logging.
+* Pane layout arrangement.
+* Generate command lines from standard-input (Pipe mode).
 
 # Requirements
 
@@ -38,14 +40,13 @@ $ sudo apt-get install tmux-xpanes
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
 
 ```sh
-# Install
 $ brew tap greymd/tools
 $ brew install tmux-xpanes
 ```
 
 ## With Zsh plugin managers (like [zplug](https://zplug.sh), [Antigen](https://github.com/zsh-users/antigen))
 
-If you are using zplug and other Zsh plugin managers, add this line to `.zshrc`.
+If you are using Zsh plugin managers like zplug, add this line to `.zshrc`.
 In addition, zsh completion for `xpanes` command is activated as well.
 
 ```sh
@@ -54,11 +55,17 @@ zplug "greymd/tmux-xpanes"
 
 ## Manual Installation
 
-If you are not using `zplug` (includeing bash users), execute following commands.
+If you cannot choose any above ways, execute following commands.
 
-```sh
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
-$ chmod +x /usr/local/bin/xpanes
+Clone the source code.
+```
+$ git clone https://github.com/greymd/tmux-xpanes.git /path/to/tmux-xpanes
+```
+
+Add this line to `~/.bashrc`.
+
+```
+source /path/to/tmux-xpanes/activate.sh
 ```
 
 #### Use without messing up `PATH`
@@ -66,6 +73,15 @@ $ chmod +x /usr/local/bin/xpanes
 `xpanes` command is portable command. Even if PATH does not include `xpanes` file, it works.
 
 ```sh
+# Download from Github
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/master/bin/xpanes -O /usr/local/bin/xpanes
+
+# Let it be executable.
+$ chmod +x /usr/local/bin/xpanes
+```
+
+```sh
+# Execute
 $ ./xpanes ARG1 ARG2 ARG3 ...
 ```
 
@@ -186,6 +202,8 @@ As you can see, `{}` is replaced each arguments. This placeholder can be changed
 ```sh
 $ xpanes -I@ -c 'seq @' 1 2 3 4
 ```
+
+`echo {}` is used as the default placeholder without `-c` option.
 
 [Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is quite useful to generate sequential numbers or alphabetical characters.
 
@@ -327,9 +345,6 @@ Result will be this.
 | window1 | `ssh groupA-host1` | `ssh groupA-host2` | none               |
 | window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
 | window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
-
-
-## Other features
 
 #### Share terminal sessions with others.
 

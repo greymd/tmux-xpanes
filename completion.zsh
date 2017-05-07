@@ -1,3 +1,3 @@
-XP_DIR="$(dirname $0:A)"
+__XPANES_DIR="$(dirname $0:A)"
 # Import completion
-fpath+="${XP_DIR}/contrib/completion/zsh/"
+fpath+="${__XPANES_DIR}/contrib/completion/zsh/"
