@@ -227,7 +227,7 @@ the command's follows "Pipe mode". "Pipe mode" will be instructed later.
 #### Ping multiple hosts
 
 ```sh
-$ xpanes -c "ping {}" 192.168.1.5 192.168.1.6 192.168.1.7 192.168.1.8
+$ xpanes -c "ping {}" 192.168.1.{5..8}
 ```
 
 The result is like this.
