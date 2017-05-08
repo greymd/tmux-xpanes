@@ -33,8 +33,10 @@ Please refer to [wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki
 ## With `apt` (For Ubuntu users)
 
 ```sh
-$ sudo add-apt-repository ppa:greymd/tmux-xpanes
+# Install `add-apt-repository` command, if necessary.
+$ sudo apt install software-properties-common
 
+$ sudo add-apt-repository ppa:greymd/tmux-xpanes
 $ sudo apt update
 $ sudo apt install tmux-xpanes
 ```
