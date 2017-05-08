@@ -14,8 +14,8 @@
 # Features
 * Split tmux's window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
-* Runnable from out of tmux session.
-* Runnable in tmux session.
+* Runnable from outside of tmux session.
+* Runnable from inside of tmux session.
 * Operation logging.
 * Layout arrangement for panes.
 * Generate command lines from standard input (Pipe mode).
