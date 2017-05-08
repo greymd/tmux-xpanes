@@ -15,7 +15,7 @@
 # Features
 * Split tmux's window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
-* Runable from tmux session.
+* Runnable from the terminal without tmux session.
 * Runnable within tmux session.
 * Operation logging.
 * Pane layout arrangement.
