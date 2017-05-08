@@ -1,8 +1,9 @@
 #!/bin/bash
-set -u
 
-# @Author yasuhiro.yamada
+# @Author Yamada, Yasuhiro
 # @Filename xpanes
+
+set -u
 readonly XP_VERSION="2.0.0"
 
 # ===============
@@ -72,8 +73,6 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   XP_STDIN=()
   XP_IS_PIPE_MODE=0
   XP_OPT_IS_SYNC=1
-  XP_KILL_WINDOW_NAME=""
-  XP_KILL_SESSION_NAME=""
   XP_OPT_DRY_RUN=0
   XP_OPT_ATTACH=1
   XP_OPT_LOG_STORE=0
@@ -120,7 +119,7 @@ _EOS_
 xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
-    Default value is \"$XP_LOG_FORMAT\"
+    Default value is "$XP_LOG_FORMAT"
     Interpreted sequences are:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
@@ -602,7 +601,7 @@ xpns_load_arg_options() {
   return 0
 }
 
-xpns_enable_long_options() {
+xpns_load_long_options() {
   if   [[ "$1" =~ ^--help$ ]]; then
     xpns_usage
     xpns_usage_verbose
@@ -675,7 +674,7 @@ xpns_parse_options() {
         shift
       else
         local _shift_count="0"
-        xpns_enable_long_options "$@"
+        xpns_load_long_options "$@"
         _shift_count="$?"
         [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
       fi
