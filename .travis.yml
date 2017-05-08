@@ -23,6 +23,8 @@ matrix:
         - os: linux
           env: SH=bash SH_VERSION=3.2 TMUX_VERSION=2.3
         - os: linux
+          env: SH=bash SH_VERSION=3.2 TMUX_VERSION=2.4
+        - os: linux
           env: SH=bash SH_VERSION=4.0 TMUX_VERSION=1.6
         - os: linux
           env: SH=bash SH_VERSION=4.0 TMUX_VERSION=1.7
@@ -40,6 +42,8 @@ matrix:
           env: SH=bash SH_VERSION=4.0 TMUX_VERSION=2.2
         - os: linux
           env: SH=bash SH_VERSION=4.0 TMUX_VERSION=2.3
+        - os: linux
+          env: SH=bash SH_VERSION=4.0 TMUX_VERSION=2.4
         - os: linux
           env: SH=bash SH_VERSION=4.1 TMUX_VERSION=1.6
         - os: linux
@@ -59,6 +63,8 @@ matrix:
         - os: linux
           env: SH=bash SH_VERSION=4.1 TMUX_VERSION=2.3
         - os: linux
+          env: SH=bash SH_VERSION=4.1 TMUX_VERSION=2.4
+        - os: linux
           env: SH=bash SH_VERSION=4.2 TMUX_VERSION=1.6
         - os: linux
           env: SH=bash SH_VERSION=4.2 TMUX_VERSION=1.7
@@ -76,6 +82,8 @@ matrix:
           env: SH=bash SH_VERSION=4.2 TMUX_VERSION=2.2
         - os: linux
           env: SH=bash SH_VERSION=4.2 TMUX_VERSION=2.3
+        - os: linux
+          env: SH=bash SH_VERSION=4.2 TMUX_VERSION=2.4
         - os: linux
           env: SH=bash SH_VERSION=4.3 TMUX_VERSION=1.6
         - os: linux
@@ -95,6 +103,8 @@ matrix:
         - os: linux
           env: SH=bash SH_VERSION=4.3 TMUX_VERSION=2.3
         - os: linux
+          env: SH=bash SH_VERSION=4.3 TMUX_VERSION=2.4
+        - os: linux
           env: SH=bash SH_VERSION=4.4 TMUX_VERSION=1.6
         - os: linux
           env: SH=bash SH_VERSION=4.4 TMUX_VERSION=1.7
@@ -112,6 +122,8 @@ matrix:
           env: SH=bash SH_VERSION=4.4 TMUX_VERSION=2.2
         - os: linux
           env: SH=bash SH_VERSION=4.4 TMUX_VERSION=2.3
+        - os: linux
+          env: SH=bash SH_VERSION=4.4 TMUX_VERSION=2.4
         - os: linux
           env: SH=bash SH_VERSION=default TMUX_VERSION=0.8
         - os: linux

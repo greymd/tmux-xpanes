@@ -54,10 +54,9 @@ readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
 readonly XP_TMP_WIN_NAME="tmp-$$"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
-readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.3"
-readonly XP_SUPPORT_TMUX_VERSIONS="${XP_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3)}"
+readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.4"
+readonly XP_SUPPORT_TMUX_VERSIONS="${XP_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3|2.4)}"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
-
 
 : "Initialize options" && {
   # options which work indivisually.
