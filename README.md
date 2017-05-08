@@ -1,12 +1,11 @@
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/xpanes_logo_1.png" height="206" width="208" />
-  <h4 align="center">Ultimate terminal divider powered by tmux.</h2>
+  <h4 align="center">Ultimate terminal divider powered by <a href="https://tmux.github.io/">tmux</a>.</h2>
 </h1>
 <p align="center">
   <a href="https://github.com/greymd/tmux-xpanes/releases/latest"><img src="https://img.shields.io/github/release/greymd/tmux-xpanes.svg" alt="Latest version" /></a>
   <a href="https://travis-ci.org/greymd/tmux-xpanes"><img src="https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master" alt="Build Status" /></a>
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
-  <a href="https://tmux.github.io/"><img src="https://img.shields.io/badge/powered_by-tmux-green.svg" alt="tmux" /></a>
 </p>
 <p align="center">
   <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie.gif" alt="Introduction Git Animation" />
@@ -15,11 +14,11 @@
 # Features
 * Split tmux's window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
-* Runnable from the terminal without tmux session.
-* Runnable within tmux session.
+* Runnable from out of tmux session.
+* Runnable in tmux session.
 * Operation logging.
-* Pane layout arrangement.
-* Generate command lines from standard-input (Pipe mode).
+* Layout arrangement for panes.
+* Generate command lines from standard input (Pipe mode).
 
 # Requirements
 
@@ -52,6 +51,7 @@ $ brew install tmux-xpanes
 ## With Zsh plugin managers
 
 Add this line to `~/.zshrc` in case of [zplug](https://zplug.sh).
+Zsh-completion for `xpanes` command is also available. See [Wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation).
 
 ```sh
 zplug "greymd/tmux-xpanes"
@@ -71,7 +71,7 @@ $ sudo install -m 0755 xpanes /usr/local/bin/xpanes
 
 # Usage
 
-Two commands `xpanes` and `tmux-xpanes` are installed. They are same commands (`tmux-xpanes` is alias of `xpanes`). Please use as you like.
+Two commands `xpanes` and `tmux-xpanes` will be installed. They are actually same commands (`tmux-xpanes` is alias of `xpanes`). Use one you like.
 
 ```
 Usage:
@@ -131,7 +131,7 @@ $ echo 3                       │$ echo 4
 ```
 
 Oh, you are not familiar with key bindings of tmux?
-Do not worry. Type `exit` and "Enter" key to close the panes.
+Don't worry. Type `exit` and "Enter" key to close the panes.
 
 ```
 $ exit                         │$ exit
@@ -154,14 +154,14 @@ $ exit                         │$ exit
 ```
 
 ### `-c` option and `-I` option.
-`-c` option allow to execute original command line.
+`-c` option allows to execute original command line.
 For example, try this one.
 
 ```sh
 $ xpanes -c 'seq {}' 1 2 3 4
 ```
 
-You will get this screen like this.
+You will get the screen like this.
 
 ```
 $ seq 1                        │$ seq 2
@@ -190,9 +190,9 @@ As you can see, `{}` is replaced each arguments. This placeholder can be changed
 $ xpanes -I@ -c 'seq @' 1 2 3 4
 ```
 
-`echo {}` is used as the default placeholder without `-c` option.
+`echo {}` is used as the default placeholder when any commands is not specified by `-c` option.
 
-[Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is quite useful to generate sequential numbers or alphabetical characters.
+[Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
 
 ```sh
 # Same as $ xpanes 1 2 3 4
@@ -201,18 +201,18 @@ $ xpanes {1..4}
 
 ## Behavior modes.
 
-Basic usages are explained as shown above. Before showing applicable usages, it is good to know behavior modes of `xpanes`  command.
+Basic usages are explained as shown above. Before showing applicable usages, it is good to know about the conditional behavior of `xpanes`  command.
 
 ### [Normal mode1] Behavior out of the tmux session.
 
-If the tmux is not being opened and `xpanes` command executed on the normal terminal, the command would follow following behavior.
+When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be...
 
 The command newly creates a tmux session and new window on the session.
 In addition, it separates the window into multiple panes. Finally, the session will be attached.
 
 ### [Normal mode2] Behavior in the tmux session.
 
-If the tmux is already being opened and `xpanes` command is executed on the tmux, the command's behavior follows follwing.
+When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be...
 
 The command newly creates a window **on the exisging active session**.
 In addition, it separates the window into multiple panes.
@@ -220,9 +220,9 @@ Finally, the window will be active window.
 
 ### [Pipe mode] Behavior in the tmux session & Accepting standard input.
 
-If the tmux is already being opened and `xpanes` command is executed on the tmux (same as above).
-And, when the command is accepting standard input ( the command followed by any commands and pipe `|`),
-the command's follows "Pipe mode". "Pipe mode" will be instructed later.
+When the tmux is already being opened and `xpanes` command is executed on the tmux (same as above).
+In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`),
+the command's behavior will be some special one called "Pipe mode". "Pipe mode" will be introduced [later](#pipe-mode).
 
 ## Further Examples
 
@@ -468,20 +468,20 @@ Pipe mode has two features.
 
 ```bash:tmux_session
 # The command line generates some numbers.
-$ echo "2 4 6 8" | xargs -n 1
+$ seq 4
+1
 2
+3
 4
-6
-8
 
 # Add those numbers to xpanes command.
-$ echo "2 4 6 8" | xargs -n 1 | xpanes seq
+$ seq 4 | xpanes seq
 ```
 
 The result will be like this.
 
 ```
-$ seq 2                                   │$ seq 4
+$ seq 1                                   │$ seq 2
                                           │
                                           │
                                           │
@@ -492,7 +492,7 @@ $ seq 2                                   │$ seq 4
                                           │
                                           │
 ------------------------------------------+------------------------------------------
-$ seq 6                                   │$ seq 8
+$ seq 3                                   │$ seq 4
                                           │
                                           │
                                           │
@@ -507,14 +507,14 @@ $ seq 6                                   │$ seq 8
 Off-course, `-c` and `-I` options are available.
 
 ```sh
-$ echo "2 4 6 8" | xargs -n 1 | xpanes -c 'seq {}'
+$ seq 4 | xpanes -c 'seq {}'
 ## xpanes seq
 ##    and
 ## xpanes -c 'seq {}'
 ##    are same.
 ```
 
-However, giving `-c` and arguments causes error.
+However, giving both `-c` and any arguments causes error.
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
@@ -542,7 +542,7 @@ Host host3
     IdentityFile ~/.ssh/id_rsa
 ```
 
-Parse host name with some UNIX commands.
+Parse host name with general UNIX commands.
 
 ```sh
 $ cat ~/.ssh/config | awk '$1=="Host"{print $2}'
@@ -582,6 +582,8 @@ $ ssh host3
                                           
                                           
 ```
+
+Pipe mode allows you to make combinations between tmux and other UNIX commands like this.
 
 # License
 
