@@ -716,6 +716,7 @@ xpns_parse_options() {
       # ----------------
       *)
       XP_ARGS+=("$1")
+      XP_NO_OPT=1
       shift
       ;;
 

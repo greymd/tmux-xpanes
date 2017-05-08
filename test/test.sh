@@ -465,6 +465,47 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_no_more_options() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay AA -l ev --help"
+    printf "\n $ $_cmd\n"
+    ${EXEC} -I@ -S $_socket_file -c "cat <<<@ > ${_tmpdir}/@.result" --stay AA -l ev --help
+    # hyphen "-" in the window name will be replacet with "_".
+    wait_panes_separation "$_socket_file" "AA" "4"
+    wait_all_files_creation ${_tmpdir}/{AA,-l,ev,--help}.result
+    diff "${_tmpdir}/AA.result" <(cat <<<AA)
+    assertEquals 0 $?
+    diff "${_tmpdir}/-l.result" <(cat <<<-l)
+    assertEquals 0 $?
+    diff "${_tmpdir}/ev.result" <(cat <<<ev)
+    assertEquals 0 $?
+    diff "${_tmpdir}/--help.result" <(cat <<<--help)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/*.result
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "4"
+        wait_all_files_creation ${_tmpdir}/{AA,-l,ev,--help}.result
+        diff "${_tmpdir}/AA.result" <(cat <<<AA)
+        assertEquals 0 $?
+        diff "${_tmpdir}/-l.result" <(cat <<<-l)
+        assertEquals 0 $?
+        diff "${_tmpdir}/ev.result" <(cat <<<ev)
+        assertEquals 0 $?
+        diff "${_tmpdir}/--help.result" <(cat <<<--help)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f ${_tmpdir}/*.result
+    }
+}
+
 test_invalid_layout() {
     # Option and arguments are continuous.
     ${EXEC} -lmem 1 2 3
@@ -927,6 +968,8 @@ test_hyphen_and_option2() {
         rm -f ${_tmpdir}/*.result
     }
 }
+
+
 
 test_desync_option_1() {
     # If tmux version is less than 1.9, skip this test.
