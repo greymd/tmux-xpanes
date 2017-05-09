@@ -203,14 +203,14 @@ $ xpanes {1..4}
 
 Basic usages are explained as shown above. Before showing applicable usages, it is good to know about the conditional behavior of `xpanes`  command.
 
-### [Normal mode1] Behavior out of the tmux session.
+### [Normal mode1] Outside of tmux session.
 
 When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be...
 
 The command newly creates a tmux session and new window on the session.
 In addition, it separates the window into multiple panes. Finally, the session will be attached.
 
-### [Normal mode2] Behavior in the tmux session.
+### [Normal mode2] Inside of tmux session.
 
 When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be...
 
@@ -218,7 +218,7 @@ The command newly creates a window **on the exisging active session**.
 In addition, it separates the window into multiple panes.
 Finally, the window will be active window.
 
-### [Pipe mode] Behavior in the tmux session & Accepting standard input.
+### [Pipe mode] Inside of tmux session & Accepting standard input.
 
 When the tmux is already being opened and `xpanes` command is executed on the tmux (same as above).
 In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`),
