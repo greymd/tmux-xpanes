@@ -167,10 +167,12 @@ xpns_get_tmux_conf() {
     | perl -anle 'print $F[1]'
 }
 
+# Disable allow-rename because
+# window separation does not work correctly
+# if "allow-rename" option is on
 xpns_suppress_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
-  # Window separation does not work correctly if "allow-rename" option is on
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     # Temporary, disable "allow-rename"
     if [ -z "${_session-}" ];then
@@ -181,12 +183,11 @@ xpns_suppress_allow_rename () {
   fi
 }
 
+# Restore default "allow-rename"
 xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
-  # Restore default "allow-rename"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
-    # Temporary, disable "allow-rename"
     if [ -z "${_session-}" ];then
       tmux set-window-option -g allow-rename on
     else
@@ -309,7 +310,7 @@ xpns_generate_window_name() {
 #
 # Split a new window into multiple panes.
 # Usage:
-#        run_split <window name> <num of pane>
+#        xpns_split_window <window name> <num of pane>
 #
 xpns_split_window() {
   local _window_name="$1" ; shift
@@ -327,6 +328,7 @@ xpns_split_window() {
   done
 }
 
+# Enable logging feature to the all the panes in the target window.
 xpns_enable_logging() {
   local _window_name="$1" ; shift
   local _index_offset="$1" ; shift
@@ -348,6 +350,7 @@ xpns_enable_logging() {
   done
 }
 
+# Send command to the all the panes in the target window.
 xpns_send_commands() {
   local _window_name="$1" ; shift
   local _index_offset="$1" ; shift
@@ -442,6 +445,7 @@ xpns_check_env() {
   return 0
 }
 
+# Execute from outside of tmux session
 xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
@@ -480,6 +484,7 @@ xpns_pre_execution() {
   xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
 }
 
+# Execute from inside of tmux session
 xpns_execution() {
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
   local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
