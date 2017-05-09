@@ -446,6 +446,13 @@ xpns_execution() {
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
   local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
+  local _default_allow_rename=$(xpns_get_tmux_conf "allow-rename")
+
+  # Window separation does not work correctly if "allow-rename" option is on
+  if [[ "${_default_allow_rename-}" == "on"  ]]; then
+    # Temporary, disable "allow-rename"
+    tmux set-window-option -t "${_window_name}" allow-rename off
+  fi
 
   xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_args_idx" "$XP_OPT_ATTACH"
 
@@ -462,6 +469,11 @@ xpns_execution() {
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
     tmux set-window-option -t "${_window_name}" synchronize-panes on
+  fi
+
+  # Restore default "allow-rename"
+  if [[ "${_default_allow_rename-}" == "on"  ]]; then
+    tmux set-window-option -t "${_window_name}" allow-rename on
   fi
 }
 
