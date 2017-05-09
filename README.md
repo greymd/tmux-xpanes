@@ -50,6 +50,8 @@ $ brew install tmux-xpanes
 
 ## With Zsh plugin managers
 
+**Attention:** With this way, please install tmux manually.
+
 Add this line to `~/.zshrc` in case of [zplug](https://zplug.sh).
 Zsh-completion for `xpanes` command is also available. See [Wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation).
 
