@@ -465,6 +465,41 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_keep_allow_rename_opt() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _allow_rename_status=""
+
+    _cmd="${EXEC} -S $_socket_file AA BB CC DD EE"
+    : "In TMUX session" && {
+
+        # allow-rename on
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        tmux -S "$_socket_file" set-window-option -g allow-rename on
+        echo "allow-rename(before): on"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "5"
+        _allow_rename_status="$(tmux -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+        echo "allow-rename(after): $_allow_rename_status"
+        assertEquals "on" "$_allow_rename_status"
+        close_tmux_session "$_socket_file"
+
+        # allow-rename off
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        tmux -S "$_socket_file" set-window-option -g allow-rename off
+        echo "allow-rename(before): off"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AA" "5"
+        _allow_rename_status="$(tmux -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+        echo "allow-rename(after): $_allow_rename_status"
+        assertEquals "off" "$_allow_rename_status"
+        close_tmux_session "$_socket_file"
+    }
+}
+
 test_no_more_options() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
