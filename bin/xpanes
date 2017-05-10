@@ -467,7 +467,9 @@ xpns_pre_execution() {
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
   tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
-    "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args && exit" C-m
+    "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args" C-m
+
+  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
