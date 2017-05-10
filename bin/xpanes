@@ -479,7 +479,7 @@ xpns_pre_execution() {
       echo ""
       echo "    tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME"
       echo ""
-      xpns_restore_allow_rename "${_def_allow_rename-}"
+      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
       exit $XP_ETTY
     fi
   fi
