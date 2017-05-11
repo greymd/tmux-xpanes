@@ -11,6 +11,34 @@
   <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie.gif" alt="Introduction Git Animation" />
 </p>
 
+## TL;DR
+
+#### Ping to multiple hosts.
+
+```sh
+$ xpanes -c "ping {}" 192.168.0.{1..9}
+```
+
+#### Enter multiple hosts over SSH and start operation logging.
+
+```sh
+$ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
+```
+
+#### Monitor CPU, Memory, Load, Processes and Disk info every seconds.
+
+```sh
+$ xpanes -e "top" "vmstat 1" "watch -n 1 df"
+```
+
+
+#### Operate multiple running Docker containers.
+
+```sh
+$ docker ps -q | xpanes -c "docker exec -it {} sh"
+```
+
+
 # Features
 * Split tmux's window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
@@ -102,7 +130,7 @@ OPTIONS:
   --stay                       Do not switch to new window.
 ```
 
-## Simple examples
+## Introduction
 
 Try this command line.
 
@@ -133,7 +161,7 @@ $ echo 3                       │$ echo 4
 ```
 
 Oh, you are not familiar with key bindings of tmux?
-Don't worry. Type `exit` and "Enter" key to close the panes.
+Don't worry. Just type `exit` and "Enter" key to close the panes.
 
 ```
 $ exit                         │$ exit
@@ -154,6 +182,8 @@ $ exit                         │$ exit
                                │
                                │
 ```
+
+As shown above, input from keyboard is synchronized within multiple panes by default.
 
 ### `-c` option and `-I` option.
 `-c` option allows to execute original command line.
@@ -192,9 +222,9 @@ As you can see, `{}` is replaced each arguments. This placeholder can be changed
 $ xpanes -I@ -c 'seq @' 1 2 3 4
 ```
 
-`echo {}` is used as the default placeholder when any commands is not specified by `-c` option.
+`echo {}` is used as the default placeholder when no commands is specified by `-c` option.
 
-[Brace expantion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
+[Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
 
 ```sh
 # Same as $ xpanes 1 2 3 4
@@ -203,18 +233,18 @@ $ xpanes {1..4}
 
 ## Behavior modes.
 
-Basic usages are explained as shown above. Before showing applicable usages, it is good to know about the conditional behavior of `xpanes`  command.
+Basic usages are shown above. Before showing further usages, it is good to know about the conditional behavior of `xpanes`  command.
 
 ### [Normal mode1] Outside of tmux session.
 
-When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be...
+When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be that.
 
 The command newly creates a tmux session and new window on the session.
 In addition, it separates the window into multiple panes. Finally, the session will be attached.
 
 ### [Normal mode2] Inside of tmux session.
 
-When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be...
+When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be that.
 
 The command newly creates a window **on the exisging active session**.
 In addition, it separates the window into multiple panes.
@@ -222,9 +252,8 @@ Finally, the window will be active window.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is already being opened and `xpanes` command is executed on the tmux (same as above).
-In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`),
-the command's behavior will be some special one called "Pipe mode". "Pipe mode" will be introduced [later](#pipe-mode).
+When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2).
+In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". It will be introduced [Pipe mode section](#pipe-mode).
 
 ## Further Examples
 
@@ -255,6 +284,8 @@ $ ping 192.168.1.7             │$ ping 192.168.1.8
                                │
                                │
 ```
+
+This example is the one having [Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html).
 
 #### Monitor multiple files
 
@@ -288,7 +319,54 @@ $ tail -f /var/log/application/error.log  │$ tail -f /var/log/application/acce
                                           │
 ```
 
-#### Connecting multiple hosts with ssh and **logging operations**.
+Hmm? you want to monitor those files through the SSH? Just do it like this.
+
+```sh
+# 'ssh user@host' is added.
+$ xpanes -c "ssh user@host tail -f {}" \
+/var/log/apache/{error,access}.log \
+/var/log/application/{error,access}.log
+```
+
+#### Connecting multiple hosts over SSH with same user
+
+```sh
+$ xpanes -c "ssh myuser@{}" host1 host2
+```
+
+```
+$ ssh myuser@host1             │ $ ssh myuser@host2
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+```
+
+#### Use SSH with ignoring alert message.
+
+`--ssh` option is helpful to ignore the alert message from OpenSSH. It is not required to answer yes/no question against it. Use it if you are fully sure that destination host is reliable one.
+
+```sh
+$ xpanes --ssh myuser1@host1 myuser2@host2
+```
+
+This is same as below.
+
+```
+$ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
+```
+
+#### Suppress input synchronization
+
+To disable the synchronization of keyboad input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
+
+```
+$ xpanes -d -c "ssh {}" myuser1@host1 myuser2@host2
+```
+
+#### Connecting multiple hosts over SSH **AND logging operations**.
 
 ```sh
 $ xpanes --log=~/operation_log -c "ssh {}" user1@host1 user2@host2
@@ -318,6 +396,7 @@ File name format for log file can be specified with `--log-format` option. Pleas
 
 **Attention:** Logging feature does not work properly with specific tmux version. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
+
 #### Execute different commands on the different panes.
 
 `-e` option executes given argument as it is.
@@ -325,6 +404,8 @@ File name format for log file can be specified with `--log-format` option. Pleas
 ```sh
 $ xpanes -e "top" "vmstat 1" "watch -n 1 free"
 ```
+
+Then the result will be like this.
 
 ```
 $ top                          │$ vmstat 1
@@ -344,7 +425,7 @@ $ watch -n 1 free
 
 ```
 
-This is same as here.
+You will get the same result with this command line.
 
 ```sh
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
@@ -352,10 +433,10 @@ $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 
 #### Changing layout of panes.
 
-To change the layout of panes, put some arguments followed by `-l` option.
-This is the example lines up some panes vertically.
+To change the layout of panes, put an argument followed by `-l` option.
+This is the example that lines up some panes vertically.
 
-`ev` means `even-vertical`.
+For example, to line up panes vertically, put `ev` (it is correspoinding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)).
 
 ```bash
 $ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
@@ -383,34 +464,11 @@ watch -n 1 df
 
 ```
 
-Same way, `eh` (short expression of `even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available.
-Please refer to `xpanes --help` in further details.
-
-#### Create multiple windows and make each one devided into multiple panes.
-
-As it was mentioned above, `xpanes` command creates a new window when it runs on the tmux session.
-Utilizing this behavior, it is possible to create multiple windows easily.
-
-```sh
-$ xpanes -c "xpanes -I@ -c 'echo @' {} && exit" \
-  "groupA-host1 groupA-host2" \
-  "groupB-host1 groupB-host2 groupB-host3" \
-  "groupC-host1 groupC-host2"
-```
-
-Result will be this.
-
-| window  | pane1              | pane2              | pane3              |
-| ------  | -----              | -----              | -----              |
-| window1 | `ssh groupA-host1` | `ssh groupA-host2` | none               |
-| window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
-| window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
+With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
 
 #### Share terminal sessions with others.
 
- `~/.cache/xpanes/socket` file will automatically be created when `xpanes` is used.
-Importing this socket file, different users can share their screens each other.
-Off course, with you can specify file name with `-S` option.
+ `~/.cache/xpanes/socket` file is automatically created when `xpanes` runs. Importing this socket file, different users can share their screens each other. Off course, you can specify the socket file name as you like with `-S` option.
 
 * user1
 
@@ -425,6 +483,73 @@ Off course, with you can specify file name with `-S` option.
 ```
 
 ... then, user1 and user2 can share their screen each other.
+
+#### Create multiple windows and make each one divided into multiple panes.
+
+As mentioned above, `xpanes` command creates a new window when it starts to run on the tmux session. Utilizing this behavior, it is possible to create multiple windows easily.
+
+```sh
+$ xpanes -c "xpanes -I@ -c 'echo @' {}; exit" \
+  "groupA-host1 groupA-host2" \
+  "groupB-host1 groupB-host2 groupB-host3" \
+  "groupC-host1 groupC-host2"
+```
+
+Result will be this.
+
+| window  | pane1              | pane2              | pane3              |
+| ------  | -----              | -----              | -----              |
+| window1 | `ssh groupA-host1` | `ssh groupA-host2` | none               |
+| window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
+| window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
+
+Can you guess why such the phenomenon happenes?
+Running this command, those panes are supposed to be created at first.
+
+```
+$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit │$ xpanes -I@ 'ssh @' groupB-host1 groupB-host2 groupB-host3; exit
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+                                                     │
+-----------------------------------------------------+-------------------------------------------------------
+$ xpanes -I@ 'ssh @' groupC-host1 groupC-host2; exit
+
+
+
+
+
+
+
+
+```
+
+Let's focus on the upper left pane.
+
+```
+$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit
+```
+
+When this command is executed on the tmux session, **it creates new window** which separated into two panes like below. And as you can see, `; exit` statement will close the panes after the separation.
+
+```
+$ ssh groupA-host1             │ $ ssh groupA-host2
+                               │
+                               │
+                               │
+                               │
+                               │
+                               │
+```
+
+Same phenomenon will be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed. Finally, just three windows will be left.
+
+
 
 ## Pipe mode
 
@@ -464,8 +589,8 @@ $ echo 3
 
 Pipe mode has two features.
 
-1. Inputted one line is corresponding to the single pane's command line (this is corresponding to one argument when Normal mode is running).
-1. `xpanes` command's argument will be the basic command line which will be used within all panes (this is corresponding to the `-c` option's argument when Normal mode is running).
+1. `xpanes` command's argument will be the common command line which will be used within all panes (this is corresponding to the `-c` option's argument in Normal mode).
+1. Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
 
 
 ```bash:tmux_session
@@ -516,16 +641,16 @@ $ seq 4 | xpanes -c 'seq {}'
 ##    are same.
 ```
 
-However, giving both `-c` and any arguments causes error.
+However, giving both `-c` and any arguments causes error. Because the command cannot decide which argument should be used.
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
 # Error: Both arguments and '-c' option are given.
 ```
 
-### Logging in to multiple hosts given by `~/.ssh/config`
+### Connecting to multiple hosts given by `~/.ssh/config`
 
-For example, let's prepare the `~/.ssh/config` file like this.
+For example, let's prepare `~/.ssh/config` file like this.
 
 ```text
 Host host1
@@ -553,7 +678,7 @@ host2
 host3
 ```
 
-Giving the result to `xpanes ssh` command.
+Giving the results to `xpanes ssh` command.
 
 ```sh
 $ cat ~/.ssh/config | awk '$1=="Host"{print $2}' | xpanes ssh
@@ -585,7 +710,25 @@ $ ssh host3
                                           
 ```
 
-Pipe mode allows you to make combinations between tmux and other UNIX commands like this.
+Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
+
+## Let's play!
+
+### Play with [terminal-parrot](https://github.com/jmhobbs/terminal-parrot).
+
+```sh
+$ yes terminal-parrot | head -n 25 | xpanes -e 
+```
+
+![terminal-parrot_movie.gif](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/terminal-parrot_movie.gif)
+
+### Play with [sl](https://github.com/mtoyoda/sl)
+
+```
+$ yes 'sl -l' | head | xpanes -elev
+```
+
+![sl_movie.gif](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/sl_movie.gif)
 
 # License
 
