@@ -712,24 +712,6 @@ $ ssh host3
 
 Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
 
-## Let's play!
-
-### Play with [terminal-parrot](https://github.com/jmhobbs/terminal-parrot).
-
-```sh
-$ yes terminal-parrot | head -n 25 | xpanes -e 
-```
-
-![terminal-parrot_movie.gif](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/terminal-parrot_movie.gif)
-
-### Play with [sl](https://github.com/mtoyoda/sl)
-
-```
-$ yes 'sl -l' | head | xpanes -elev
-```
-
-![sl_movie.gif](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/sl_movie.gif)
-
 # License
 
 The scripts is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
