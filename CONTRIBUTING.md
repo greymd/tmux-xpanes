@@ -11,6 +11,8 @@ First off, thanks for taking the time to contribute! :smile:
 
 ### Did you write a patch that fixes a bug, or make a purely cosmetic patch?
 
+* Please run [testing](https://github.com/greymd/tmux-xpanes/tree/doc/contributing#testing) in advance.
+  * It is **better** to ensure all the test cases are passed on your local environment before sending a pull request.
 * Open a new pull request with the patch.
 * Ensure the PR description clearly describes the problem and solution. Include the relevant issue number if applicable.
 
