@@ -6,7 +6,6 @@ First off, thanks for taking the time to contribute! :smile:
 
 * **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/greymd/tmux-xpanes/issues).
   * Refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) as well.
-
 * If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/greymd/tmux-xpanes/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or an **executable test case** demonstrating the expected behavior that is not occurring.
 
 ### Did you write a patch that fixes a bug, or make a purely cosmetic patch?
