@@ -620,56 +620,71 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(echo "$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+  xpns_load_flag_options "$(printf "%s" "$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
-      XP_REPSTR="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
-      return 1
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
     # -I AAA BBB  -- XP_REPSTR="AAA"
     # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
+      XP_REPSTR="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
+      return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_REPSTR="$2"
-      return 2
+      return 0
+    else
+      echo "xpanes: invalid argument '$2' for -I option" >&2
+      exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
-      XP_LAYOUT="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+      XP_LAYOUT="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
       xpns_is_valid_layout "$XP_LAYOUT"
-      return 1
+      return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
-      XP_LAYOUT="$(echo "$2" |  xpns_layout_short2long )"
+      XP_LAYOUT="$(printf "%s" "$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "$XP_LAYOUT"
-      return 2
+      return 0
+    else
+      echo "xpanes: invalid argument '$2' for -l option" >&2
+      exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
-      XP_CMD_UTILITY="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+      XP_CMD_UTILITY="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
       XP_OPT_CMD_UTILITY=1
-      return 1
+      return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_CMD_UTILITY="$2"
       XP_OPT_CMD_UTILITY=1
-      return 2
+      return 0
+    else
+      echo "xpanes: invalid argument '$2' for -c option" >&2
+      exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
-      XP_MAX_PANE_ARGS="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
-      return 1
-    elif ! [[ "$2" =~ ^-.* ]]; then
+      XP_MAX_PANE_ARGS="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
+      return 0
+    elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
-      return 2
+      return 0
+    else
+      echo "xpanes: invalid argument '$2' for -n option" >&2
+      exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
-      XP_SOCKET_PATH="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
-      return 1
+      XP_SOCKET_PATH="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
+      return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_SOCKET_PATH="$2"
-      return 2
+      return 0
+    else
+      echo "xpanes: invalid argument '$2' for -S option" >&2
+      exit $XP_EINVAL
     fi
   fi
   return 0
@@ -766,16 +781,14 @@ xpns_parse_options() {
         local _shift_count="0"
         if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]];then
           xpns_load_arg_options "$@"
-          _shift_count="$?"
-          [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
+          XP_OPTIONS+=("$1") && shift
         elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [ -n "${2-}" ];then
           xpns_load_arg_options "$@"
           _shift_count="$?"
-          [ "$_shift_count" = "2" ] && XP_OPTIONS+=("$1" "$2") && shift && shift
+          XP_OPTIONS+=("$1" "$2") && shift && shift
         elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
           xpns_load_flag_options "$1"
-          _shift_count="$?"
-          [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
+          XP_OPTIONS+=("$1") && shift
 
         # ----------------
         # Other options
