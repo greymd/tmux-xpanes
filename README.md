@@ -50,8 +50,8 @@ $ docker ps -q | xpanes -c "docker exec -it {} sh"
 
 # Requirements
 
-* `bash` (version 3.2 and more)
-* `tmux` (version 1.6 and more)
+* Bash (version 3.2 and more)
+* tmux (version 1.6 and more)
 
 # Installation
 
@@ -504,7 +504,7 @@ Result will be this.
 | window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
 
 Can you guess why such the phenomenon happenes?
-Running this command, those panes are supposed to be created at first.
+Running this command, such the window is supposed to be created at first.
 
 ```
 $ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit │$ xpanes -I@ 'ssh @' groupB-host1 groupB-host2 groupB-host3; exit
@@ -535,7 +535,7 @@ Let's focus on the upper left pane.
 $ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit
 ```
 
-When this command is executed on the tmux session, **it creates new window** which separated into two panes like below. And as you can see, `; exit` statement will close the panes after the separation.
+When this command is executed on the tmux session, **it will create new window** which separated into two panes like below. And as you can see, `; exit` statement will close the pane itself after the separation.
 
 ```
 $ ssh groupA-host1             │ $ ssh groupA-host2
@@ -547,9 +547,7 @@ $ ssh groupA-host1             │ $ ssh groupA-host2
                                │
 ```
 
-Same phenomenon will be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed. Finally, just three windows will be left.
-
-
+Same phenomenon will be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed itself. Finally, just the three windows will be left.
 
 ## Pipe mode
 
@@ -712,7 +710,32 @@ $ ssh host3
 
 Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
 
+## ... and [let's play!](https://github.com/greymd/tmux-xpanes/wiki/Let's-play!)
+
+# Contributing
+
+Please check out the [CONTRIBUTING](CONTRIBUTING.md) about how to proceed.
+
+## Testing
+
+Please note the following points before running the test.
+
+* Prepare [shunit2](https://github.com/kward/shunit2).
+* Run it from **outside of tmux session.**
+
+Follow this.
+
+```sh
+## Clone repository together with shunit2.
+$ git clone --recursive https://github.com/greymd/tmux-xpanes.git
+$ cd tmux-xpanes
+
+## Run
+$ bash test/test.sh
+
+## => Testing will start ...
+```
+
 # License
 
 The scripts is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
