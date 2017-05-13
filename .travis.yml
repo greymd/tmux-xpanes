@@ -2,6 +2,12 @@ language: generic
 dist: trusty
 sudo: required
 
+branches:
+    only:
+        - master
+        - /^bugfix.*/
+        - /^feature.*/
+
 matrix:
     include:
         - os: linux
