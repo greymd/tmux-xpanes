@@ -657,7 +657,7 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
-      XP_MAX_PANE_ARGS="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+      XP_MAX_PANE_ARGS="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
       return 1
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_MAX_PANE_ARGS="$2"
@@ -764,10 +764,13 @@ xpns_parse_options() {
       else
 
         local _shift_count="0"
-        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}  ]];then
+        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]];then
           xpns_load_arg_options "$@"
           _shift_count="$?"
           [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
+        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [ -n "${2-}" ];then
+          xpns_load_arg_options "$@"
+          _shift_count="$?"
           [ "$_shift_count" = "2" ] && XP_OPTIONS+=("$1" "$2") && shift && shift
         elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
           xpns_load_flag_options "$1"
