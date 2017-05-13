@@ -535,7 +535,10 @@ xpns_switch_pipe_mode() {
   while read line;
   do
     XP_STDIN+=("$line")
-  done < <(cat)
+  done < <(cat \
+    | \
+    # Remove empty lines
+    perl -anle '$#F >= 0 and print')
 
   # Merge them into utility.
   if [ ! -z "${XP_ARGS[*]-}" ]; then
