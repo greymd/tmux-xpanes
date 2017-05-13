@@ -62,7 +62,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   # options which work indivisually.
   readonly XP_FLAG_OPTIONS="[hVde]"
   # options which requre arguments.
-  readonly XP_ARG_OPTIONS="[IScl]"
+  readonly XP_ARG_OPTIONS="[IScln]"
   readonly XP_DEFAULT_LAYOUT="tiled"
   readonly XP_DEFAULT_REPSTR="{}"
   readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -83,6 +83,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   XP_OPT_CMD_UTILITY=0
   XP_CMD_UTILITY=""
   XP_LAYOUT="$XP_DEFAULT_LAYOUT"
+  XP_MAX_PANE_ARGS=""
 }
 
 xpns_usage() {
@@ -445,6 +446,15 @@ xpns_check_env() {
   return 0
 }
 
+xpns_pipe_filter() {
+  local _number="${1-}"
+  if [ -z "${_number-}" ]; then
+    cat
+  else
+    xargs -n "${_number}"
+  fi
+}
+
 # Execute from outside of tmux session
 xpns_pre_execution() {
   local _opts4args=""
@@ -536,9 +546,12 @@ xpns_switch_pipe_mode() {
   do
     XP_STDIN+=("$line")
   done < <(cat \
-    | \
+      | \
     # Remove empty lines
-    perl -anle '$#F >= 0 and print')
+    perl -anle '$#F >= 0 and print' \
+      | \
+    xpns_pipe_filter "${XP_MAX_PANE_ARGS}"
+    )
 
   # Merge them into utility.
   if [ ! -z "${XP_ARGS[*]-}" ]; then
@@ -640,6 +653,14 @@ xpns_load_arg_options() {
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_CMD_UTILITY="$2"
       XP_OPT_CMD_UTILITY=1
+      return 2
+    fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
+      XP_MAX_PANE_ARGS="$(echo "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+      return 1
+    elif ! [[ "$2" =~ ^-.* ]]; then
+      XP_MAX_PANE_ARGS="$2"
       return 2
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
