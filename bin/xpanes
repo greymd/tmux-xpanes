@@ -455,6 +455,15 @@ xpns_pipe_filter() {
   fi
 }
 
+xpns_set_args_per_pane() {
+  local _pane_num="$1"; shift
+  local _filtered_args=()
+  while read _line; do
+    _filtered_args+=("$_line")
+  done < <(xargs -n "${_pane_num}" <<<"$(xpns_arr2args "${XP_ARGS[@]}")")
+  XP_ARGS=("${_filtered_args[@]}")
+}
+
 # Execute from outside of tmux session
 xpns_pre_execution() {
   local _opts4args=""
@@ -498,6 +507,11 @@ xpns_pre_execution() {
 
 # Execute from inside of tmux session
 xpns_execution() {
+
+  if [ $XP_IS_PIPE_MODE -eq 0 ] && [ -n "${XP_MAX_PANE_ARGS-}" ];then
+    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
+  fi
+
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
   local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
@@ -533,25 +547,43 @@ xpns_execution() {
 ## ----------------
 xpns_switch_pipe_mode() {
 
-  if [ -z "${TMUX-}" ]; then
-    echo "Warning: 'pipe mode' requires attached session." >&2
-  fi
-
+  local _pane_num4new_term=""
   if [ ! -z "${XP_ARGS[*]-}" ] && [ ! -z "${XP_CMD_UTILITY-}" ]; then
     echo "Error: Both arguments and '-c' option are given." >&2
     exit $XP_EINVAL
+  fi
+
+  if [ -z "${TMUX-}" ]; then
+    echo "Warning: 'pipe mode' requires attached session." >&2
+    # This condition is used in case of inside tmux session & non-pipe mode.
+    # For example:
+    #     (outside of tmux session)$ echo {a..g} | ./xpanes -n 2
+    # => This will once create the new window like this.
+    #     (inside of tmux session)$ ./xpanes '-n' '2' 'a' 'b' 'c' 'd' 'e' 'f' 'g'
+    #     => After the window is closed, following panes would be left.
+    #     (pane 1)$ echo a b
+    #     (pane 2)$ echo c d
+    #     (pane 3)$ echo e f
+    #     (pane 4)$ echo g
+    # In order to create such the query,
+    # separate all the argument into minimum tokens
+    # with xargs -n 1
+    if [ -n "${XP_MAX_PANE_ARGS-}" ]; then
+      _pane_num4new_term=1
+    fi
   fi
 
   while read line;
   do
     XP_STDIN+=("$line")
   done < <(cat \
-      | \
-    # Remove empty lines
-    perl -anle '$#F >= 0 and print' \
-      | \
-    xpns_pipe_filter "${XP_MAX_PANE_ARGS}"
-    )
+             | \
+             # Remove empty lines
+             perl -anle '$#F >= 0 and print' \
+             | \
+             xpns_pipe_filter "${_pane_num4new_term:-$XP_MAX_PANE_ARGS}"
+           )
+
 
   # Merge them into utility.
   if [ ! -z "${XP_ARGS[*]-}" ]; then
@@ -857,13 +889,13 @@ xpns_main() {
   }
 
   #
-  # If current shell is NOT in tmux session.
+  # If current shell is outside of tmux session.
   #
   if [ -z "${TMUX-}" ]; then
     xpns_pre_execution
 
   #
-  # If current shell is already in tmux session.
+  # If current shell is already inside of tmux session.
   #
   else
     xpns_execution
