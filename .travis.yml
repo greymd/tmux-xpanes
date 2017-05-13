@@ -5,6 +5,8 @@ sudo: required
 branches:
     only:
         - master
+        - develop
+        - /^develop-.*/
         - /^bugfix.*/
         - /^feature.*/
 
