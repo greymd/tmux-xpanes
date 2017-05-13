@@ -712,7 +712,11 @@ Pipe mode allows you to make combinations between tmux and other general UNIX co
 
 ## ... and [let's play!](https://github.com/greymd/tmux-xpanes/wiki/Let's-play!)
 
-# Testing
+# Contributing
+
+Please check out the [CONTRIBUTING](CONTRIBUTING.md) about how to proceed.
+
+## Testing
 
 Please note the following points before running the test.
 
@@ -731,10 +735,6 @@ $ bash test/test.sh
 
 ## => Testing will start ...
 ```
-
-# Contributing
-
-Please check out the [CONTRIBUTING](CONTRIBUTING.md) about how to proceed.
 
 # License
 
