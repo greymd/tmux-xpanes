@@ -123,6 +123,7 @@ OPTIONS:
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
+  -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
