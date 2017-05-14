@@ -219,7 +219,7 @@ xpns_log_filenames () {
     | perl -nle 'print $_."-".(($h{$_}++)+1)' \
     | while read _arg
     do
-      echo "$_full_fmt" \
+      cat <<<"$_full_fmt" \
         | sed "s/\[:ARG:\]/$_arg/g" \
         | sed "s/\[:PID:\]/$$/g"
     done
@@ -278,8 +278,9 @@ xpns_arr2args() {
   fi
   for i in "$@" ;do
     _arg="$i"
-    # Use 'printf' command instead of 'echo' to print option like '-e'.
-    printf "%s" "$_arg" \
+    # Use 'cat <<<"input"' command instead of 'echo',
+    # because such the command recognizes option like '-e'.
+    cat <<<"$_arg" \
       | \
       # Escaping single quotations.
       sed "s/'/'\"'\"'/g" \
@@ -297,7 +298,7 @@ xpns_arr2args() {
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
-  echo "$1" \
+  cat <<<"$1" \
     | tr '.' ' ' \
     | \
     # coron must be replaced because tmux interprets it.
@@ -341,7 +342,7 @@ xpns_enable_logging() {
   local _logfiles=($(
   for i in $(seq 0 "$_args_num")
   do
-    echo "${_args[i]}"
+    cat <<<"${_args[i]}"
   done | xpns_log_filenames "$_log_format"
   ))
   for i in $(seq 0 "$_args_num")
@@ -652,7 +653,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(printf "%s" "$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+  xpns_load_flag_options "$(cat <<<"$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
@@ -661,7 +662,7 @@ xpns_load_arg_options() {
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
-      XP_REPSTR="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
+      XP_REPSTR="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_REPSTR="$2"
@@ -672,11 +673,11 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
-      XP_LAYOUT="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+      XP_LAYOUT="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
       xpns_is_valid_layout "$XP_LAYOUT"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
-      XP_LAYOUT="$(printf "%s" "$2" |  xpns_layout_short2long )"
+      XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "$XP_LAYOUT"
       return 0
     else
@@ -685,7 +686,7 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
-      XP_CMD_UTILITY="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+      XP_CMD_UTILITY="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
       XP_OPT_CMD_UTILITY=1
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -698,7 +699,7 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
-      XP_MAX_PANE_ARGS="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
+      XP_MAX_PANE_ARGS="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
       return 0
     elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
@@ -709,7 +710,7 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
-      XP_SOCKET_PATH="$(printf "%s" "$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
+      XP_SOCKET_PATH="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_SOCKET_PATH="$2"
