@@ -556,7 +556,11 @@ xpns_switch_pipe_mode() {
 
   if [ -z "${TMUX-}" ]; then
     echo "Warning: 'pipe mode' requires attached session." >&2
-    # This condition is used in case of inside tmux session & non-pipe mode.
+    # This condition is used when the following situations.
+    #   * Executed outside of tmux session
+    #   * Non-pipe mode.
+    #   * -n option.
+    #
     # For example:
     #     (outside of tmux session)$ echo {a..g} | ./xpanes -n 2
     # => This will once create the new window like this.
