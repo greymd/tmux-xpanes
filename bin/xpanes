@@ -86,6 +86,22 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
   XP_MAX_PANE_ARGS=""
 }
 
+# Logger
+#   $1 -- Log level (i.e Warning, Error)
+#   $2 -- Message
+#   i.e
+#      xpanes:Error: invalid option.
+#
+# This log format is created with reference to openssl's one.
+#   $ echo | openssl -a
+#   openssl:Error: '-a' is an invalid command.
+xpns_msg() {
+  local _loglevel="$1"
+  local _msgbody="$2"
+  local _msg="$XP_THIS_FILE_NAME:$_loglevel: ${_msgbody}"
+  echo "${_msg}" >&2
+}
+
 xpns_usage() {
   cat << _EOS_
 Usage:
@@ -244,9 +260,9 @@ xpns_ensure_directory() {
   if [ ! -d "${_dir}" ]; then
     # Create directory
     if mkdir "${_dir}"; then
-      echo "${_dir} is created." >&2
+      xpns_msg "Info" "${_dir} is created."
     else
-      echo "Failed to create ${_dir}" >&2
+      xpns_msg "Error" "Failed to create ${_dir}"
       exit $XP_ELOGDIR
     fi
   fi
@@ -255,7 +271,7 @@ xpns_ensure_directory() {
   #   but also i-node and other misc situations.
   touch "${_dir}/$_checkfile"
   if [ $? -ne 0 ]; then
-    echo "${_dir} is not writable." >&2
+    xpns_msg "Error" "${_dir} is not writable."
     rm -f "${_dir}/$_checkfile"
     exit $XP_ELOGWRITE
   fi
@@ -427,22 +443,23 @@ xpns_check_env() {
   while read cmd ; do
     type "$cmd" > /dev/null 2>&1
     if [ $? -ne 0 ]; then
-      echo "$cmd is required to work." >&2
+      xpns_msg "Error" "$cmd is required to work."
       exit $XP_ENOCMD
     fi
   done < <(echo "$_cmds" | tr ' ' '\n')
 
   mkdir -p "$XP_CACHE_HOME"
   if [ $? -eq 1 ];then
-    echo "Warning: failed to create cache directory '${XP_CACHE_HOME}'." >&2
+    xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
   XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   echo "$XP_CURRENT_TMUX_VERSION" | grep -qE "$XP_SUPPORT_TMUX_VERSIONS"
   if [ $? -eq 1 ];then
-    echo "Warning: '$XP_THIS_FILE_NAME' may not work properly!" >&2
-    echo "         Current tmux version $XP_CURRENT_TMUX_VERSION is out of support." >&2
-    echo "         From version $XP_SUPPORT_TMUX_VERSION_LOWER to $XP_SUPPORT_TMUX_VERSION_UPPER is officially supported." >&2
+    xpns_msg "Warning" \
+"'$XP_THIS_FILE_NAME' may not work correctly!
+Current tmux version $XP_CURRENT_TMUX_VERSION is out of support.
+From version $XP_SUPPORT_TMUX_VERSION_LOWER to $XP_SUPPORT_TMUX_VERSION_UPPER is officially supported."
   fi
   return 0
 }
@@ -495,10 +512,12 @@ xpns_pre_execution() {
   if [ $XP_OPT_ATTACH -eq 1 ]; then
     tmux -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME"
     if [ $? -ne 0 ] && [ $XP_IS_PIPE_MODE -eq 1 ]; then
-      echo "Recovery: Execute below command line to re-attach the new session."
-      echo ""
-      echo "    tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME"
-      echo ""
+      xpns_msg "Recovery" \
+"Execute below command line to re-attach the new session.
+
+tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
+
+"
       xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
       exit $XP_ETTY
     fi
@@ -550,12 +569,12 @@ xpns_switch_pipe_mode() {
 
   local _pane_num4new_term=""
   if [ ! -z "${XP_ARGS[*]-}" ] && [ ! -z "${XP_CMD_UTILITY-}" ]; then
-    echo "Error: Both arguments and '-c' option are given." >&2
+    xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
     exit $XP_EINVAL
   fi
 
   if [ -z "${TMUX-}" ]; then
-    echo "Warning: 'pipe mode' requires attached session." >&2
+    xpns_msg "Warning" "'pipe mode' requires attached session."
     # This condition is used when the following situations.
     #   * Executed outside of tmux session
     #   * Non-pipe mode.
@@ -630,7 +649,7 @@ xpns_is_valid_layout() {
   local _layout="$1"
   echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
   if [ $? -ne 0 ]; then
-    echo "Error: Invalid layout '$_layout'." >&2
+    xpns_msg "Error" "Invalid layout '$_layout'."
     exit $XP_ELAYOUT
   fi
 }
@@ -672,7 +691,7 @@ xpns_load_arg_options() {
       XP_REPSTR="$2"
       return 0
     else
-      echo "xpanes: invalid argument '$2' for -I option" >&2
+      xpns_msg "Error" "invalid argument '$2' for -I option"
       exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
@@ -685,7 +704,7 @@ xpns_load_arg_options() {
       xpns_is_valid_layout "$XP_LAYOUT"
       return 0
     else
-      echo "xpanes: invalid argument '$2' for -l option" >&2
+      xpns_msg "Error" "invalid argument '$2' for -l option"
       exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
@@ -698,7 +717,7 @@ xpns_load_arg_options() {
       XP_OPT_CMD_UTILITY=1
       return 0
     else
-      echo "xpanes: invalid argument '$2' for -c option" >&2
+      xpns_msg "Error" "invalid argument '$2' for -c option"
       exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
@@ -709,7 +728,7 @@ xpns_load_arg_options() {
       XP_MAX_PANE_ARGS="$2"
       return 0
     else
-      echo "xpanes: invalid argument '$2' for -n option" >&2
+      xpns_msg "Error" "invalid argument '$2' for -n option"
       exit $XP_EINVAL
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
@@ -720,7 +739,7 @@ xpns_load_arg_options() {
       XP_SOCKET_PATH="$2"
       return 0
     else
-      echo "xpanes: invalid argument '$2' for -S option" >&2
+      xpns_msg "Error" "invalid argument '$2' for -S option"
       exit $XP_EINVAL
     fi
   fi
@@ -768,7 +787,7 @@ xpns_load_long_options() {
   # Other options
   # ----------------
   else
-    echo "Invalid option -- '${1#--}'" >&2
+    xpns_msg "Error" "invalid option -- '${1#--}'"
     xpns_usage
     echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
     exit $XP_EINVAL
@@ -831,7 +850,7 @@ xpns_parse_options() {
         # Other options
         # ----------------
         else
-          echo "Invalid option -- '${1#-}'" >&2
+          xpns_msg "Error" "Invalid option -- '${1#-}'"
           xpns_usage
           echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
           exit $XP_EINVAL
@@ -860,7 +879,7 @@ xpns_parse_options() {
 
   # When no argument arr given, exit.
   if [ -z "${XP_ARGS[*]-}" ]; then
-    echo "No arguments are given." >&2
+    xpns_msg "Error" "No arguments are given."
     xpns_usage
     echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
     exit $XP_EINVAL
