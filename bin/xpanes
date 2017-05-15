@@ -577,10 +577,10 @@ xpns_switch_pipe_mode() {
   fi
 
   if [ -z "${TMUX-}" ]; then
-    xpns_msg "Warning" "'pipe mode' requires attached session."
+    xpns_msg "Warning" "'Pipe mode' requires attached session."
     # This condition is used when the following situations.
     #   * Executed outside of tmux session
-    #   * Non-pipe mode.
+    #   * Pipe mode.
     #   * -n option.
     #
     # For example:
