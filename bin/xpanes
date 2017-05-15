@@ -232,6 +232,7 @@ xpns_restore_allow_rename () {
 xpns_log_filenames () {
   local _arg_fmt="$1"
   local _full_fmt="$(date '+'$_arg_fmt)"
+  # TODO : Handle empty string
   cat \
     | perl -nle 'print $_."-".(($h{$_}++)+1)' \
     | while read _arg
@@ -315,6 +316,7 @@ xpns_arr2args() {
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
+  # TODO : Handle empty string
   cat <<<"$1" \
     | tr '.' ' ' \
     | \

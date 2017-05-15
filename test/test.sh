@@ -2134,4 +2134,6 @@ test_log_format_and_desync_option_pipe() {
     }
 }
 
+# TODO : test with logging + empty string argument
+
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
