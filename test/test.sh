@@ -465,6 +465,142 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_n_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -S $_socket_file --stay -n 2 -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' 2 4 6 8"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "2" "2"
+    divide_two_panes_impl "$_socket_file"
+    assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+    assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+    close_tmux_session "$_socket_file"
+    rm -rf $TEST_TMP/*
+
+    # Run with empty arguments
+    _cmd="${EXEC} -S $_socket_file --stay -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' -n 2 2 '' 4 '' 6 8 10"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "2" "4"
+    divide_four_panes_impl "$_socket_file"
+    assertEquals "$(seq 2)" "$(cat $TEST_TMP/2)"
+    assertEquals "$(seq 4)" "$(cat $TEST_TMP/4)"
+    assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+    assertEquals "$(seq 10)" "$(cat $TEST_TMP/10)"
+    close_tmux_session "$_socket_file"
+    rm -rf $TEST_TMP/*
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -n 2 -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' 2 4 6 8"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "2" "2"
+        divide_two_panes_impl "$_socket_file"
+        assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+        assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+        close_tmux_session "$_socket_file"
+
+        _cmd="${EXEC} -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' -n 2 2 '' 4 '' 6 8 10"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "2" "4"
+        divide_four_panes_impl "$_socket_file"
+        assertEquals "$(seq 2)" "$(cat $TEST_TMP/2)"
+        assertEquals "$(seq 4)" "$(cat $TEST_TMP/4)"
+        assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+        assertEquals "$(seq 10)" "$(cat $TEST_TMP/10)"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_n_option_pipe() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="echo 2 4 6 8 | ${EXEC} -S $_socket_file --stay -n 2 -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' "
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "2" "2"
+    divide_two_panes_impl "$_socket_file"
+    assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+    assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+    close_tmux_session "$_socket_file"
+    rm -rf $TEST_TMP/*
+
+    # Run with empty lines
+    _cmd=" echo -ne '2\n\n4\n\n6\n \n8 10' | ${EXEC} -S $_socket_file --stay -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' -n 2"
+    printf "\n $ $_cmd\n"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "2" "3"
+    divide_three_panes_impl "$_socket_file"
+    assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+    assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+    assertEquals "$(seq 10)" "$(cat $TEST_TMP/10)"
+    close_tmux_session "$_socket_file"
+    rm -rf $TEST_TMP/*
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -n 2 -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)' 2 4 6 8"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "2" "2"
+        divide_two_panes_impl "$_socket_file"
+        assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+        assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+        close_tmux_session "$_socket_file"
+
+        _cmd=" echo -ne '2\n\n4\n\n6\n \n8\n\t10' | ${EXEC} -n 2 -c 'seq {} > $TEST_TMP/\$(echo {} | tr -dc 0-9)'"
+        printf "\n $ TMUX($_cmd)\n"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "2" "3"
+        divide_three_panes_impl "$_socket_file"
+        assertEquals "$(seq 2 4)" "$(cat $TEST_TMP/24)"
+        assertEquals "$(seq 6 8)" "$(cat $TEST_TMP/68)"
+        assertEquals "$(seq 10)" "$(cat $TEST_TMP/10)"
+        close_tmux_session "$_socket_file"
+    }
+}
+
+test_no_args_option() {
+  local _cmd=""
+  # Option which requires argument without any arguments
+  _cmd="${EXEC} -n"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="echo a b c d e | ${EXEC} -n"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="${EXEC} -S"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="${EXEC} -l -c '{}'"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="seq 10 | ${EXEC} -l -c '{}'"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="${EXEC} -c"
+  printf "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+}
+
 test_keep_allow_rename_opt() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
@@ -864,6 +1000,13 @@ test_unsupported_version() {
 
 test_invalid_args() {
     local _cmd="${EXEC} -Z"
+    printf "\n $ $_cmd\n"
+    # execute
+    $_cmd > /dev/null
+    assertEquals "4" "$?"
+
+    # -n option only accepts numbers.
+    _cmd="${EXEC} -n A"
     printf "\n $ $_cmd\n"
     # execute
     $_cmd > /dev/null
@@ -1990,5 +2133,7 @@ test_log_format_and_desync_option_pipe() {
         rmdir ${_tmpdir}/fin
     }
 }
+
+# TODO : test with logging + empty string argument
 
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2
