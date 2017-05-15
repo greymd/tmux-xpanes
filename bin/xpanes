@@ -359,7 +359,7 @@ xpns_enable_logging() {
   local _logfiles=($(
   for i in $(seq 0 "$_args_num")
   do
-    cat <<<"${_args[i]}"
+    printf "%s\n" "${_args[i]}"
   done | xpns_log_filenames "$_log_format"
   ))
   for i in $(seq 0 "$_args_num")
