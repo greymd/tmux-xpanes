@@ -52,6 +52,7 @@ readonly XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
 # Temporary window name is tmp-12345(PID)
 readonly XP_TMP_WIN_NAME="tmp-$$"
+readonly XP_EMPTY_WIN_NAME="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.4"
@@ -232,9 +233,13 @@ xpns_restore_allow_rename () {
 xpns_log_filenames () {
   local _arg_fmt="$1"
   local _full_fmt="$(date '+'$_arg_fmt)"
-  # TODO : Handle empty string
   cat \
-    | perl -nle 'print $_."-".(($h{$_}++)+1)' \
+    | \
+    # Handle empty string
+    sed 's/^$/'$XP_EMPTY_WIN_NAME'/' \
+    | \
+    # 1st argument + '-' + unique number (avoid same argument has same name)
+    perl -nle 'print $_."-".(($h{$_}++)+1)' \
     | while read _arg
     do
       cat <<<"$_full_fmt" \
@@ -316,9 +321,13 @@ xpns_arr2args() {
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
-  # TODO : Handle empty string
   cat <<<"$1" \
-    | tr '.' ' ' \
+    | \
+    # Empty string must have name.
+    sed 's/^$/'$XP_EMPTY_WIN_NAME'/' \
+    | \
+    # dot is regarded as a field separator because tmux interprets it.
+    tr '.' ' ' \
     | \
     # coron must be replaced because tmux interprets it.
     sed 's/:/;/g' \
