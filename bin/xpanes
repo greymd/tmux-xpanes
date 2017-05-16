@@ -52,7 +52,7 @@ readonly XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
 # Temporary window name is tmp-12345(PID)
 readonly XP_TMP_WIN_NAME="tmp-$$"
-readonly XP_UNPRINTABLE_STR="UNPRINTABLE"
+readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.4"
@@ -546,7 +546,7 @@ xpns_execution() {
   fi
 
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(xpns_generate_window_name "$XP_UNPRINTABLE_STR" "${XP_ARGS[0]}")
+  local _window_name=$(xpns_generate_window_name "$XP_EMPTY_STR" "${XP_ARGS[0]}")
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
   local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
@@ -560,7 +560,7 @@ xpns_execution() {
       "$_pane_base_index" \
       "$XP_LOG_DIR" \
       "$XP_LOG_FORMAT" \
-      "$XP_UNPRINTABLE_STR" \
+      "$XP_EMPTY_STR" \
       "${XP_ARGS[@]}"
   fi
 
