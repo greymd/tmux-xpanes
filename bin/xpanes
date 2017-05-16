@@ -530,11 +530,15 @@ xpns_pre_execution() {
 tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
 
 "
-      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
+      # Suppress error message. Because it might be failed.
+      # It might be failed. Before appling changes, first window might be closed.
+      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH" &> /dev/null
       exit $XP_ETTY
     fi
   fi
-  xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
+  # Suppress error message. Because it might be failed.
+  # Before appling changes, first window might be closed.
+  xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH" &> /dev/null
 }
 
 # Execute from inside of tmux session
