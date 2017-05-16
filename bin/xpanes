@@ -360,7 +360,7 @@ xpns_enable_logging() {
   local _log_dir="$1" ; shift
   local _log_format="$1" ; shift
   local _unprintable_str="$1" ; shift
-  local _args=($@)
+  local _args=("$@")
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
   local _logfiles=($(
