@@ -52,7 +52,7 @@ readonly XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
 # Temporary window name is tmp-12345(PID)
 readonly XP_TMP_WIN_NAME="tmp-$$"
-readonly XP_EMPTY_WIN_NAME="EMPTY"
+readonly XP_UNPRINTABLE_STR="UNPRINTABLE"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.4"
@@ -222,7 +222,7 @@ xpns_restore_allow_rename () {
 # Return:
 #        File names.
 # Example:
-#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | log_filenames '[:ARG:]_[:PID:]_%Y%m%d.log'
+#        $ echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | xpns_log_filenames '[:ARG:]_[:PID:]_%Y%m%d.log'
 #        aaa-1_1234_20160101.log
 #        bbb-1_1234_20160101.log
 #        ccc-1_1234_20160101.log
@@ -234,9 +234,6 @@ xpns_log_filenames () {
   local _arg_fmt="$1"
   local _full_fmt="$(date '+'$_arg_fmt)"
   cat \
-    | \
-    # Handle empty string
-    sed 's/^$/'$XP_EMPTY_WIN_NAME'/' \
     | \
     # 1st argument + '-' + unique number (avoid same argument has same name)
     perl -nle 'print $_."-".(($h{$_}++)+1)' \
@@ -321,10 +318,8 @@ xpns_arr2args() {
 # ex, $1     =  aaa.bbb.ccc
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
-  cat <<<"$1" \
-    | \
-    # Empty string must have name.
-    sed 's/^$/'$XP_EMPTY_WIN_NAME'/' \
+  local _unprintable_str="${1-}"; shift
+  cat <<<"${1:-$_unprintable_str}" \
     | \
     # dot is regarded as a field separator because tmux interprets it.
     tr '.' ' ' \
@@ -364,13 +359,15 @@ xpns_enable_logging() {
   local _index_offset="$1" ; shift
   local _log_dir="$1" ; shift
   local _log_format="$1" ; shift
+  local _unprintable_str="$1" ; shift
   local _args=($@)
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
   local _logfiles=($(
   for i in $(seq 0 "$_args_num")
   do
-    printf "%s\n" "${_args[i]}"
+    # Replace empty string.
+    printf "%s\n" "${_args[i]:-$_unprintable_str}"
   done | xpns_log_filenames "$_log_format"
   ))
   for i in $(seq 0 "$_args_num")
@@ -549,7 +546,7 @@ xpns_execution() {
   fi
 
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(xpns_generate_window_name "${XP_ARGS[0]}")
+  local _window_name=$(xpns_generate_window_name "$XP_UNPRINTABLE_STR" "${XP_ARGS[0]}")
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
   local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
@@ -558,11 +555,22 @@ xpns_execution() {
   xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_args_idx" "$XP_OPT_ATTACH"
 
   if [ $XP_OPT_LOG_STORE -eq 1 ]; then
-    xpns_enable_logging  "$_window_name" "$_pane_base_index" "$XP_LOG_DIR" "$XP_LOG_FORMAT" "${XP_ARGS[@]}"
+    xpns_enable_logging \
+      "$_window_name" \
+      "$_pane_base_index" \
+      "$XP_LOG_DIR" \
+      "$XP_LOG_FORMAT" \
+      "$XP_UNPRINTABLE_STR" \
+      "${XP_ARGS[@]}"
   fi
 
   # Sending ssh opearations for each pane.
-  xpns_send_commands "$_window_name" "$_pane_base_index" "$XP_REPSTR" "$XP_CMD_UTILITY" "${XP_ARGS[@]}"
+  xpns_send_commands \
+    "$_window_name" \
+    "$_pane_base_index" \
+    "$XP_REPSTR" \
+    "$XP_CMD_UTILITY" \
+    "${XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
   xpns_arrange_pane_location "$_window_name" $_last_args_idx
@@ -771,23 +779,19 @@ xpns_load_long_options() {
     xpns_version
     exit 0
   elif [[ "$1" =~ ^--desync$ ]]; then
-    XP_OPTIONS+=("$1")
     XP_OPT_IS_SYNC=0
     return 1
   elif [[ "$1" =~ ^--log-format=.*$ ]]; then
-    XP_OPTIONS+=("$1")
     XP_OPT_LOG_STORE=1
     XP_LOG_FORMAT="${1#--log-format=}"
     return 1
   elif [[ "$1" =~ ^--log ]]; then
-    XP_OPTIONS+=("$1")
     XP_OPT_LOG_STORE=1
     if [[ "$1" =~ ^--log=.*$  ]]; then
       XP_LOG_DIR="${1#--log=}"
     fi
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
-    XP_OPTIONS+=("$1")
     XP_CMD_UTILITY="$XP_SSH_CMD_UTILITY"
     return 1
     # For unit testing
@@ -796,7 +800,6 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
-    XP_OPTIONS+=("$1")
     return 1
 
   # ----------------
