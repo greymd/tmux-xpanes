@@ -465,6 +465,44 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_divide_five_panes_special_chars() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -S $_socket_file --stay '%s' '%d' ':' '-' ''"
+    printf "\n $ %s\n" "$_cmd"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" '\\x25' '5'
+    divide_five_panes_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+    _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
+    printf "\n $ %s\n" "$_cmd"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" '\\x2e' '5'
+    divide_five_panes_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file --stay '%s' '%d' ':' '-' ''"
+        printf "\n $ TMUX(%s)\n" "$_cmd"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" '\\x25' '5'
+        divide_five_panes_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+
+        _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
+        printf "\n $ TMUX(%s)\n" "$_cmd"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" '\\x2e' '5'
+        divide_five_panes_impl "$_socket_file"
+        close_tmux_session "$_socket_file"
+    }
+}
+
 test_log_and_empty_arg() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(tmux -V)." >&2
