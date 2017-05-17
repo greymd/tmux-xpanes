@@ -194,6 +194,7 @@ xpns_suppress_allow_rename () {
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     # Temporary, disable "allow-rename"
+    xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
     if [ -z "${_session-}" ];then
       tmux set-window-option -g allow-rename off
     else
@@ -203,10 +204,13 @@ xpns_suppress_allow_rename () {
 }
 
 # Restore default "allow-rename"
+# Do not write like 'xpns_restore_allow_rename "somevalue" "somevalue" > /dev/null'
+# In tmux 1.6, 'tmux set-window-option' might be stopped in case of redirection.
 xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
+    xpns_msg "Info" "Restore original value of 'allow-rename' option."
     if [ -z "${_session-}" ];then
       tmux set-window-option -g allow-rename on
     else
@@ -527,15 +531,13 @@ xpns_pre_execution() {
 tmux -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
 
 "
-      # Suppress error message. Because it might be failed.
       # It might be failed. Before appling changes, first window might be closed.
-      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH" &> /dev/null
+      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
       exit $XP_ETTY
     fi
   fi
-  # Suppress error message. Because it might be failed.
-  # Before appling changes, first window might be closed.
-  xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH" &> /dev/null
+  # It might be failed. Before appling changes, first window might be closed.
+  xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
 }
 
 # Execute from inside of tmux session
