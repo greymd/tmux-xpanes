@@ -169,7 +169,7 @@ xpns_get_tmux_version() {
   else
     _tmux_version="$(tmux -V)"
   fi
-  echo "$_tmux_version" | perl -anle 'printf $F[1]'
+  echo "$_tmux_version" | perl -anle 'printf "%s", "$F[1]"'
 }
 
 xpns_get_tmux_conf() {
@@ -318,22 +318,23 @@ xpns_arr2args() {
 }
 
 # Extract first field to generate window name.
-# Dot '.' is also interepreted as a filed separator.
-# ex, $1     =  aaa.bbb.ccc
+# ex, $2     =  'aaa bbb ccc'
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
   cat <<<"${1:-$_unprintable_str}" \
     | \
-    # dot is regarded as a field separator because tmux interprets it.
-    tr '.' ' ' \
+    # following characters should be replaced
+    # because they are interepred by tmux.
+    sed 's/\./\\x2e/g' \
     | \
-    # coron must be replaced because tmux interprets it.
-    sed 's/:/;/g' \
+    sed 's/:/\\x3a/g' \
     | \
-    sed 's/-/_/g' \
+    sed 's/-/\\x2d/g' \
     | \
-    perl -anle 'printf "$F[0]-'$$'"'
+    sed 's/%/\\x25/g' \
+    | \
+    perl -anle 'printf "%s", "$F[0]-'$$'"'
 }
 
 #
