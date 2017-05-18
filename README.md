@@ -13,13 +13,13 @@
 
 ## TL;DR
 
-#### Ping to multiple hosts.
+#### Ping multiple hosts.
 
 ```sh
 $ xpanes -c "ping {}" 192.168.0.{1..9}
 ```
 
-#### Enter multiple hosts over SSH and start operation logging.
+#### Connect to multiple hosts over SSH and record each operation log.
 
 ```sh
 $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
@@ -32,7 +32,7 @@ $ xpanes -e "top" "vmstat 1" "watch -n 1 df"
 ```
 
 
-#### Operate multiple running Docker containers.
+#### Operate running Docker containers on the interactive screen.
 
 ```sh
 $ docker ps -q | xpanes -c "docker exec -it {} sh"
@@ -40,11 +40,11 @@ $ docker ps -q | xpanes -c "docker exec -it {} sh"
 
 
 # Features
-* Split tmux's window into multiple panes.
+* Split tmux window into multiple panes.
   + Build command lines from given arguments & execute them on the panes.
 * Runnable from outside of tmux session.
 * Runnable from inside of tmux session.
-* Operation logging.
+* Record operation log.
 * Layout arrangement for panes.
 * Generate command lines from standard input (Pipe mode).
 
