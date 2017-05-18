@@ -465,6 +465,104 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_log_and_empty_arg() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' AA '' BB"
+    printf "\n $ $_cmd\n"
+    # Execute command (slightly different)
+    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@  && tmux detach-client" '' AA '' BB
+    wait_panes_separation "$_socket_file" "EMPTY" "4"
+    # AA and BB. Empty file is not created.
+    wait_existing_file_number "${_tmpdir}/fin" "2"
+
+    # Wait several seconds just in case.
+    sleep 3
+    ls ${_tmpdir}/logs | grep -E '^EMPTY-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^EMPTY-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE__')
+
+    ls ${_tmpdir}/logs | grep -E '^AA-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AA-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AA_')
+
+    ls ${_tmpdir}/logs | grep -E '^EMPTY-2\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^EMPTY-2\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE__')
+
+    ls ${_tmpdir}/logs | grep -E '^BB-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^BB-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BB_')
+
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/logs/*
+    rmdir ${_tmpdir}/logs
+    rm -f ${_tmpdir}/fin/*
+    rmdir ${_tmpdir}/fin
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "EMPTY" "4"
+        # AA and BB. Empty file is not created.
+        wait_existing_file_number "${_tmpdir}/fin" "2"
+
+        # Wait several seconds just in case.
+        sleep 3
+        ls ${_tmpdir}/logs | grep -E '^EMPTY-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^EMPTY-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE__')
+
+        ls ${_tmpdir}/logs | grep -E '^AA-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AA-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AA_')
+
+        ls ${_tmpdir}/logs | grep -E '^EMPTY-2\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^EMPTY-2\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE__')
+
+        ls ${_tmpdir}/logs | grep -E '^BB-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^BB-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BB_')
+
+        close_tmux_session "$_socket_file"
+
+        rm -f ${_tmpdir}/logs/*
+        rmdir ${_tmpdir}/logs
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
+}
+
 test_n_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
