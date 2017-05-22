@@ -131,7 +131,7 @@ OPTIONS:
   --stay                       Do not switch to new window.
 ```
 
-## Introduction
+## Getting Started
 
 Try this command line.
 
