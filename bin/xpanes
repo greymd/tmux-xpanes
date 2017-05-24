@@ -323,8 +323,17 @@ xpns_arr2args() {
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
   cat <<<"${1:-$_unprintable_str}" \
-    | perl -anle 'printf "%s", "$F[0]-'$$'"' \
-    | perl -nle 'printf unpack("H*", $_)'
+    | perl -anle 'printf "%s", "$F[0]-'$$'"'
+}
+
+# Convert string to another string which can be handled as tmux window name.
+xpns_value2key() {
+  perl -nle 'printf unpack("H*", $_);'
+}
+
+# Restore string encoded by xpns_value2key function.
+xpns_key2value() {
+  perl -nle 'printf pack("H*", $_);'
 }
 
 #
@@ -539,7 +548,11 @@ xpns_execution() {
   fi
 
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(xpns_generate_window_name "$XP_EMPTY_STR" "${XP_ARGS[0]}")
+  local _window_name=$(
+    xpns_generate_window_name \
+      "$XP_EMPTY_STR" \
+      "${XP_ARGS[0]}" \
+      | xpns_value2key)
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
   local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
@@ -573,10 +586,8 @@ xpns_execution() {
     tmux set-window-option -t "${_window_name}" synchronize-panes on
   fi
 
-  while read _win_name ; do
-    local _original_name=$(echo "$_win_name" | perl -nle 'printf pack("H*", $_)')
-    tmux rename-window -t "$_win_name" "$_original_name"
-  done < <(tmux list-windows -F '#{window_name}')
+  # Restore original window name.
+  tmux rename-window -t "$_window_name" "$(echo "$_window_name" | xpns_key2value)"
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 
