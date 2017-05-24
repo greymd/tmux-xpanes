@@ -323,18 +323,8 @@ xpns_arr2args() {
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
   cat <<<"${1:-$_unprintable_str}" \
-    | \
-    # following characters should be replaced
-    # because they are interepred by tmux.
-    sed 's/\./\\x2e/g' \
-    | \
-    sed 's/:/\\x3a/g' \
-    | \
-    sed 's/-/\\x2d/g' \
-    | \
-    sed 's/%/\\x25/g' \
-    | \
-    perl -anle 'printf "%s", "$F[0]-'$$'"'
+    | perl -anle 'printf "%s", "$F[0]-'$$'"' \
+    | perl -nle 'printf unpack("H*", $_)'
 }
 
 #
@@ -582,6 +572,11 @@ xpns_execution() {
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
     tmux set-window-option -t "${_window_name}" synchronize-panes on
   fi
+
+  while read _win_name ; do
+    local _original_name=$(echo "$_win_name" | perl -nle 'printf pack("H*", $_)')
+    tmux rename-window -t "$_win_name" "$_original_name"
+  done < <(tmux list-windows -F '#{window_name}')
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 
