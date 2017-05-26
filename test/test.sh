@@ -472,14 +472,14 @@ test_divide_five_panes_special_chars() {
     _cmd="${EXEC} -S $_socket_file --stay '%s' '%d' ':' '-' ''"
     printf "\n $ %s\n" "$_cmd"
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" '\\x25' '5'
+    wait_panes_separation "$_socket_file" '%s' '5'
     divide_five_panes_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
     printf "\n $ %s\n" "$_cmd"
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" '\\x2e' '5'
+    wait_panes_separation "$_socket_file" '.' '5'
     divide_five_panes_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
@@ -489,7 +489,7 @@ test_divide_five_panes_special_chars() {
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" '\\x25' '5'
+        wait_panes_separation "$_socket_file" '%s' '5'
         divide_five_panes_impl "$_socket_file"
         close_tmux_session "$_socket_file"
 
@@ -497,7 +497,7 @@ test_divide_five_panes_special_chars() {
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" '\\x2e' '5'
+        wait_panes_separation "$_socket_file" '.' '5'
         divide_five_panes_impl "$_socket_file"
         close_tmux_session "$_socket_file"
     }
