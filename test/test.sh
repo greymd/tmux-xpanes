@@ -465,6 +465,34 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_window_name_having_special_chars() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    local _expected_name='%.-&*_.co.jp'
+    local _actual_name=""
+    _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
+    printf "\n $ %s\n" "$_cmd"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "$_expected_name" '1'
+    _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | perl -pe 's/-[0-9]+$//g')
+    close_tmux_session "$_socket_file"
+    echo "Actual name:$_actual_name Expected name:$_expected_name"
+    assertEquals "$_expected_name" "$_actual_name"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
+        printf "\n $ TMUX(%s)\n" "$_cmd"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "$_expected_name"
+        _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | perl -pe 's/-[0-9]+$//g')
+        close_tmux_session "$_socket_file"
+        echo "Actual name:$_actual_name Expected name:$_expected_name"
+        assertEquals "$_expected_name" "$_actual_name"
+    }
+}
+
 test_divide_five_panes_special_chars() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
