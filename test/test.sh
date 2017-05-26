@@ -473,20 +473,22 @@ test_window_name_having_special_chars() {
     local _actual_name=""
     _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
     printf "\n $ %s\n" "$_cmd"
+    tmux -S "$_socket_file" set-window-option -g allow-rename off
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" "$_expected_name" '1'
-    _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | perl -pe 's/-[0-9]+$//g')
+    wait_panes_separation "$_socket_file" "%" '1'
+    _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
     close_tmux_session "$_socket_file"
     echo "Actual name:$_actual_name Expected name:$_expected_name"
     assertEquals "$_expected_name" "$_actual_name"
 
     : "In TMUX session" && {
-        _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
+        _cmd="${EXEC} -S $_socket_file '$_expected_name'"
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
+        tmux -S "$_socket_file" set-window-option -g allow-rename off
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "$_expected_name"
-        _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | perl -pe 's/-[0-9]+$//g')
+        wait_panes_separation "$_socket_file" "%" '1'
+        _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
         close_tmux_session "$_socket_file"
         echo "Actual name:$_actual_name Expected name:$_expected_name"
         assertEquals "$_expected_name" "$_actual_name"
