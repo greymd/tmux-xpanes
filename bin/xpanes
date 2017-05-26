@@ -516,10 +516,12 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
+  tmux -S "$XP_SOCKET_PATH" \
+    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
     "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args" C-m
 
-  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
+  tmux -S "$XP_SOCKET_PATH" \
+    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
@@ -558,7 +560,11 @@ xpns_execution() {
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
-  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_args_idx" "$XP_OPT_ATTACH"
+  xpns_prepare_window \
+    "$_window_name" \
+    "$_pane_base_index" \
+    "$_last_args_idx" \
+    "$XP_OPT_ATTACH"
 
   if [ $XP_OPT_LOG_STORE -eq 1 ]; then
     xpns_enable_logging \
@@ -579,7 +585,9 @@ xpns_execution() {
     "${XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
-  xpns_arrange_pane_location "$_window_name" $_last_args_idx
+  xpns_arrange_pane_location \
+    "$_window_name" \
+    $_last_args_idx
 
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
