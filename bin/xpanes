@@ -151,6 +151,9 @@ FORMAT:
     And etc.
     Other sequences are available. Please refer to date(1) manual.
 
+Copyright (c) 2017 Yamada, Yasuhiro
+Released under the MIT License.
+https://github.com/greymd/tmux-xpanes
 _EOS_
 }
 
