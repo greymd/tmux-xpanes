@@ -323,7 +323,12 @@ xpns_arr2args() {
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
   cat <<<"${1:-$_unprintable_str}" \
-    | perl -anle 'printf "%s", "$F[0]-'$$'"'
+    | \
+      # Leave first 200 characters to prevent
+      # the name exceed the maximum length of tmux window name (2000 byte).
+      grep -oE '^.{1,200}' \
+    | \
+      perl -anle 'printf "%s", "$F[0]-'$$'"'
 }
 
 # Convert string to another string which can be handled as tmux window name.
