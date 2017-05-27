@@ -465,6 +465,24 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_maximum_window_name() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _window_name=""
+    local _arg="$(yes | head -n 300 | tr -d '\n')"
+    _cmd="${EXEC} -S $_socket_file --stay '$_arg'"
+    printf "\n $ %s\n" "$_cmd"
+    tmux -S "$_socket_file" set-window-option -g allow-rename off
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "y" '1'
+
+    # Maximum window name is 200 characters + "-{PID}"
+    tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep -qE '^y{200}-[0-9]+$'
+    assertEquals "0" "$?"
+
+    close_tmux_session "$_socket_file"
+}
+
 test_window_name_having_special_chars() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
