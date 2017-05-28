@@ -465,6 +465,54 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_maximum_window_name() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _window_name=""
+    local _arg="$(yes | head -n 300 | tr -d '\n')"
+    _cmd="${EXEC} -S $_socket_file --stay '$_arg'"
+    printf "\n $ %s\n" "$_cmd"
+    tmux -S "$_socket_file" set-window-option -g allow-rename off
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "y" '1'
+
+    # Maximum window name is 200 characters + "-{PID}"
+    tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep -qE '^y{200}-[0-9]+$'
+    assertEquals "0" "$?"
+
+    close_tmux_session "$_socket_file"
+}
+
+test_window_name_having_special_chars() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    local _expected_name='%.-&*_.co.jp'
+    local _actual_name=""
+    _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
+    printf "\n $ %s\n" "$_cmd"
+    tmux -S "$_socket_file" set-window-option -g allow-rename off
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "%" '1'
+    _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
+    close_tmux_session "$_socket_file"
+    echo "Actual name:$_actual_name Expected name:$_expected_name"
+    assertEquals "$_expected_name" "$_actual_name"
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -S $_socket_file '$_expected_name'"
+        printf "\n $ TMUX(%s)\n" "$_cmd"
+        create_tmux_session "$_socket_file"
+        tmux -S "$_socket_file" set-window-option -g allow-rename off
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "%" '1'
+        _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
+        close_tmux_session "$_socket_file"
+        echo "Actual name:$_actual_name Expected name:$_expected_name"
+        assertEquals "$_expected_name" "$_actual_name"
+    }
+}
+
 test_divide_five_panes_special_chars() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
@@ -472,14 +520,14 @@ test_divide_five_panes_special_chars() {
     _cmd="${EXEC} -S $_socket_file --stay '%s' '%d' ':' '-' ''"
     printf "\n $ %s\n" "$_cmd"
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" '\\x25' '5'
+    wait_panes_separation "$_socket_file" '%s' '5'
     divide_five_panes_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
     printf "\n $ %s\n" "$_cmd"
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" '\\x2e' '5'
+    wait_panes_separation "$_socket_file" '.' '5'
     divide_five_panes_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
@@ -489,7 +537,7 @@ test_divide_five_panes_special_chars() {
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" '\\x25' '5'
+        wait_panes_separation "$_socket_file" '%s' '5'
         divide_five_panes_impl "$_socket_file"
         close_tmux_session "$_socket_file"
 
@@ -497,7 +545,7 @@ test_divide_five_panes_special_chars() {
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" '\\x2e' '5'
+        wait_panes_separation "$_socket_file" '.' '5'
         divide_five_panes_impl "$_socket_file"
         close_tmux_session "$_socket_file"
     }

@@ -151,6 +151,9 @@ FORMAT:
     And etc.
     Other sequences are available. Please refer to date(1) manual.
 
+Copyright (c) 2017 Yamada, Yasuhiro
+Released under the MIT License.
+https://github.com/greymd/tmux-xpanes
 _EOS_
 }
 
@@ -324,17 +327,21 @@ xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
   cat <<<"${1:-$_unprintable_str}" \
     | \
-    # following characters should be replaced
-    # because they are interepred by tmux.
-    sed 's/\./\\x2e/g' \
+      # Leave first 200 characters to prevent
+      # the name exceed the maximum length of tmux window name (2000 byte).
+      grep -oE '^.{1,200}' \
     | \
-    sed 's/:/\\x3a/g' \
-    | \
-    sed 's/-/\\x2d/g' \
-    | \
-    sed 's/%/\\x25/g' \
-    | \
-    perl -anle 'printf "%s", "$F[0]-'$$'"'
+      perl -anle 'printf "%s", "$F[0]-'$$'"'
+}
+
+# Convert string to another string which can be handled as tmux window name.
+xpns_value2key() {
+  perl -nle 'printf unpack("H*", $_);'
+}
+
+# Restore string encoded by xpns_value2key function.
+xpns_key2value() {
+  perl -nle 'printf pack("H*", $_);'
 }
 
 #
@@ -517,10 +524,12 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
+  tmux -S "$XP_SOCKET_PATH" \
+    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
     "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args" C-m
 
-  tmux -S "$XP_SOCKET_PATH" send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
+  tmux -S "$XP_SOCKET_PATH" \
+    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
@@ -549,13 +558,21 @@ xpns_execution() {
   fi
 
   local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(xpns_generate_window_name "$XP_EMPTY_STR" "${XP_ARGS[0]}")
+  local _window_name=$(
+    xpns_generate_window_name \
+      "$XP_EMPTY_STR" \
+      "${XP_ARGS[0]}" \
+      | xpns_value2key)
   local _last_args_idx=$((${#XP_ARGS[@]} - 1))
   local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
-  xpns_prepare_window "$_window_name" "$_pane_base_index" "$_last_args_idx" "$XP_OPT_ATTACH"
+  xpns_prepare_window \
+    "$_window_name" \
+    "$_pane_base_index" \
+    "$_last_args_idx" \
+    "$XP_OPT_ATTACH"
 
   if [ $XP_OPT_LOG_STORE -eq 1 ]; then
     xpns_enable_logging \
@@ -576,12 +593,17 @@ xpns_execution() {
     "${XP_ARGS[@]}"
 
   # This is just the author's preference (You can remove next statement.)
-  xpns_arrange_pane_location "$_window_name" $_last_args_idx
+  xpns_arrange_pane_location \
+    "$_window_name" \
+    $_last_args_idx
 
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
     tmux set-window-option -t "${_window_name}" synchronize-panes on
   fi
+
+  # Restore original window name.
+  tmux rename-window -t "$_window_name" "$(echo "$_window_name" | xpns_key2value)"
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 
