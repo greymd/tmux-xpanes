@@ -20,6 +20,8 @@ command ... | `xpanes` [`OPTIONS`] [<*utility*> ...]
 DESCRIPTION
 -----------
 
+Create multiple panes with those features.
+
 * Split tmux window into multiple panes.
   * Build command lines from given arguments & execute them on the panes.
 * Runnable from outside of tmux session.
@@ -89,6 +91,23 @@ For example:
   And etc.
 Other sequences are available. Please refer to `date(1)` manual.
 
+MODES
+------
+
+### [Normal mode1] Outside of tmux session.
+
+When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be that. The command newly creates a tmux session and new window on the session. In addition, it separates the window into multiple panes. Finally, the session will be attached.
+
+### [Normal mode2] Inside of tmux session.
+
+When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be that. The command newly creates a window **on the exisging active session**. In addition, it separates the window into multiple panes. Finally, the window will be active window.
+
+### [Pipe mode] Inside of tmux session & Accepting standard input.
+
+When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`. Pipe mode has two features.
+
+1. `xpanes` command's argument will be the common command line which will be used within all panes (this is corresponding to the `-c` option's argument in Normal mode).
+1. Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
 
 EXAMPLES
 -------
@@ -117,6 +136,173 @@ EXAMPLES
     │                               │                               │
     +-------------------------------+-------------------------------+
 
+### `-c` option and `-I` option.
+
+`xpanes` -I@ -c 'seq @' 1 2 3 4
+
+    +-------------------------------+-------------------------------+
+    |$ seq 1                        │$ seq 2                        |
+    │1                              │1                              │
+    │                               │2                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    |$ seq 3                        │$ seq 4                        |
+    │1                              │1                              │
+    │2                              │2                              │
+    │3                              │3                              │
+    │                               │4                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+
+### Ping multiple hosts
+
+`xpanes` -c "ping {}" 192.168.1.{5..8}
+
+    +-------------------------------+-------------------------------+
+    |$ ping 192.168.1.5             │$ ping 192.168.1.6             |
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    |$ ping 192.168.1.7             │$ ping 192.168.1.8             |
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+
+#### Use SSH with ignoring alert message.
+
+`xpanes` --ssh myuser1@host1 myuser2@host2
+
+    +-------------------------------+-------------------------------+
+    │$ ssh myuser@host1             │ $ ssh myuser@host2            │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+
+#### Execute different commands on the different panes.
+
+`xpanes` -e "top" "vmstat 1" "watch -n 1 free"
+
+    +-------------------------------+------------------------------+
+    │$ top                          │$ vmstat 1                    │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------┴------------------------------+
+    |$ watch -n 1 free                                             |
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    +--------------------------------------------------------------+
+
+#### Changing layout of panes.
+
+`xpanes` -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
+
+    +-------------------------------------------------------------+
+    |$ top                                                        |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    +-------------------------------------------------------------+
+    |$ vmstat 1                                                   |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    +-------------------------------------------------------------+
+    |$ watch -n 1 df                                              |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    +-------------------------------------------------------------+
+
+#### Pipe mode
+
+`seq` 3 | `xpanes`
+
+    +------------------------------+------------------------------+
+    |$ echo 1                      │$ echo 2                      |
+    |1                             │2                             |
+    |                              │                              |
+    |                              │                              |
+    |                              │                              |
+    |                              │                              |
+    |                              │                              |
+    |                              │                              |
+    +------------------------------+------------------------------+
+    |$ echo 3                                                     |
+    |3                                                            |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    |                                                             |
+    +------------------------------+------------------------------+
+
+#### Pipe mode with argument
+
+`seq` 4 | `xpanes` seq
+
+    +-------------------------------+------------------------------+
+    │$ seq 1                        │$ seq 2                       |
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ seq 3                        │$ seq 4                       |
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
 
 AUTHOR AND COPYRIGHT
 ------
