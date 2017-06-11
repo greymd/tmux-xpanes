@@ -218,8 +218,8 @@ xpns_suppress_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
-    # Temporary, disable "allow-rename"
-    xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
+    ## Temporary, disable "allow-rename"
+    # xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
     if [ -z "${_session-}" ];then
       tmux set-window-option -g allow-rename off
     else
@@ -235,7 +235,7 @@ xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
-    xpns_msg "Info" "Restore original value of 'allow-rename' option."
+    # xpns_msg "Info" "Restore original value of 'allow-rename' option."
     if [ -z "${_session-}" ];then
       tmux set-window-option -g allow-rename on
     else
