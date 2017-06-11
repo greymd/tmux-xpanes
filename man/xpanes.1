@@ -1,7 +1,7 @@
 .TH XPANES 1 "MAY 2017" "User Commands" ""
 .SH NAME
 .PP
-tmux\-xpanes, xpanes \- Ultimate terminal divider powered by tmux
+xpanes, tmux\-xpanes \- Ultimate terminal divider powered by tmux.
 .SH SYNOPSIS
 .SS Normal mode
 .PP
@@ -11,7 +11,7 @@ tmux\-xpanes, xpanes \- Ultimate terminal divider powered by tmux
 command ... | \fB\fCxpanes\fR [\fB\fCOPTIONS\fR] [<\fIutility\fP> ...]
 .SH DESCRIPTION
 .PP
-Create multiple panes with those features.
+\fB\fCxpanes\fR or \fB\fCtmux\-xpanes\fR (alias of \fB\fCxpanes\fR) commands have following features.
 .RS
 .IP \(bu 2
 Split tmux window into multiple panes.
@@ -77,17 +77,17 @@ Let <\fIutility\fP> 'ssh \-o StrictHostKeyChecking=no {}'.
 Do not switch to new window.
 .SS \fIFORMAT\fP
 .PP
-Default value is "[:ARG:].log.%Y\-%m\-%d_%H\-%M\-%S"
-Interpreted sequences are:
-  \fB\fC[:PID:]\fR   Process id of the tmux session. (e.g, 41531)
-  \fB\fC[:ARG:]\fR   Argument name
+Default value is "[:ARG:].log.%Y\-%m\-%d_%H\-%M\-%S".
+  Interpreted sequences are:
+    \fB\fC[:PID:]\fR   Process id of the tmux session. (e.g, 41531)
+    \fB\fC[:ARG:]\fR   Argument name
 .PP
 In addition, sequences same as \fB\fCdate(1)\fR command are available.
-For example:
-  \fB\fC%Y\fR   year  (e.g, 1960)
-  \fB\fC%m\fR   month (e.g, 01)
-  \fB\fC%d\fR   date  (e.g, 31)
-  And etc.
+  For example:
+    \fB\fC%Y\fR   year  (e.g, 1960)
+    \fB\fC%m\fR   month (e.g, 01)
+    \fB\fC%d\fR   date  (e.g, 31)
+    And etc.
 Other sequences are available. Please refer to \fB\fCdate(1)\fR manual.
 .SH MODES
 .SS [Normal mode1] Outside of tmux session.
@@ -134,7 +134,7 @@ Single line given by standard input is corresponding to the single pane's comman
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS \fB\fC\-c\fR option and \fB\fC\-I\fR option.
+.SS \fB\fC\-c\fR option and \fB\fC\-I\fR option
 .PP
 \fB\fCxpanes\fR \-I@ \-c 'seq @' 1 2 3 4
 .PP
@@ -188,31 +188,31 @@ Single line given by standard input is corresponding to the single pane's comman
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS Use SSH with ignoring alert message.
+.SS Use SSH without key checking
 .PP
 \fB\fCxpanes\fR \-\-ssh myuser1@host1 myuser2@host2
 .PP
 .RS
 .nf
-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
-│$ ssh myuser@host1             │ $ ssh myuser@host2            │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-│                               │                               │
-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ ssh \-o StrictHostKeyChecking=no myuser@host1 │ $ ssh \-o StrictHostKeyChecking=no myuser@host2 │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS Execute different commands on the different panes.
+.SS Execute different commands on the different panes
 .PP
 \fB\fCxpanes\fR \-e "top" "vmstat 1" "watch \-n 1 free"
 .PP
@@ -237,7 +237,7 @@ Single line given by standard input is corresponding to the single pane's comman
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS Changing layout of panes.
+.SS Change layout of panes
 .PP
 \fB\fCxpanes\fR \-l ev \-c "{}" "top" "vmstat 1" "watch \-n 1 df"
 .PP
@@ -257,7 +257,6 @@ Single line given by standard input is corresponding to the single pane's comman
 |                                                             |
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 |$ watch \-n 1 df                                              |
-|                                                             |
 |                                                             |
 |                                                             |
 |                                                             |
@@ -292,7 +291,7 @@ Single line given by standard input is corresponding to the single pane's comman
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS Pipe mode with argument
+.SS Pipe mode with an argument
 .PP
 \fB\fCseq\fR 4 | \fB\fCxpanes\fR seq
 .PP

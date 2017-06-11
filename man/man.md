@@ -4,7 +4,7 @@ XPANES 1 "MAY 2017" "User Commands" ""
 NAME
 ----
 
-tmux-xpanes, xpanes - Ultimate terminal divider powered by tmux
+xpanes, tmux-xpanes - Ultimate terminal divider powered by tmux.
 
 SYNOPSIS
 --------
@@ -20,7 +20,7 @@ command ... | `xpanes` [`OPTIONS`] [<*utility*> ...]
 DESCRIPTION
 -----------
 
-Create multiple panes with those features.
+`xpanes` or `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes.
   * Build command lines from given arguments & execute them on the panes.
@@ -78,17 +78,17 @@ OPTIONS
   Do not switch to new window.
 
 ### *FORMAT*
-Default value is "[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-Interpreted sequences are:
-  `[:PID:]`   Process id of the tmux session. (e.g, 41531)
-  `[:ARG:]`   Argument name
+Default value is "[:ARG:].log.%Y-%m-%d_%H-%M-%S".
+  Interpreted sequences are:
+    `[:PID:]`   Process id of the tmux session. (e.g, 41531)
+    `[:ARG:]`   Argument name
 
 In addition, sequences same as `date(1)` command are available.
-For example:
-  `%Y`   year  (e.g, 1960)
-  `%m`   month (e.g, 01)
-  `%d`   date  (e.g, 31)
-  And etc.
+  For example:
+    `%Y`   year  (e.g, 1960)
+    `%m`   month (e.g, 01)
+    `%d`   date  (e.g, 31)
+    And etc.
 Other sequences are available. Please refer to `date(1)` manual.
 
 MODES
@@ -136,7 +136,7 @@ EXAMPLES
     │                               │                               │
     +-------------------------------+-------------------------------+
 
-### `-c` option and `-I` option.
+### `-c` option and `-I` option
 
 `xpanes` -I@ -c 'seq @' 1 2 3 4
 
@@ -184,28 +184,28 @@ EXAMPLES
     │                               │                               │
     +-------------------------------+-------------------------------+
 
-#### Use SSH with ignoring alert message.
+#### Use SSH without key checking
 
 `xpanes` --ssh myuser1@host1 myuser2@host2
 
-    +-------------------------------+-------------------------------+
-    │$ ssh myuser@host1             │ $ ssh myuser@host2            │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +-------------------------------+-------------------------------+
+    +-----------------------------------------------+------------------------------------------------+
+    │$ ssh -o StrictHostKeyChecking=no myuser@host1 │ $ ssh -o StrictHostKeyChecking=no myuser@host2 │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    │                                               │                                                │
+    +-----------------------------------------------+------------------------------------------------+
 
-#### Execute different commands on the different panes.
+#### Execute different commands on the different panes
 
 `xpanes` -e "top" "vmstat 1" "watch -n 1 free"
 
@@ -227,7 +227,7 @@ EXAMPLES
     │                                                              │
     +--------------------------------------------------------------+
 
-#### Changing layout of panes.
+#### Change layout of panes
 
 `xpanes` -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
 
@@ -245,7 +245,6 @@ EXAMPLES
     |                                                             |
     +-------------------------------------------------------------+
     |$ watch -n 1 df                                              |
-    |                                                             |
     |                                                             |
     |                                                             |
     |                                                             |
@@ -276,7 +275,7 @@ EXAMPLES
     |                                                             |
     +------------------------------+------------------------------+
 
-#### Pipe mode with argument
+#### Pipe mode with an argument
 
 `seq` 4 | `xpanes` seq
 
