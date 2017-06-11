@@ -1,0 +1,331 @@
+.TH XPANES 1 "MAY 2017" "User Commands" ""
+.SH NAME
+.PP
+xpanes, tmux\-xpanes \- Ultimate terminal divider powered by tmux.
+.SH SYNOPSIS
+.SS Normal mode
+.PP
+\fB\fCxpanes\fR [\fB\fCOPTIONS\fR] \fIargument\fP ...
+.SS Pipe mode
+.PP
+command ... | \fB\fCxpanes\fR [\fB\fCOPTIONS\fR] [<\fIutility\fP> ...]
+.SH DESCRIPTION
+.PP
+\fB\fCxpanes\fR or \fB\fCtmux\-xpanes\fR (alias of \fB\fCxpanes\fR) commands have following features.
+.RS
+.IP \(bu 2
+Split tmux window into multiple panes.
+.RS
+.IP \(bu 2
+Build command lines from given arguments & execute them on the panes.
+.RE
+.IP \(bu 2
+Runnable from outside of tmux session.
+.IP \(bu 2
+Runnable from inside of tmux session.
+.IP \(bu 2
+Record operation log.
+.IP \(bu 2
+Layout arrangement for panes.
+.IP \(bu 2
+Generate command lines from standard input (Pipe mode).
+.RE
+.SH OPTIONS
+.TP
+\fB\fC\-h\fR, \fB\fC\-\-help\fR
+Show this screen.
+.TP
+\fB\fC\-V\fR, \fB\fC\-\-version\fR
+Show version.
+.TP
+\fB\fC\-c\fR <\fIutility\fP>
+Specify <\fIutility\fP> which is executed as a command in each panes. If <\fIutility\fP> is omitted, \fB\fCecho(1)\fR is used.
+.TP
+\fB\fC\-d\fR, \fB\fC\-\-desync\fR
+Make synchronize\-panes option off on new window.
+.TP
+\fB\fC\-e\fR
+Execute given arguments as is.
+.TP
+\fB\fC\-I\fR <\fIrepstr\fP>
+Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by \-c option. Default value of <\fIrepstr\fP> is {}.
+.PP
+\fB\fC\-l\fR <\fIlayout\fP>
+  Specify a layout for a window. Recognized layout arguments are:
+    \fB\fCt\fR    tiled (default)
+    \fB\fCeh\fR   even\-horizontal
+    \fB\fCev\fR   even\-vertical
+    \fB\fCmh\fR   main\-horizontal
+    \fB\fCmv\fR   main\-vertical
+.TP
+\fB\fC\-n\fR <\fInumber\fP>
+Set the maximum number of arguments taken for each pane of <\fIutility\fP>.
+.TP
+\fB\fC\-S\fR <\fIsocket\-path\fP>
+Specify a full alternative path to the server socket.
+.TP
+\fB\fC\-\-log\fR[\fB\fC=\fR<\fIdirectory\fP>]
+Enable logging and store log files to ~/.cache/xpanes/logs or given <\fIdirectory\fP>.
+.TP
+\fB\fC\-\-log\-format=\fR<\fIFORMAT\fP>
+File name of log files follows given <\fIFORMAT\fP>.
+.TP
+\fB\fC\-\-ssh\fR
+Let <\fIutility\fP> 'ssh \-o StrictHostKeyChecking=no {}'.
+.TP
+\fB\fC\-\-stay\fR
+Do not switch to new window.
+.SS \fIFORMAT\fP
+.PP
+Default value is "[:ARG:].log.%Y\-%m\-%d_%H\-%M\-%S".
+  Interpreted sequences are:
+    \fB\fC[:PID:]\fR   Process id of the tmux session. (e.g, 41531)
+    \fB\fC[:ARG:]\fR   Argument name
+.PP
+In addition, sequences same as \fB\fCdate(1)\fR command are available.
+  For example:
+    \fB\fC%Y\fR   year  (e.g, 1960)
+    \fB\fC%m\fR   month (e.g, 01)
+    \fB\fC%d\fR   date  (e.g, 31)
+    And etc.
+Other sequences are available. Please refer to \fB\fCdate(1)\fR manual.
+.SH MODES
+.SS [Normal mode1] Outside of tmux session.
+.PP
+When the tmux is not being opened and \fB\fCxpanes\fR command is executed on the normal terminal, the command's behavior is supposed to be that. The command newly creates a tmux session and new window on the session. In addition, it separates the window into multiple panes. Finally, the session will be attached.
+.SS [Normal mode2] Inside of tmux session.
+.PP
+When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the existing tmux session, the command's behavior is supposed to be that. The command newly creates a window \fBon the exisging active session\fP\&. In addition, it separates the window into multiple panes. Finally, the window will be active window.
+.SS [Pipe mode] Inside of tmux session & Accepting standard input.
+.PP
+When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe \fB\fC|\fR), the command's behavior will be special one called "Pipe mode". Then, \fB\fCxpanes\fR behaves like UNIX \fB\fCxargs(1)\fR\&. Pipe mode has two features.
+.nr step0 0 1
+.RS
+.IP \n+[step0]
+\fB\fCxpanes\fR command's argument will be the common command line which will be used within all panes (this is corresponding to the \fB\fC\-c\fR option's argument in Normal mode).
+.IP \n+[step0]
+Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of \fB\fCxpanes\fR in Normal mode).
+.RE
+.SH EXAMPLES
+.SS Simple example
+.PP
+\fB\fCxpanes\fR 1 2 3 4
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ echo 1                       │$ echo 2                       │
+│1                              │2                              │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ echo 3                       │$ echo 4                       │
+│3                              │4                              │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS \fB\fC\-c\fR option and \fB\fC\-I\fR option
+.PP
+\fB\fCxpanes\fR \-I@ \-c 'seq @' 1 2 3 4
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ seq 1                        │$ seq 2                        |
+│1                              │1                              │
+│                               │2                              │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ seq 3                        │$ seq 4                        |
+│1                              │1                              │
+│2                              │2                              │
+│3                              │3                              │
+│                               │4                              │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Ping multiple hosts
+.PP
+\fB\fCxpanes\fR \-c "ping {}" 192.168.1.{5..8}
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ ping 192.168.1.5             │$ ping 192.168.1.6             |
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ ping 192.168.1.7             │$ ping 192.168.1.8             |
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
+│                               │                               │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Use SSH without key checking
+.PP
+\fB\fCxpanes\fR \-\-ssh myuser1@host1 myuser2@host2
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ ssh \-o StrictHostKeyChecking=no myuser@host1 │ $ ssh \-o StrictHostKeyChecking=no myuser@host2 │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
+│                                               │                                                │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Execute different commands on the different panes
+.PP
+\fB\fCxpanes\fR \-e "top" "vmstat 1" "watch \-n 1 free"
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ top                          │$ vmstat 1                    │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-┴\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ watch \-n 1 free                                             |
+│                                                              │
+│                                                              │
+│                                                              │
+│                                                              │
+│                                                              │
+│                                                              │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Change layout of panes
+.PP
+\fB\fCxpanes\fR \-l ev \-c "{}" "top" "vmstat 1" "watch \-n 1 df"
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ top                                                        |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ vmstat 1                                                   |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ watch \-n 1 df                                              |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Pipe mode
+.PP
+\fB\fCseq\fR 3 | \fB\fCxpanes\fR
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo 1                      │$ echo 2                      |
+|1                             │2                             |
+|                              │                              |
+|                              │                              |
+|                              │                              |
+|                              │                              |
+|                              │                              |
+|                              │                              |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo 3                                                     |
+|3                                                            |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
+|                                                             |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Pipe mode with an argument
+.PP
+\fB\fCseq\fR 4 | \fB\fCxpanes\fR seq
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ seq 1                        │$ seq 2                       |
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+│$ seq 3                        │$ seq 4                       |
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
+│                               │                              │
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SH AUTHOR AND COPYRIGHT
+.PP
+Copyright (c) 2017 Yamada, Yasuhiro \[la]greengregson@gmail.com\[ra] Released under the MIT License.
+\[la]https://github.com/greymd/tmux-xpanes\[ra]
+.SH SEE ALSO
+.PP
+.BR tmux (1)

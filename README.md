@@ -446,19 +446,19 @@ $ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
 It would be like this.
 
 ```
-top
+$ top
 
 
 
 
 -------------------------------------------------------------
-vmstat 1
+$ vmstat 1
 
 
 
 
 -------------------------------------------------------------
-watch -n 1 df
+$ watch -n 1 df
 
 
 
