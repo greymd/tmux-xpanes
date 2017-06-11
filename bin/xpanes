@@ -55,8 +55,6 @@ readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
-readonly XP_SUPPORT_TMUX_VERSION_UPPER="2.5"
-readonly XP_SUPPORT_TMUX_VERSIONS="${XP_SUPPORT_TMUX_VERSIONS:-(1.6|1.7|1.8|1.9|1.9a|2.0|2.1|2.2|2.3|2.4|2.5)}"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
 : "Initialize options" && {
@@ -173,6 +171,30 @@ xpns_get_tmux_version() {
     _tmux_version="$(tmux -V)"
   fi
   echo "$_tmux_version" | perl -anle 'printf "%s", "$F[1]"'
+}
+
+# Check whether the given version is greater than current tmux version.
+# $1 ... target version.
+# $2 ... curent tmux version.
+# In case of tmux version is 1.7, the result will be like this.
+# 0 is true, 1 is false.
+##  arg  -> result
+#   func 1.5  1.7 -> 0
+#   func 1.6  1.7 -> 0
+#   func 1.7  1.7 -> 0
+#   func 1.8  1.7 -> 1
+#   func 1.9  1.7 -> 1
+#   func 1.9a 1.7 -> 1
+#   func 2.0  1.7 -> 1
+xpns_tmux_is_greater_equals() {
+  local _check_version="$1"
+  local _tmux_version="${2:-$(xpns_get_tmux_version)}"
+  # Simple numerical comparison does not work because there is the version like "1.9a".
+  if [[ "$((echo "$_tmux_version"; echo "$_check_version") | sort -n | head -n 1)" != "$_check_version" ]];then
+    return 1
+  else
+    return 0
+  fi
 }
 
 xpns_get_tmux_conf() {
@@ -475,13 +497,17 @@ xpns_check_env() {
   fi
 
   XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
-  echo "$XP_CURRENT_TMUX_VERSION" | grep -qE "$XP_SUPPORT_TMUX_VERSIONS"
-  if [ $? -eq 1 ];then
+  if ( xpns_tmux_is_greater_equals \
+    $XP_SUPPORT_TMUX_VERSION_LOWER \
+    $XP_CURRENT_TMUX_VERSION ) ;then
+    : "Supported tmux version"
+  else
     xpns_msg "Warning" \
 "'$XP_THIS_FILE_NAME' may not work correctly!
 Current tmux version $XP_CURRENT_TMUX_VERSION is out of support.
-From version $XP_SUPPORT_TMUX_VERSION_LOWER to $XP_SUPPORT_TMUX_VERSION_UPPER is officially supported."
+Version $XP_SUPPORT_TMUX_VERSION_LOWER and over is officially supported."
   fi
+
   return 0
 }
 
