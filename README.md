@@ -142,46 +142,50 @@ $ xpanes 1 2 3 4
 You will get the screen like this.
 
 ```
-$ echo 1                       │$ echo 2
-1                              │2
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
--------------------------------+-------------------------------
-$ echo 3                       │$ echo 4
-3                              │4
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ echo 1                       │$ echo 2                       │
+    │1                              │2                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ echo 3                       │$ echo 4                       │
+    │3                              │4                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 Oh, you are not familiar with key bindings of tmux?
 Don't worry. Just type `exit` and "Enter" key to close the panes.
 
 ```
-$ exit                         │$ exit
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
--------------------------------+-------------------------------
-$ exit                         │$ exit
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ exit                         │$ exit                         │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ exit                         │$ exit                         │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 As shown above, input from keyboard is synchronized within multiple panes by default.
@@ -197,23 +201,25 @@ $ xpanes -c 'seq {}' 1 2 3 4
 You will get the screen like this.
 
 ```
-$ seq 1                        │$ seq 2
-1                              │1
-                               │2
-                               │
-                               │
-                               │
-                               │
-                               │
--------------------------------+-------------------------------
-$ seq 3                        │$ seq 4
-1                              │1
-2                              │2
-3                              │3
-                               │4
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ seq 1                        │$ seq 2                        │
+    │1                              │1                              │
+    │                               │2                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ seq 3                        │$ seq 4                        │
+    │1                              │1                              │
+    │2                              │2                              │
+    │3                              │3                              │
+    │                               │4                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 `seq` command which generates sequencial numbers is specified by `-c`.
@@ -267,23 +273,25 @@ $ xpanes -c "ping {}" 192.168.1.{5..8}
 The result is like this.
 
 ```
-$ ping 192.168.1.5             │$ ping 192.168.1.6
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
--------------------------------+-------------------------------
-$ ping 192.168.1.7             │$ ping 192.168.1.8
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ ping 192.168.1.5             │$ ping 192.168.1.6             │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ ping 192.168.1.7             │$ ping 192.168.1.8             │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 This example is the one having [Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html).
@@ -297,27 +305,29 @@ $ xpanes -c "tail -f {}" /var/log/apache/{error,access}.log /var/log/application
 The result is like this.
 
 ```
-$ tail -f /var/log/apache/error.log       │$ tail -f /var/log/apache/access.log
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-------------------------------------------+------------------------------------------
-$ tail -f /var/log/application/error.log  │$ tail -f /var/log/application/access.log
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
+    +------------------------------------------+------------------------------------------+
+    │$ tail -f /var/log/apache/error.log       │$ tail -f /var/log/apache/access.log      │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
+    │$ tail -f /var/log/application/error.log  │$ tail -f /var/log/application/access.log │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
 ```
 
 Hmm? you want to monitor those files through the SSH? Just do it like this.
@@ -336,13 +346,21 @@ $ xpanes -c "ssh myuser@{}" host1 host2
 ```
 
 ```
-$ ssh myuser@host1             │ $ ssh myuser@host2
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ ssh myuser@host1             │ $ ssh myuser@host2            │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 #### Use SSH with ignoring alert message.
@@ -376,13 +394,21 @@ $ xpanes --log=~/operation_log -c "ssh {}" user1@host1 user2@host2
 The result is like this.
 
 ```
-$ ssh user1@host1              │ $ ssh user2@host2
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ ssh user1@host1              │ $ ssh user2@host2             │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 In addition, log files will be created.
@@ -409,21 +435,23 @@ $ xpanes -e "top" "vmstat 1" "watch -n 1 free"
 Then the result will be like this.
 
 ```
-$ top                          │$ vmstat 1
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
--------------------------------┴------------------------------
-$ watch -n 1 free
-
-
-
-
-
-
+    +-------------------------------+------------------------------+
+    │$ top                          │$ vmstat 1                    │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ watch -n 1 free                                             │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    │                                                              │
+    +--------------------------------------------------------------+
 ```
 
 You will get the same result with this command line.
@@ -446,23 +474,25 @@ $ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
 It would be like this.
 
 ```
-$ top
-
-
-
-
--------------------------------------------------------------
-$ vmstat 1
-
-
-
-
--------------------------------------------------------------
-$ watch -n 1 df
-
-
-
-
+    +-------------------------------------------------------------+
+    │$ top                                                        │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    +-------------------------------------------------------------+
+    │$ vmstat 1                                                   │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    +-------------------------------------------------------------+
+    │$ watch -n 1 df                                              │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    +-------------------------------------------------------------+
 ```
 
 With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
@@ -508,26 +538,29 @@ Can you guess why such the phenomenon happenes?
 Running this command, such the window is supposed to be created at first.
 
 ```
-$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit │$ xpanes -I@ 'ssh @' groupB-host1 groupB-host2 groupB-host3; exit
-                                                     │
-                                                     │
-                                                     │
-                                                     │
-                                                     │
-                                                     │
-                                                     │
-                                                     │
-                                                     │
------------------------------------------------------+-------------------------------------------------------
-$ xpanes -I@ 'ssh @' groupC-host1 groupC-host2; exit
-
-
-
-
-
-
-
-
+    +-----------------------------------------------------+------------------------------------------------------+
+    │$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit │$ xpanes -I@ 'ssh @' groupB-host1 groupB-host2 \      │
+    │                                                     │                     groupB-host3; exit               │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │                                                     │                                                      │
+    │-----------------------------------------------------+------------------------------------------------------│
+    │$ xpanes -I@ 'ssh @' groupC-host1 groupC-host2; exit                                                        │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    │                                                                                                            │
+    +-----------------------------------------------------+------------------------------------------------------+
 ```
 
 Let's focus on the upper left pane.
@@ -539,13 +572,21 @@ $ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit
 When this command is executed on the tmux session, **it will create new window** which separated into two panes like below. And as you can see, `; exit` statement will close the pane itself after the separation.
 
 ```
-$ ssh groupA-host1             │ $ ssh groupA-host2
-                               │
-                               │
-                               │
-                               │
-                               │
-                               │
+    +-------------------------------+-------------------------------+
+    │$ ssh groupA-host1             │ $ ssh groupA-host2            │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 ```
 
 Same phenomenon will be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed itself. Finally, just the three windows will be left.
@@ -563,27 +604,25 @@ $ seq 3 | xpanes
 With this command line, the output would be like this.
 
 ```
-$ echo 1                                  │$ echo 2
-1                                         │2
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-------------------------------------------+------------------------------------------
-$ echo 3
-3                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
+    +------------------------------+------------------------------+
+    │$ echo 1                      │$ echo 2                      │
+    │1                             │2                             │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo 3                                                     │
+    │3                                                            │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    +------------------------------+------------------------------+
 ```
 
 Pipe mode has two features.
@@ -607,27 +646,29 @@ $ seq 4 | xpanes seq
 The result will be like this.
 
 ```
-$ seq 1                                   │$ seq 2
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-------------------------------------------+------------------------------------------
-$ seq 3                                   │$ seq 4
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
+    +-------------------------------+------------------------------+
+    │$ seq 1                        │$ seq 2                       │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ seq 3                        │$ seq 4                       │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
 ```
 
 Off-course, `-c` and `-I` options are available.
@@ -686,27 +727,25 @@ $ cat ~/.ssh/config | awk '$1=="Host"{print $2}' | xpanes ssh
 The results would be like this.
 
 ```
-$ ssh host1                               │$ ssh host2 
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-                                          │
-------------------------------------------+------------------------------------------
-$ ssh host3
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
+    +------------------------------+------------------------------+
+    │$ ssh host1                   │$ ssh host2                   │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ ssh host3                                                  │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    │                                                             │
+    +------------------------------+------------------------------+
 ```
 
 Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
