@@ -755,7 +755,7 @@ Pipe mode allows you to make combinations between tmux and other general UNIX co
 Contents of environment variable `TMUX_XPANES_EXEC` is preferentially used as a command.
 Pure `tmux` is used in case of empty.
 If you hope, add the statement to change the environment variable to your default login shell's configure file (i.e `.bashrc`, `.zshrc`)
-It is helpful if you want to use specific tmux verison, or enable specific option.
+It is helpful if you want to use specific tmux verison, or enable specific option always.
 
 ```sh
 export TMUX_XPANES_EXEC="/usr/local/bin/tmux1.8 -2"
