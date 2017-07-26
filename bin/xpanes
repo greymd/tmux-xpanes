@@ -34,6 +34,8 @@ readonly XP_ENOCMD=127
 
 # ===============
 
+# Used tmux command by default.
+# i.e, the command can be another one like 'export TMUX_XPANES_EXEC="tmux -2"'
 TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
