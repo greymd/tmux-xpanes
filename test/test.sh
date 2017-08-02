@@ -451,10 +451,23 @@ divide_three_panes_eh_impl() {
     assertEquals 1 "$(( $b_height == $c_height ))"
 }
 
+set_tmux_exec_randomly () {
+  local _num=$(($RANDOM % 3));
+  if [[ $_num -eq 0 ]];then
+    export TMUX_XPANES_EXEC="tmux -2"
+  elif [[ $_num -eq 1 ]];then
+    export TMUX_XPANES_EXEC="tmux"
+  else
+    unset TMUX_XPANES_EXEC
+  fi
+}
+
 setUp(){
     cd ${BIN_DIR}
     mkdir -p $TEST_TMP
+    set_tmux_exec_randomly
     echo ">>>>>>>>>>" >&2
+    echo "TMUX_XPANES_EXEC ... '$TMUX_XPANES_EXEC'" >&2
 }
 
 tearDown(){

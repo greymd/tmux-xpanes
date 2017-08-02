@@ -750,6 +750,18 @@ The results would be like this.
 
 Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
 
+## Change default `tmux` command
+
+Environment variable `TMUX_XPANES_EXEC` is preferentially used as a internal `tmux` command.
+Pure `tmux` is used in case of empty.
+Add the statement to your default login shell's configure file (i.e `.bashrc`, `.zshrc`) to change the environment variable .
+It is helpful if you want to use specific tmux verison, or enable specific options always.
+
+```sh
+export TMUX_XPANES_EXEC="/usr/local/bin/tmux1.8 -2"
+# => xpanes command calls "tmux1.8 -2" internally.
+```
+
 ## ... and [let's play!](https://github.com/greymd/tmux-xpanes/wiki/Let's-play!)
 
 # Contributing

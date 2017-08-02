@@ -91,6 +91,10 @@ In addition, sequences same as `date(1)` command are available.
     And etc.
 Other sequences are available. Please refer to `date(1)` manual.
 
+### ENVIRONMENT VARIABLES
+Contents of environment variable `TMUX_XPANES_EXEC` is preferentially used as a internal `tmux` command.
+It is helpful if you want to use specific tmux verison, or enable specific option always.
+
 MODES
 ------
 
