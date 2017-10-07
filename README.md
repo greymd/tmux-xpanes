@@ -222,7 +222,7 @@ You will get the screen like this.
     +-------------------------------+-------------------------------+
 ```
 
-`seq` command which generates sequencial numbers is specified by `-c`.
+`seq` command which generates sequential numbers is specified by `-c`.
 As you can see, `{}` is replaced each arguments. This placeholder can be changed by `-I` option like this.
 
 ```sh
@@ -244,23 +244,24 @@ Basic usages are shown above. Before showing further usages, it is good to know 
 
 ### [Normal mode1] Outside of tmux session.
 
-When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be that.
+When the tmux is not open and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
 
-The command newly creates a tmux session and new window on the session.
-In addition, it separates the window into multiple panes. Finally, the session will be attached.
+ - The command newly creates a tmux session and new window on the session.
+ - In addition, it separates the window into multiple panes. Finally, the session will be attached.
 
 ### [Normal mode2] Inside of tmux session.
 
-When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be that.
+When the tmux is already open and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
 
-The command newly creates a window **on the exisging active session**.
-In addition, it separates the window into multiple panes.
-Finally, the window will be active window.
+ - The command newly creates a window **on the exisging active session**.
+ - In addition, it separates the window into multiple panes.
+ - Finally, the window will be active window.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2).
-In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". It will be introduced [Pipe mode section](#pipe-mode).
+When the tmux is open and `xpanes` command is executed from within tmux (which means Normal mode2).
+In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode". 
+It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
 
@@ -379,7 +380,7 @@ $ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
 
 #### Suppress input synchronization
 
-To disable the synchronization of keyboad input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
+To disable the synchronization of keyboard input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
 
 ```
 $ xpanes -d -c "ssh {}" myuser1@host1 myuser2@host2
@@ -465,7 +466,7 @@ $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 To change the layout of panes, put an argument followed by `-l` option.
 This is the example that lines up some panes vertically.
 
-For example, to line up panes vertically, put `ev` (it is correspoinding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)).
+For example, to line up panes vertically, put `ev` (it is corresponding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)).
 
 ```bash
 $ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
@@ -534,7 +535,7 @@ Result will be this.
 | window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
 | window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
 
-Can you guess why such the phenomenon happenes?
+Can you guess why such the phenomenon happens?
 Running this command, such the window is supposed to be created at first.
 
 ```
