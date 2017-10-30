@@ -424,6 +424,11 @@ File name format for log file can be specified with `--log-format` option. Pleas
 
 **Attention:** Logging feature does not work properly with specific tmux version. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
+#### Execute the same sudo command on multiple hosts via SSH, entering your password once
+
+```
+xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.com
+```
 
 #### Execute different commands on the different panes.
 
