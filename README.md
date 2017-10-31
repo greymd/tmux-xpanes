@@ -427,7 +427,33 @@ File name format for log file can be specified with `--log-format` option. Pleas
 #### Execute the same sudo command on multiple hosts via SSH, entering your password once
 
 ```
-xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.com
+$ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.com
+```
+
+```
+    +------------------------------------+-------------------------------------+
+    │$ ssh -t host-1 'sudo some command' │$ ssh -t host-2 'sudo some command'  │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │                                    │                                     │
+    │------------------------------------+-------------------------------------│
+    │$ ssh -t some-third-host.example.com 'sudo some command'                  │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    │                                                                          │
+    +------------------------------------+-------------------------------------+
 ```
 
 #### Execute different commands on the different panes.
