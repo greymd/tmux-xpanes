@@ -4,7 +4,7 @@ XPANES 1 "MAY 2017" "User Commands" ""
 NAME
 ----
 
-xpanes, tmux-xpanes - Ultimate terminal divider powered by tmux.
+xpanes, tmux-xpanes - Ultimate terminal divider powered by tmux
 
 SYNOPSIS
 --------
@@ -93,22 +93,32 @@ Other sequences are available. Please refer to `date(1)` manual.
 
 ### ENVIRONMENT VARIABLES
 Contents of environment variable `TMUX_XPANES_EXEC` is preferentially used as a internal `tmux` command.
-It is helpful if you want to use specific tmux verison, or enable specific option always.
+It is helpful if you want to use specific tmux version, or enable specific option always.
 
 MODES
 ------
 
 ### [Normal mode1] Outside of tmux session.
 
-When the tmux is not being opened and `xpanes` command is executed on the normal terminal, the command's behavior is supposed to be that. The command newly creates a tmux session and new window on the session. In addition, it separates the window into multiple panes. Finally, the session will be attached.
+When the tmux is not opened and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
+
+* The command newly creates a tmux session and new window on the session.
+* In addition, it separates the window into multiple panes.
+* Finally, the session will be attached.
 
 ### [Normal mode2] Inside of tmux session.
 
-When the tmux is already being opened and `xpanes` command is executed on the existing tmux session, the command's behavior is supposed to be that. The command newly creates a window **on the exisging active session**. In addition, it separates the window into multiple panes. Finally, the window will be active window.
+When the tmux is already opened and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
+
+* The command newly creates a window **on the existing active session**.
+* In addition, it separates the window into multiple panes.
+* Finally, the window will be active window.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`. Pipe mode has two features.
+When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`.
+
+Pipe mode has two features.
 
 1. `xpanes` command's argument will be the common command line which will be used within all panes (this is corresponding to the `-c` option's argument in Normal mode).
 1. Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).

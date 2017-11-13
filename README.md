@@ -1,6 +1,6 @@
 <h1 align="center">
   <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/xpanes_logo_1.png" height="206" width="208" />
-  <h4 align="center">Ultimate terminal divider powered by <a href="https://tmux.github.io/">tmux</a>.</h2>
+  <h4 align="center">Ultimate terminal divider powered by <a href="https://tmux.github.io/">tmux</a></h2>
 </h1>
 <p align="center">
   <a href="https://github.com/greymd/tmux-xpanes/releases/latest"><img src="https://img.shields.io/github/release/greymd/tmux-xpanes.svg" alt="Latest version" /></a>
@@ -247,7 +247,8 @@ Basic usages are shown above. Before showing further usages, it is good to know 
 When the tmux is not open and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
 
  - The command newly creates a tmux session and new window on the session.
- - In addition, it separates the window into multiple panes. Finally, the session will be attached.
+ - In addition, it separates the window into multiple panes.
+ - Finally, the session will be attached.
 
 ### [Normal mode2] Inside of tmux session.
 
@@ -260,7 +261,7 @@ When the tmux is already open and `xpanes` command is executed from within the e
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
 When the tmux is open and `xpanes` command is executed from within tmux (which means Normal mode2).
-In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode". 
+In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode".
 It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
