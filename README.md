@@ -254,7 +254,7 @@ When the tmux is not open and `xpanes` command is executed on the normal termina
 
 When the tmux is already open and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
 
- - The command newly creates a window **on the exisging active session**.
+ - The command newly creates a window **on the existing active session**.
  - In addition, it separates the window into multiple panes.
  - Finally, the window will be active window.
 
@@ -788,7 +788,7 @@ Pipe mode allows you to make combinations between tmux and other general UNIX co
 Environment variable `TMUX_XPANES_EXEC` is preferentially used as a internal `tmux` command.
 Pure `tmux` is used in case of empty.
 Add the statement to your default login shell's configure file (i.e `.bashrc`, `.zshrc`) to change the environment variable .
-It is helpful if you want to use specific tmux verison, or enable specific options always.
+It is helpful if you want to use specific tmux version, or enable specific options always.
 
 ```sh
 export TMUX_XPANES_EXEC="/usr/local/bin/tmux1.8 -2"
