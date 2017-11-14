@@ -279,19 +279,33 @@ xpns_log_filenames () {
 }
 
 #
+# Normalize directory by making following conversion.
+#  * Tilde expansion.
+#  * Remove the slash '/' at the end of the dirname.
+# Usage:
+#        xpns_normalize_directory <direname>
+# Return:
+#        Normalized <dirname>
+#
+xpns_normalize_directory() {
+  local _dir="$1"
+  # Remove end of slash '/'
+  _dir="${_dir%/}"
+  # tilde expansion
+  _dir="${_dir/#~/$HOME}"
+  echo "$_dir"
+}
+
+#
 # Ensure existance of given directory
 # Usage:
 #        xpns_ensure_directory <direname>
+# Return:
+#        Absolute path of the <dirname>
 #
 xpns_ensure_directory() {
   local _dir="$1"
   local _checkfile="${XP_THIS_FILE_NAME}.$$"
-
-  # Remove end of slash '/'
-  _dir="${_dir%/}"
-
-  # tilda expansion
-  _dir="${_dir/#~/$HOME}"
 
   # Check directory.
   if [ ! -d "${_dir}" ]; then
@@ -303,6 +317,7 @@ xpns_ensure_directory() {
       exit $XP_ELOGDIR
     fi
   fi
+
   # Try to create file.
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
@@ -313,6 +328,7 @@ xpns_ensure_directory() {
     exit $XP_ELOGWRITE
   fi
   rm -f "${_dir}/$_checkfile"
+  echo $(cd "$_dir" && pwd)
 }
 
 # Convert array to string which is can be used as command line argument.
@@ -980,9 +996,8 @@ xpns_main() {
       return 0
     fi
     if [ $XP_OPT_LOG_STORE -eq 1 ]; then
-      xpns_ensure_directory "$XP_LOG_DIR"
-      # Store absolute path
-      XP_LOG_DIR="$(cd "$XP_LOG_DIR" && pwd)"
+      XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
+      XP_LOG_DIR=$(xpns_ensure_directory "$XP_LOG_DIR")
     fi
   }
 
