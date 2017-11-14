@@ -428,7 +428,9 @@ xpns_enable_logging() {
   for i in $(seq 0 "$_args_num")
   do
     # Start logging
-    $TMUX_XPANES_EXEC pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" "cat >> '${_log_dir}/${_logfiles[i]}'"
+    $TMUX_XPANES_EXEC \
+      pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" \
+      "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
   done
 }
 
@@ -937,7 +939,6 @@ xpns_parse_options() {
         elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
           xpns_load_flag_options "$1"
           XP_OPTIONS+=("$1") && shift
-
         ## ----------------
         # Other options
         ## ----------------
@@ -949,7 +950,6 @@ xpns_parse_options() {
         fi
       fi
       ;;
-
       ## ----------------
       # Other arguments
       ## ----------------
