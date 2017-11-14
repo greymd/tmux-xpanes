@@ -1,7 +1,7 @@
 .TH XPANES 1 "MAY 2017" "User Commands" ""
 .SH NAME
 .PP
-xpanes, tmux\-xpanes \- Ultimate terminal divider powered by tmux.
+xpanes, tmux\-xpanes \- Ultimate terminal divider powered by tmux
 .SH SYNOPSIS
 .SS Normal mode
 .PP
@@ -92,17 +92,33 @@ Other sequences are available. Please refer to \fB\fCdate(1)\fR manual.
 .SS ENVIRONMENT VARIABLES
 .PP
 Contents of environment variable \fB\fCTMUX_XPANES_EXEC\fR is preferentially used as a internal \fB\fCtmux\fR command.
-It is helpful if you want to use specific tmux verison, or enable specific option always.
+It is helpful if you want to use specific tmux version, or enable specific option always.
 .SH MODES
 .SS [Normal mode1] Outside of tmux session.
 .PP
-When the tmux is not being opened and \fB\fCxpanes\fR command is executed on the normal terminal, the command's behavior is supposed to be that. The command newly creates a tmux session and new window on the session. In addition, it separates the window into multiple panes. Finally, the session will be attached.
+When the tmux is not opened and \fB\fCxpanes\fR command is executed on the normal terminal, the command's behavior is as follows:
+.RS
+.IP \(bu 2
+The command newly creates a tmux session and new window on the session.
+.IP \(bu 2
+In addition, it separates the window into multiple panes. Finally, the session will be attached.
+.RE
 .SS [Normal mode2] Inside of tmux session.
 .PP
-When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the existing tmux session, the command's behavior is supposed to be that. The command newly creates a window \fBon the exisging active session\fP\&. In addition, it separates the window into multiple panes. Finally, the window will be active window.
+When the tmux is already opened and \fB\fCxpanes\fR command is executed from within the existing tmux session, the command's behavior is as follows:
+.RS
+.IP \(bu 2
+The command newly creates a window \fBon the existing active session\fP\&.
+.IP \(bu 2
+In addition, it separates the window into multiple panes.
+.IP \(bu 2
+Finally, the window will be active window.
+.RE
 .SS [Pipe mode] Inside of tmux session & Accepting standard input.
 .PP
-When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe \fB\fC|\fR), the command's behavior will be special one called "Pipe mode". Then, \fB\fCxpanes\fR behaves like UNIX \fB\fCxargs(1)\fR\&. Pipe mode has two features.
+When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe \fB\fC|\fR), the command's behavior will be special one called "Pipe mode". Then, \fB\fCxpanes\fR behaves like UNIX \fB\fCxargs(1)\fR\&.
+.PP
+Pipe mode has two features.
 .nr step0 0 1
 .RS
 .IP \n+[step0]
