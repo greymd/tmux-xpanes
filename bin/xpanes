@@ -6,10 +6,9 @@
 set -u
 readonly XP_VERSION="2.2.0"
 
-# ===============
+## --------------------------------
 # Error constants
-# ===============
-
+## --------------------------------
 # Undefined or General errors
 readonly XP_EUNDEF=1
 
@@ -61,34 +60,36 @@ readonly XP_EMPTY_STR="EMPTY"
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
-: "Initialize options" && {
-  # options which work indivisually.
-  readonly XP_FLAG_OPTIONS="[hVde]"
-  # options which requre arguments.
-  readonly XP_ARG_OPTIONS="[IScln]"
-  readonly XP_DEFAULT_LAYOUT="tiled"
-  readonly XP_DEFAULT_REPSTR="{}"
-  readonly XP_DEFAULT_CMD_UTILITY="echo {} "
-  readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
-  XP_OPTIONS=()
-  XP_ARGS=()
-  XP_STDIN=()
-  XP_IS_PIPE_MODE=0
-  XP_OPT_IS_SYNC=1
-  XP_OPT_DRY_RUN=0
-  XP_OPT_ATTACH=1
-  XP_OPT_LOG_STORE=0
-  XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
-  XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-  XP_REPSTR=""
-  XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
-  XP_NO_OPT=0
-  XP_OPT_CMD_UTILITY=0
-  XP_CMD_UTILITY=""
-  XP_LAYOUT="$XP_DEFAULT_LAYOUT"
-  XP_MAX_PANE_ARGS=""
-}
+## --------------------------------
+# Initialize Options
+## --------------------------------
+# options which work indivisually.
+readonly XP_FLAG_OPTIONS="[hVde]"
+# options which requre arguments.
+readonly XP_ARG_OPTIONS="[IScln]"
+readonly XP_DEFAULT_LAYOUT="tiled"
+readonly XP_DEFAULT_REPSTR="{}"
+readonly XP_DEFAULT_CMD_UTILITY="echo {} "
+readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+XP_OPTIONS=()
+XP_ARGS=()
+XP_STDIN=()
+XP_IS_PIPE_MODE=0
+XP_OPT_IS_SYNC=1
+XP_OPT_DRY_RUN=0
+XP_OPT_ATTACH=1
+XP_OPT_LOG_STORE=0
+XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
+XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+XP_REPSTR=""
+XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
+XP_NO_OPT=0
+XP_OPT_CMD_UTILITY=0
+XP_CMD_UTILITY=""
+XP_LAYOUT="$XP_DEFAULT_LAYOUT"
+XP_MAX_PANE_ARGS=""
 
+## --------------------------------
 # Logger
 #   $1 -- Log level (i.e Warning, Error)
 #   $2 -- Message
@@ -98,6 +99,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 # This log format is created with reference to openssl's one.
 #   $ echo | openssl -a
 #   openssl:Error: '-a' is an invalid command.
+## --------------------------------
 xpns_msg() {
   local _loglevel="$1"
   local _msgbody="$2"
@@ -278,7 +280,7 @@ xpns_log_filenames () {
     done
 }
 
-#
+## --------------------------------
 # Normalize directory by making following conversion.
 #  * Tilde expansion.
 #  * Remove the slash '/' at the end of the dirname.
@@ -286,7 +288,7 @@ xpns_log_filenames () {
 #        xpns_normalize_directory <direname>
 # Return:
 #        Normalized <dirname>
-#
+## --------------------------------
 xpns_normalize_directory() {
   local _dir="$1"
   # Remove end of slash '/'
@@ -296,13 +298,13 @@ xpns_normalize_directory() {
   echo "$_dir"
 }
 
-#
-# Ensure existance of given directory
+## --------------------------------
+# Ensure existence of given directory
 # Usage:
 #        xpns_ensure_directory <direname>
 # Return:
 #        Absolute path of the <dirname>
-#
+## --------------------------------
 xpns_ensure_directory() {
   local _dir="$1"
   local _checkfile="${XP_THIS_FILE_NAME}.$$"
@@ -398,7 +400,6 @@ xpns_split_window() {
   do
     $TMUX_XPANES_EXEC split-window -t "${_window_name}" -h -d
     $TMUX_XPANES_EXEC select-layout even-horizontal
-
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
     if [ $i -ge 2 ]; then
@@ -873,9 +874,9 @@ xpns_load_long_options() {
     XP_OPT_ATTACH=0
     return 1
 
-  # ----------------
+  ## ----------------
   # Other options
-  # ----------------
+  ## ----------------
   else
     xpns_msg "Error" "invalid option -- '${1#--}'"
     xpns_usage
@@ -900,9 +901,9 @@ xpns_parse_options() {
       fi
       ;;
 
-      # ----------------
+      ## ----------------
       # Long options
-      # ----------------
+      ## ----------------
       --*)
       if [ $XP_NO_OPT -eq 1 ]; then
         XP_ARGS+=("$1")
@@ -915,9 +916,9 @@ xpns_parse_options() {
       fi
       ;;
 
-      # ----------------
+      ## ----------------
       # Short options
-      # ----------------
+      ## ----------------
       -*)
       if [ $XP_NO_OPT -eq 1 ]; then
         XP_ARGS+=("$1")
@@ -936,9 +937,9 @@ xpns_parse_options() {
           xpns_load_flag_options "$1"
           XP_OPTIONS+=("$1") && shift
 
-        # ----------------
+        ## ----------------
         # Other options
-        # ----------------
+        ## ----------------
         else
           xpns_msg "Error" "Invalid option -- '${1#-}'"
           xpns_usage
@@ -948,9 +949,9 @@ xpns_parse_options() {
       fi
       ;;
 
-      # ----------------
+      ## ----------------
       # Other arguments
-      # ----------------
+      ## ----------------
       *)
       XP_ARGS+=("$1")
       XP_NO_OPT=1
@@ -989,33 +990,35 @@ xpns_main() {
   xpns_parse_options ${1+"$@"}
   xpns_check_env "$XP_DEPENDENCIES"
 
-  : "Parameter validation" && {
-    # Validate log directory.
-    # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-    if [ $XP_OPT_DRY_RUN -eq 1 ]; then
-      return 0
-    fi
-    if [ $XP_OPT_LOG_STORE -eq 1 ]; then
-      XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
-      XP_LOG_DIR=$(xpns_ensure_directory "$XP_LOG_DIR")
-    fi
-  }
+  ## --------------------------------
+  # Parameter validation
+  ## --------------------------------
+  # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+  if [ $XP_OPT_DRY_RUN -eq 1 ]; then
+    return 0
+  fi
+  # Validate log directory.
+  if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+    XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
+    XP_LOG_DIR=$(xpns_ensure_directory "$XP_LOG_DIR")
+  fi
 
-  #
+  ## --------------------------------
   # If current shell is outside of tmux session.
-  #
+  ## --------------------------------
   if [ -z "${TMUX-}" ]; then
     xpns_pre_execution
 
-  #
+  ## --------------------------------
   # If current shell is already inside of tmux session.
-  #
+  ## --------------------------------
   else
     xpns_execution
   fi
   exit 0
 }
 
-: "Entry point" && {
-  xpns_main ${1+"$@"}
-}
+## --------------------------------
+# Entry Point
+## --------------------------------
+xpns_main ${1+"$@"}
