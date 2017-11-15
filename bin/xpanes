@@ -301,11 +301,11 @@ xpns_normalize_directory() {
 ## --------------------------------
 # Ensure existence of given directory
 # Usage:
-#        xpns_ensure_directory <direname>
+#        xpns_is_valid_directory <direname>
 # Return:
 #        Absolute path of the <dirname>
 ## --------------------------------
-xpns_ensure_directory() {
+xpns_is_valid_directory() {
   local _dir="$1"
   local _checkfile="${XP_THIS_FILE_NAME}.$$"
 
@@ -330,7 +330,6 @@ xpns_ensure_directory() {
     exit $XP_ELOGWRITE
   fi
   rm -f "${_dir}/$_checkfile"
-  echo $(cd "$_dir" && pwd)
 }
 
 # Convert array to string which is can be used as command line argument.
@@ -1002,7 +1001,8 @@ xpns_main() {
   # Validate log directory.
   if [ $XP_OPT_LOG_STORE -eq 1 ]; then
     XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
-    XP_LOG_DIR=$(xpns_ensure_directory "$XP_LOG_DIR")
+    xpns_is_valid_directory "$XP_LOG_DIR" && \
+    XP_LOG_DIR=$(cd "$XP_LOG_DIR" && pwd)
   fi
   ## --------------------------------
   # If current shell is outside of tmux session.
