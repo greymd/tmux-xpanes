@@ -499,7 +499,7 @@ test_normalize_log_directory() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
     HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
