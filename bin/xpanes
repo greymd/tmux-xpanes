@@ -6,10 +6,9 @@
 set -u
 readonly XP_VERSION="2.2.0"
 
-# ===============
+## --------------------------------
 # Error constants
-# ===============
-
+## --------------------------------
 # Undefined or General errors
 readonly XP_EUNDEF=1
 
@@ -43,7 +42,7 @@ readonly XP_THIS_FILE_NAME="${0##*/}"
 readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
 readonly XP_ABS_THIS_FILE_NAME="$XP_THIS_DIR/$XP_THIS_FILE_NAME"
 
-# Prevent cache directory being created under root / dir in any case.
+# Prevent cache directory being created under root / directory in any case.
 # This is quite rare case (but it can be happened).
 readonly XP_USER_HOME="${HOME:-/etc}"
 
@@ -61,34 +60,36 @@ readonly XP_EMPTY_STR="EMPTY"
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
-: "Initialize options" && {
-  # options which work indivisually.
-  readonly XP_FLAG_OPTIONS="[hVde]"
-  # options which requre arguments.
-  readonly XP_ARG_OPTIONS="[IScln]"
-  readonly XP_DEFAULT_LAYOUT="tiled"
-  readonly XP_DEFAULT_REPSTR="{}"
-  readonly XP_DEFAULT_CMD_UTILITY="echo {} "
-  readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
-  XP_OPTIONS=()
-  XP_ARGS=()
-  XP_STDIN=()
-  XP_IS_PIPE_MODE=0
-  XP_OPT_IS_SYNC=1
-  XP_OPT_DRY_RUN=0
-  XP_OPT_ATTACH=1
-  XP_OPT_LOG_STORE=0
-  XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
-  XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
-  XP_REPSTR=""
-  XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
-  XP_NO_OPT=0
-  XP_OPT_CMD_UTILITY=0
-  XP_CMD_UTILITY=""
-  XP_LAYOUT="$XP_DEFAULT_LAYOUT"
-  XP_MAX_PANE_ARGS=""
-}
+## --------------------------------
+# Initialize Options
+## --------------------------------
+# options which work individually.
+readonly XP_FLAG_OPTIONS="[hVde]"
+# options which need arguments.
+readonly XP_ARG_OPTIONS="[IScln]"
+readonly XP_DEFAULT_LAYOUT="tiled"
+readonly XP_DEFAULT_REPSTR="{}"
+readonly XP_DEFAULT_CMD_UTILITY="echo {} "
+readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+XP_OPTIONS=()
+XP_ARGS=()
+XP_STDIN=()
+XP_IS_PIPE_MODE=0
+XP_OPT_IS_SYNC=1
+XP_OPT_DRY_RUN=0
+XP_OPT_ATTACH=1
+XP_OPT_LOG_STORE=0
+XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
+XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+XP_REPSTR=""
+XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
+XP_NO_OPT=0
+XP_OPT_CMD_UTILITY=0
+XP_CMD_UTILITY=""
+XP_LAYOUT="$XP_DEFAULT_LAYOUT"
+XP_MAX_PANE_ARGS=""
 
+## --------------------------------
 # Logger
 #   $1 -- Log level (i.e Warning, Error)
 #   $2 -- Message
@@ -98,6 +99,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 # This log format is created with reference to openssl's one.
 #   $ echo | openssl -a
 #   openssl:Error: '-a' is an invalid command.
+## --------------------------------
 xpns_msg() {
   local _loglevel="$1"
   local _msgbody="$2"
@@ -178,8 +180,8 @@ xpns_get_tmux_version() {
 }
 
 # Check whether the given version is greater than current tmux version.
-# $1 ... target version.
-# $2 ... curent tmux version.
+# $1 ... Target version.
+# $2 ... Current tmux version.
 # In case of tmux version is 1.7, the result will be like this.
 # 0 is true, 1 is false.
 ##  arg  -> result
@@ -233,7 +235,7 @@ xpns_suppress_allow_rename () {
 }
 
 # Restore default "allow-rename"
-# Do not write like 'xpns_restore_allow_rename "somevalue" "somevalue" > /dev/null'
+# Do not write like 'xpns_restore_allow_rename "some value" "some value" > /dev/null'
 # In tmux 1.6, 'tmux set-window-option' might be stopped in case of redirection.
 xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
@@ -278,20 +280,34 @@ xpns_log_filenames () {
     done
 }
 
-#
-# Ensure existance of given directory
+## --------------------------------
+# Normalize directory by making following conversion.
+#  * Tilde expansion.
+#  * Remove the slash '/' at the end of the dirname.
 # Usage:
-#        xpns_ensure_directory <direname>
-#
-xpns_ensure_directory() {
+#        xpns_normalize_directory <direname>
+# Return:
+#        Normalized <dirname>
+## --------------------------------
+xpns_normalize_directory() {
   local _dir="$1"
-  local _checkfile="${XP_THIS_FILE_NAME}.$$"
-
   # Remove end of slash '/'
   _dir="${_dir%/}"
-
-  # tilda expansion
+  # tilde expansion
   _dir="${_dir/#~/$HOME}"
+  echo "$_dir"
+}
+
+## --------------------------------
+# Ensure existence of given directory
+# Usage:
+#        xpns_is_valid_directory <direname>
+# Return:
+#        Absolute path of the <dirname>
+## --------------------------------
+xpns_is_valid_directory() {
+  local _dir="$1"
+  local _checkfile="${XP_THIS_FILE_NAME}.$$"
 
   # Check directory.
   if [ ! -d "${_dir}" ]; then
@@ -303,6 +319,7 @@ xpns_ensure_directory() {
       exit $XP_ELOGDIR
     fi
   fi
+
   # Try to create file.
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
@@ -382,7 +399,6 @@ xpns_split_window() {
   do
     $TMUX_XPANES_EXEC split-window -t "${_window_name}" -h -d
     $TMUX_XPANES_EXEC select-layout even-horizontal
-
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
     if [ $i -ge 2 ]; then
@@ -411,7 +427,9 @@ xpns_enable_logging() {
   for i in $(seq 0 "$_args_num")
   do
     # Start logging
-    $TMUX_XPANES_EXEC pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" "cat >> '${_log_dir}/${_logfiles[i]}'"
+    $TMUX_XPANES_EXEC \
+      pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" \
+      "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
   done
 }
 
@@ -429,7 +447,7 @@ xpns_send_commands() {
   done
 }
 
-# Serarate window vertically, when the number of panes is 1 or 2.
+# Separate window vertically, when the number of panes is 1 or 2.
 xpns_arrange_pane_location() {
   local _window_name="$1" ; shift
   local _args_num="$1"
@@ -543,7 +561,7 @@ xpns_pre_execution() {
   xpns_suppress_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
 
   # Append -- flag.
-  # Because any arugments may have `-`
+  # Because any arguments may have `-`
   if [ $XP_NO_OPT -eq 1 ]; then
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
@@ -571,12 +589,12 @@ xpns_pre_execution() {
 $TMUX_XPANES_EXEC -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
 
 "
-      # It might be failed. Before appling changes, first window might be closed.
+      # It might be failed. Before applying changes, first window might be closed.
       xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
       exit $XP_ETTY
     fi
   fi
-  # It might be failed. Before appling changes, first window might be closed.
+  # It might be failed. Before applying changes, first window might be closed.
   xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
 }
 
@@ -614,7 +632,7 @@ xpns_execution() {
       "${XP_ARGS[@]}"
   fi
 
-  # Sending ssh opearations for each pane.
+  # Sending ssh operations for each pane.
   xpns_send_commands \
     "$_window_name" \
     "$_pane_base_index" \
@@ -622,18 +640,23 @@ xpns_execution() {
     "$XP_CMD_UTILITY" \
     "${XP_ARGS[@]}"
 
-  # This is just the author's preference (You can remove next statement.)
+  # This is just the author's preference
+  # (It means you can remove next statement as you like.)
   xpns_arrange_pane_location \
     "$_window_name" \
     $_last_args_idx
 
   # Enable broadcasting
   if [ $XP_OPT_IS_SYNC -eq 1 ]; then
-    $TMUX_XPANES_EXEC set-window-option -t "${_window_name}" synchronize-panes on
+    $TMUX_XPANES_EXEC \
+      set-window-option -t "${_window_name}" \
+      synchronize-panes on
   fi
 
   # Restore original window name.
-  $TMUX_XPANES_EXEC rename-window -t "$_window_name" "$(echo "$_window_name" | xpns_key2value)"
+  $TMUX_XPANES_EXEC \
+    rename-window -t "$_window_name" \
+    "$(echo "$_window_name" | xpns_key2value)"
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 
@@ -696,7 +719,7 @@ xpns_switch_pipe_mode() {
 
   # If there is empty -I option or user does not assign the <repstr>,
   # Append the space and <repstr> at the end of the <utility>
-  # This is same as the unix xargs command.
+  # This is same as the xargs command of GNU.
   # i.e,
   #   $ echo 10 | xargs seq
   #     => seq 10
@@ -759,7 +782,7 @@ xpns_load_arg_options() {
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
-    # -I AAA BBB  -- XP_REPSTR="AAA"
+    # -I AAA BBB  -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
@@ -857,9 +880,9 @@ xpns_load_long_options() {
     XP_OPT_ATTACH=0
     return 1
 
-  # ----------------
+  ## ----------------
   # Other options
-  # ----------------
+  ## ----------------
   else
     xpns_msg "Error" "invalid option -- '${1#--}'"
     xpns_usage
@@ -869,7 +892,6 @@ xpns_load_long_options() {
 }
 
 xpns_parse_options() {
-
   while (( $# > 0 ))
   do
     case "$1" in
@@ -883,10 +905,9 @@ xpns_parse_options() {
         shift
       fi
       ;;
-
-      # ----------------
+      ## ----------------
       # Long options
-      # ----------------
+      ## ----------------
       --*)
       if [ $XP_NO_OPT -eq 1 ]; then
         XP_ARGS+=("$1")
@@ -898,16 +919,14 @@ xpns_parse_options() {
         [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
       fi
       ;;
-
-      # ----------------
+      ## ----------------
       # Short options
-      # ----------------
+      ## ----------------
       -*)
       if [ $XP_NO_OPT -eq 1 ]; then
         XP_ARGS+=("$1")
         shift
       else
-
         local _shift_count="0"
         if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]];then
           xpns_load_arg_options "$@"
@@ -919,10 +938,9 @@ xpns_parse_options() {
         elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
           xpns_load_flag_options "$1"
           XP_OPTIONS+=("$1") && shift
-
-        # ----------------
+        ## ----------------
         # Other options
-        # ----------------
+        ## ----------------
         else
           xpns_msg "Error" "Invalid option -- '${1#-}'"
           xpns_usage
@@ -931,16 +949,14 @@ xpns_parse_options() {
         fi
       fi
       ;;
-
-      # ----------------
+      ## ----------------
       # Other arguments
-      # ----------------
+      ## ----------------
       *)
       XP_ARGS+=("$1")
       XP_NO_OPT=1
       shift
       ;;
-
     esac
   done
 
@@ -969,38 +985,40 @@ xpns_parse_options() {
   fi
 }
 
+## --------------------------------
+# Main function
+## --------------------------------
 xpns_main() {
   xpns_parse_options ${1+"$@"}
   xpns_check_env "$XP_DEPENDENCIES"
-
-  : "Parameter validation" && {
-    # Validate log directory.
-    # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-    if [ $XP_OPT_DRY_RUN -eq 1 ]; then
-      return 0
-    fi
-    if [ $XP_OPT_LOG_STORE -eq 1 ]; then
-      xpns_ensure_directory "$XP_LOG_DIR"
-      # Store absolute path
-      XP_LOG_DIR="$(cd "$XP_LOG_DIR" && pwd)"
-    fi
-  }
-
-  #
+  ## --------------------------------
+  # Parameter validation
+  ## --------------------------------
+  # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
+  if [ $XP_OPT_DRY_RUN -eq 1 ]; then
+    return 0
+  fi
+  # Validate log directory.
+  if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+    XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
+    xpns_is_valid_directory "$XP_LOG_DIR" && \
+    XP_LOG_DIR=$(cd "$XP_LOG_DIR" && pwd)
+  fi
+  ## --------------------------------
   # If current shell is outside of tmux session.
-  #
+  ## --------------------------------
   if [ -z "${TMUX-}" ]; then
     xpns_pre_execution
-
-  #
+  ## --------------------------------
   # If current shell is already inside of tmux session.
-  #
+  ## --------------------------------
   else
     xpns_execution
   fi
   exit 0
 }
 
-: "Entry point" && {
-  xpns_main ${1+"$@"}
-}
+## --------------------------------
+# Entry Point
+## --------------------------------
+xpns_main ${1+"$@"}
