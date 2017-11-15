@@ -92,7 +92,7 @@ exec_tmux_session() {
         fi
         # Tmux session does not work.
         if [ $i -eq 30 ]; then
-            echo "Test failed" >&2
+            echo "Tmux session timeout" >&2
             return 1
         fi
     done
@@ -137,7 +137,7 @@ wait_panes_separation() {
         fi
         # Still not separated.
         if [ $i -eq $_wait_seconds ]; then
-            echo "wait_panes_separation: Test failed" >&2
+            echo "wait_panes_separation: Too long time for window separation. Aborted." >&2
             return 1
         fi
     done
@@ -477,6 +477,92 @@ tearDown(){
 }
 
 ###################### START TESTING ######################
+
+test_normalize_log_directory() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux -V)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    printf "\n $ $_cmd\n"
+    # Execute command (slightly different)
+    HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "2"
+
+    # Wait several seconds just in case.
+    sleep 3
+    ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+    ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
+    assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BBBB_')
+
+    close_tmux_session "$_socket_file"
+    rm -f ${_tmpdir}/logs/*
+    rmdir ${_tmpdir}/logs
+    rm -f ${_tmpdir}/fin/*
+    rmdir ${_tmpdir}/fin
+
+    : "In TMUX session" && {
+        printf "\n $ TMUX($_cmd)\n"
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        wait_existing_file_number "${_tmpdir}/fin" "2"
+
+        # Wait several seconds just in case.
+        sleep 3
+        ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_AAAA_')
+
+        ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
+        assertEquals 1 $(cat ${_tmpdir}/logs/$_log_file | grep -ac 'GEGE_BBBB_')
+
+        close_tmux_session "$_socket_file"
+
+        rm -f ${_tmpdir}/logs/*
+        rmdir ${_tmpdir}/logs
+        rm -f ${_tmpdir}/fin/*
+        rmdir ${_tmpdir}/fin
+    }
+}
 
 test_maximum_window_name() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
