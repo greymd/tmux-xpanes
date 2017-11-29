@@ -1,15 +1,16 @@
 
-Name:     tmux-xpanes
-Summary:  Ultimate terminal divider powered by tmux
-Version:  2.2.1
-Group:    Applications
-License:  MIT
-Release:  %(date '+%'s)
-URL:      https://github.com/greymd/tmux-xpanes
-Source:   https://github.com/greymd/tmux-xpanes/archive/v%{version}.tar.gz
-Vendor:   Yamada, Yasuhiro <greengregson at gmail dot com>
-Requires: tmux
-Provides: tmux-xpanes, xpanes
+Name:       tmux-xpanes
+Summary:    Ultimate terminal divider powered by tmux
+Version:    2.2.1
+Group:      Applications
+License:    MIT
+Release:    %(date '+%'s)
+URL:        https://github.com/greymd/tmux-xpanes
+Source:     https://github.com/greymd/tmux-xpanes/archive/v%{version}.tar.gz
+BuildArch:  noarch
+Vendor:     Yamada, Yasuhiro <greengregson at gmail dot com>
+Requires:   tmux
+Provides:   tmux-xpanes, xpanes
 
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -26,14 +27,12 @@ xpanes or tmux-xpanes (alias of xpanes) commands have following features:
 
 
 %prep
-%setup -c
+%setup
 
 %install
-rm -rf %{buildroot}
-%{__mv} %{name}-%{version}/* .
-mkdir -p %{buildroot}%{_mandir}/man1 %{buildroot}%{_bindir}
-%{__cp} -Rp man/*.1 %{buildroot}%{_mandir}/man1/
-%{__cp} -Rp bin/* %{buildroot}%{_bindir}/
+install -d -m 0755 %{buildroot}%{_mandir}/man1 %{buildroot}%{_bindir}
+%{__cp} -a man/*.1 %{buildroot}%{_mandir}/man1/
+%{__cp} -a bin/* %{buildroot}%{_bindir}/
 
 %files
 %defattr(0644, root, root, 0755)
@@ -44,3 +43,4 @@ mkdir -p %{buildroot}%{_mandir}/man1 %{buildroot}%{_bindir}
 
 %clean
 %{__rm} -rf %{buildroot}
+
