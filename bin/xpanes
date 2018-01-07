@@ -505,9 +505,14 @@ xpns_prepare_window() {
 xpns_check_env() {
   local _cmds="$1"
   while read -r cmd ; do
-    if ! type "$cmd" > /dev/null 2>&1; then
-      xpns_msg "Error" "$cmd is required to work."
-      exit $XP_ENOCMD
+    if ! type "${cmd}" > /dev/null 2>&1; then
+      if [[ "${cmd}" == "tmux" ]] && [[ "${TMUX_XPANES_EXEC}" == "tmux" ]]; then
+        xpns_msg "Error" "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
+        exit $XP_ENOCMD
+      elif [[ "${cmd}" != "tmux" ]]; then
+        xpns_msg "Error" "${cmd} is required."
+        exit $XP_ENOCMD
+      fi
     fi
   done < <(echo "$_cmds" | tr ' ' '\n')
 
