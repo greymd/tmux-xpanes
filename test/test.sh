@@ -22,7 +22,7 @@ switch_tmux_path () {
       return 0
     fi
     # Make PATH include tmux
-    export PATH="${PATH}:${_tmux_path}"
+    export PATH="${_tmux_path}:${PATH}"
   fi
   return 0
 }
@@ -2451,6 +2451,7 @@ readonly TMUX_EXEC=$(get_tmux_full_path)
 if [ -n "$BASH_VERSION" ]; then
   # This is bash
   echo "Testing for bash $BASH_VERSION"
+  echo "tmux path: ${TMUX_EXEC}"
   echo "            $(${TMUX_EXEC} -V)"
 fi
 
