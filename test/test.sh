@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Directory name of this file
+readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+readonly TEST_TMP="$THIS_DIR/test_tmp"
+readonly OLD_PATH="${PATH}"
+
 # func 0 -- Restore old PATH.
 # func 1 -- make PATH include tmux.
 switch_tmux_path () {
@@ -24,17 +29,15 @@ switch_tmux_path () {
 
 tmux_version_number() {
     local _tmux_version=""
-    switch_tmux_path 1
-    tmux -V &> /dev/null
+    ${TMUX_EXEC} -V &> /dev/null
     if [ $? -ne 0 ]; then
         # From tmux 0.9 to 1.3, there is no -V option.
         # Adjust all to 0.9
         _tmux_version="tmux 0.9"
     else
-        _tmux_version="$(tmux -V)"
+        _tmux_version="$(${TMUX_EXEC} -V)"
     fi
     echo "$_tmux_version" | perl -anle 'printf $F[1]'
-    switch_tmux_path 0
 }
 
 # Check whether the given version is less than current tmux version.
@@ -58,6 +61,7 @@ is_less_than() {
 
 # !!Run this function at first!!
 check_version() {
+    switch_tmux_path 1
     ${BIN_DIR}${EXEC} --dry-run A
     # If tmux version is less than 1.6, skip rest of the tests.
     if is_less_than "1.6" ;then
@@ -65,16 +69,17 @@ check_version() {
         echo "Because this version is out of support." >&2
         exit 0
     fi
+    switch_tmux_path 0
 }
 
 create_tmux_session() {
     local _socket_file="$1"
-    tmux -S $_socket_file new-session -d
+    ${TMUX_EXEC} -S $_socket_file new-session -d
     # Once attach tmux session and detach it.
     # Because, pipe-pane feature does not work with tmux 1.8 (it might be bug).
     # To run pipe-pane, it is necessary to attach the session.
-    tmux -S $_socket_file send-keys "sleep 1 && tmux detach-client" C-m
-    tmux -S $_socket_file attach-session
+    ${TMUX_EXEC} -S $_socket_file send-keys "sleep 1 && ${TMUX_EXEC} detach-client" C-m
+    ${TMUX_EXEC} -S $_socket_file attach-session
 }
 
 exec_tmux_session() {
@@ -82,8 +87,8 @@ exec_tmux_session() {
     local _tmpdir=${SHUNIT_TMPDIR:-/tmp}
     echo "send-keys: cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done" >&2
     # Same reason as the comments near "create_tmux_session".
-    tmux -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done && sleep 1 && tmux detach-client" C-m
-    tmux -S $_socket_file attach-session
+    ${TMUX_EXEC} -S $_socket_file send-keys "cd ${BIN_DIR} && $* && touch ${SHUNIT_TMPDIR}/done && sleep 1 && ${TMUX_EXEC} detach-client" C-m
+    ${TMUX_EXEC} -S $_socket_file attach-session
     # Wait until tmux session is completely established.
     for i in $(seq 30) ;do
         sleep 1
@@ -101,13 +106,13 @@ exec_tmux_session() {
 
 capture_tmux_session() {
     local _socket_file="$1"
-    tmux -S $_socket_file capture-pane
-    tmux -S $_socket_file show-buffer
+    ${TMUX_EXEC} -S $_socket_file capture-pane
+    ${TMUX_EXEC} -S $_socket_file show-buffer
 }
 
 close_tmux_session() {
     local _socket_file="$1"
-    tmux -S $_socket_file kill-session
+    ${TMUX_EXEC} -S $_socket_file kill-session
     rm $_socket_file
 }
 
@@ -121,14 +126,14 @@ wait_panes_separation() {
     # Wait until pane separation is completed
     for i in $(seq $_wait_seconds) ;do
         sleep 1
-        _window_name=$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep "^${_window_name_prefix}" | head -n 1)
+        _window_name=$(${TMUX_EXEC} -S $_socket_file list-windows -F '#{window_name}' | grep "^${_window_name_prefix}" | head -n 1)
         # printf "wait_panes_separation: " >&2
         # tmux -S $_socket_file list-windows -F '#{window_name}' >&2
         if ! [ -z "${_window_name}" ]; then
-            _pane_num="$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+            _pane_num="$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
             # tmux -S $_socket_file list-panes -t "$_window_name"
             if [ "${_pane_num}" = "${_expected_pane_num}" ]; then
-                tmux -S $_socket_file list-panes -t "$_window_name" >&2
+                ${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" >&2
                 # Wait several seconds to ensure the completion.
                 # Even the number of panes equals to expected number,
                 # the separation is not complated sometimes.
@@ -200,10 +205,10 @@ between_plus_minus() {
 get_window_having_panes() {
     local _socket_file="$1"
     local _pane_num="$2"
-    tmux  -S "$_socket_file" list-windows -F '#{window_index}' \
+    ${TMUX_EXEC}  -S "$_socket_file" list-windows -F '#{window_index}' \
         | while read idx;
             do
-                echo -n "$idx "; tmux -S "$_socket_file" list-panes -t $idx -F '#{pane_index}' | grep -c .
+                echo -n "$idx "; ${TMUX_EXEC} -S "$_socket_file" list-panes -t $idx -F '#{pane_index}' | grep -c .
             done | awk '$2=='$_pane_num'{print $1}' | head -n 1
 }
 
@@ -218,19 +223,19 @@ divide_two_panes_impl() {
     # +---+---+
 
     echo "Check number of panes"
-    assertEquals 2 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+    assertEquals 2 "$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
     echo "A:$a_width B:$b_width"
     # true:1, false:0
     # a_width +- 1 is b_width
     assertEquals 1 "$(between_plus_minus 1 $a_width $b_width)"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
     echo "A:$a_height B:$b_height"
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
@@ -248,20 +253,20 @@ divide_three_panes_impl() {
     # +---+---+
 
     echo "Check number of panes"
-    assertEquals 3 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+    assertEquals 3 "$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
     echo "A:$a_width B:$b_width C:$c_width"
     assertEquals 1 "$(between_plus_minus 1 $a_width $b_width)"
     assertEquals 1 "$(( $(( $a_width + $b_width + 1 )) == $c_width ))"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
     echo "A:$a_height B:$b_height C:$c_height"
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
@@ -280,10 +285,10 @@ divide_four_panes_impl() {
     # +---+---+
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
-    d_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==4')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    d_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==4')
     echo "A:$a_width B:$b_width C:$c_width D:$d_width"
 
     assertEquals 1 "$(($a_width == $c_width))"
@@ -292,10 +297,10 @@ divide_four_panes_impl() {
     assertEquals 1 "$(between_plus_minus 1 $c_width $d_width)"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
-    d_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==4')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    d_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==4')
     echo "A:$a_height B:$b_height C:$c_height D:$d_height"
     # In this case, height must be same.
     assertEquals 1 "$(( $a_height == $b_height ))"
@@ -318,11 +323,11 @@ divide_five_panes_impl() {
     # +---+---+
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
-    d_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==4')
-    e_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==5')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    d_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==4')
+    e_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==5')
     echo "A:$a_width B:$b_width C:$c_width D:$d_width E:$e_width"
     assertEquals 1 "$(($a_width == $c_width))"
     assertEquals 1 "$(($b_width == $d_width))"
@@ -332,11 +337,11 @@ divide_five_panes_impl() {
     assertEquals 1 "$(( $(( $a_width + $b_width + 1 )) == $e_width))"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
-    d_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==4')
-    e_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==5')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    d_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==4')
+    e_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==5')
     echo "A:$a_height B:$b_height C:$c_height D:$d_height E:$e_height"
     assertEquals 1 "$(( $a_height == $b_height ))"
     assertEquals 1 "$(( $c_height == $d_height ))"
@@ -360,19 +365,19 @@ divide_two_panes_ev_impl() {
     # +-------+
 
     echo "Check number of panes"
-    assertEquals 2 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+    assertEquals 2 "$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
     echo "A:$a_width B:$b_width"
     # true:1, false:0
     # In this case, height must be same.
     assertEquals 1 "$(( $a_width == $b_width ))"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
     echo "A:$a_height B:$b_height"
     # a_height +- 1 is b_height
     assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
@@ -397,12 +402,12 @@ divide_three_panes_ev_impl() {
     # +-------+
 
     echo "Check number of panes"
-    assertEquals 3 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+    assertEquals 3 "$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
     echo "A:$a_width B:$b_width C:$c_width"
     # true:1, false:0
     # In this case, height must be same.
@@ -410,9 +415,9 @@ divide_three_panes_ev_impl() {
     assertEquals 1 "$(( $b_width == $c_width ))"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
     echo "A:$a_height B:$b_height C:$c_height"
 
     assertEquals 1 "$(between_plus_minus 1 $a_height $b_height)"
@@ -430,12 +435,12 @@ divide_three_panes_eh_impl() {
     # +---+---+---+
 
     echo "Check number of panes"
-    assertEquals 3 "$(tmux -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
+    assertEquals 3 "$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" | grep -c .)"
 
     echo "Check width"
-    a_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
+    a_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==1')
+    b_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==2')
+    c_width=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_width}' | awk 'NR==3')
     echo "A:$a_width B:$b_width C:$c_width"
     # true:1, false:0
     # In this case, height must be same.
@@ -443,9 +448,9 @@ divide_three_panes_eh_impl() {
     assertEquals 1 "$(between_plus_minus 2 $b_width $c_width)"
 
     echo "Check height"
-    a_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(tmux -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
+    a_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==1')
+    b_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==2')
+    c_height=$(${TMUX_EXEC} -S $_socket_file list-panes -t "$_window_name" -F '#{pane_height}' | awk 'NR==3')
     echo "A:$a_height B:$b_height C:$c_height"
 
     assertEquals 1 "$(( $a_height == $b_height ))"
@@ -495,9 +500,15 @@ tearDown(){
 
 ###################### START TESTING ######################
 
+test_tmux_path_invalid() {
+  switch_tmux_path 0
+  TMUX_XPANES_EXEC="tmux" ${EXEC} 1 2 3
+  assertEquals "127" "$?"
+}
+
 test_normalize_log_directory() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
@@ -505,7 +516,7 @@ test_normalize_log_directory() {
         return 0
     fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
         return 0
     fi
@@ -519,7 +530,7 @@ test_normalize_log_directory() {
     _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
@@ -588,12 +599,12 @@ test_maximum_window_name() {
     local _arg="$(yes | head -n 300 | tr -d '\n')"
     _cmd="${EXEC} -S $_socket_file --stay '$_arg'"
     printf "\n $ %s\n" "$_cmd"
-    tmux -S "$_socket_file" set-window-option -g allow-rename off
+    ${TMUX_EXEC} -S "$_socket_file" set-window-option -g allow-rename off
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "y" '1'
 
     # Maximum window name is 200 characters + "-{PID}"
-    tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep -qE '^y{200}-[0-9]+$'
+    ${TMUX_EXEC} -S "$_socket_file" list-windows -F '#{window_name}' | grep -qE '^y{200}-[0-9]+$'
     assertEquals "0" "$?"
 
     close_tmux_session "$_socket_file"
@@ -607,10 +618,10 @@ test_window_name_having_special_chars() {
     local _actual_name=""
     _cmd="${EXEC} -S $_socket_file --stay '$_expected_name'"
     printf "\n $ %s\n" "$_cmd"
-    tmux -S "$_socket_file" set-window-option -g allow-rename off
+    ${TMUX_EXEC} -S "$_socket_file" set-window-option -g allow-rename off
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "%" '1'
-    _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
+    _actual_name=$(${TMUX_EXEC} -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
     close_tmux_session "$_socket_file"
     echo "Actual name:$_actual_name Expected name:$_expected_name"
     assertEquals "$_expected_name" "$_actual_name"
@@ -619,10 +630,10 @@ test_window_name_having_special_chars() {
         _cmd="${EXEC} -S $_socket_file '$_expected_name'"
         printf "\n $ TMUX(%s)\n" "$_cmd"
         create_tmux_session "$_socket_file"
-        tmux -S "$_socket_file" set-window-option -g allow-rename off
+        ${TMUX_EXEC} -S "$_socket_file" set-window-option -g allow-rename off
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "%" '1'
-        _actual_name=$(tmux -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
+        _actual_name=$(${TMUX_EXEC} -S "$_socket_file" list-windows -F '#{window_name}' | grep '%' | perl -pe 's/-[0-9]+$//g')
         close_tmux_session "$_socket_file"
         echo "Actual name:$_actual_name Expected name:$_expected_name"
         assertEquals "$_expected_name" "$_actual_name"
@@ -669,7 +680,7 @@ test_divide_five_panes_special_chars() {
 
 test_log_and_empty_arg() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
@@ -677,7 +688,7 @@ test_log_and_empty_arg() {
         return 0
     fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
         return 0
     fi
@@ -691,7 +702,7 @@ test_log_and_empty_arg() {
     _cmd="XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' AA '' BB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@  && tmux detach-client" '' AA '' BB
+    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@  && ${TMUX_EXEC} detach-client" '' AA '' BB
     wait_panes_separation "$_socket_file" "EMPTY" "4"
     # AA and BB. Empty file is not created.
     wait_existing_file_number "${_tmpdir}/fin" "2"
@@ -913,11 +924,11 @@ test_keep_allow_rename_opt() {
         # allow-rename on
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
-        tmux -S "$_socket_file" set-window-option -g allow-rename on
+        ${TMUX_EXEC} -S "$_socket_file" set-window-option -g allow-rename on
         echo "allow-rename(before): on"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "5"
-        _allow_rename_status="$(tmux -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+        _allow_rename_status="$(${TMUX_EXEC} -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
         echo "allow-rename(after): $_allow_rename_status"
         assertEquals "on" "$_allow_rename_status"
         close_tmux_session "$_socket_file"
@@ -925,11 +936,11 @@ test_keep_allow_rename_opt() {
         # allow-rename off
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
-        tmux -S "$_socket_file" set-window-option -g allow-rename off
+        ${TMUX_EXEC} -S "$_socket_file" set-window-option -g allow-rename off
         echo "allow-rename(before): off"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "5"
-        _allow_rename_status="$(tmux -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+        _allow_rename_status="$(${TMUX_EXEC} -S "$_socket_file" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
         echo "allow-rename(after): $_allow_rename_status"
         assertEquals "off" "$_allow_rename_status"
         close_tmux_session "$_socket_file"
@@ -1468,8 +1479,8 @@ test_desync_option_1() {
     eval "$_cmd"
     # ${EXEC} -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     wait_panes_separation "$_socket_file" "AA" "4"
-    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
     # Match
     assertEquals 0 $?
     close_tmux_session "$_socket_file"
@@ -1480,8 +1491,8 @@ test_desync_option_1() {
     eval "$_cmd"
     # ${EXEC} -d -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     wait_panes_separation "$_socket_file" "AA" "4"
-    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
     # Unmach
     assertEquals 1 $?
     close_tmux_session "$_socket_file"
@@ -1493,8 +1504,8 @@ test_desync_option_1() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "4"
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         # Match
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
@@ -1505,8 +1516,8 @@ test_desync_option_1() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "4"
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         # Unmach
         assertEquals 1 $?
         close_tmux_session "$_socket_file"
@@ -1533,8 +1544,8 @@ test_desync_option_2() {
     # ${EXEC} -I@ -S $_socket_file -c "echo @" --stay -- AA BB CC DD
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AA" "4"
-    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
     # Match
     assertEquals 0 $?
     close_tmux_session "$_socket_file"
@@ -1545,8 +1556,8 @@ test_desync_option_2() {
     # ${EXEC} -I@ -S $_socket_file -dc "echo @" --stay -- AA BB CC DD
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AA" "4"
-    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
     # Unmach
     assertEquals 1 $?
     close_tmux_session "$_socket_file"
@@ -1558,8 +1569,8 @@ test_desync_option_2() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "4"
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         # Match
         assertEquals 0 $?
         close_tmux_session "$_socket_file"
@@ -1570,8 +1581,8 @@ test_desync_option_2() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AA" "4"
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         # Unmach
         assertEquals 1 $?
         close_tmux_session "$_socket_file"
@@ -1683,17 +1694,17 @@ test_start_separation() {
 
     # Run this test if the version is more than 1.7.
     if is_less_than "1.8" ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because tmux 1.6 and 1.7 does not work properly without attached tmux session." >&2
     else
         # It is required to attach and detach after that.
-        _cmd="${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB"
+        _cmd="${EXEC} -S $_socket_file -I@ -c 'echo @ && ${TMUX_EXEC} detach-client' AAAA BBBB"
         printf "\n $ $_cmd\n"
-        ${EXEC} -S $_socket_file -I@ -c 'echo @ && tmux detach-client' AAAA BBBB
+        ${EXEC} -S $_socket_file -I@ -c "echo @ && ${TMUX_EXEC} detach-client" AAAA BBBB
 
         wait_panes_separation "$_socket_file" "AAAA" "2"
         # Number of window is 1
-        assertEquals "1" "$(tmux -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
+        assertEquals "1" "$(${TMUX_EXEC} -S $_socket_file list-windows -F '#{window_name}' | grep -c .)"
         close_tmux_session "$_socket_file"
     fi
 
@@ -1704,9 +1715,9 @@ test_start_separation() {
         printf "\n $ TMUX($_cmd)\n"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        tmux -S $_socket_file list-windows
+        ${TMUX_EXEC} -S $_socket_file list-windows
         # There must be 2 windows -- default window & new window.
-        assertEquals "2" "$(tmux -S $_socket_file list-windows | grep -c .)"
+        assertEquals "2" "$(${TMUX_EXEC} -S $_socket_file list-windows | grep -c .)"
         close_tmux_session "$_socket_file"
     }
 }
@@ -1975,7 +1986,7 @@ test_repstr_command_option_pipe() {
 
 test_log_option() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
@@ -1983,7 +1994,7 @@ test_log_option() {
         return 0
     fi
     if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
         return 0
     fi
@@ -1997,7 +2008,7 @@ test_log_option() {
     _cmd="XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
-    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB
+    XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
@@ -2061,7 +2072,7 @@ test_log_option() {
 
 test_log_format_option() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
@@ -2085,7 +2096,7 @@ test_log_format_option() {
     _cmd="${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    ${EXEC} --log=${_logdir} --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -2158,7 +2169,7 @@ test_log_format_option() {
 
 test_log_format_option2() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
-        echo "Skip this test for $(tmux -V)." >&2
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
@@ -2183,7 +2194,7 @@ test_log_format_option2() {
     _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -2281,7 +2292,7 @@ test_log_format_and_desync_option() {
     _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
-    XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && tmux detach-client" AAAA AAAA BBBB CCCC
+    XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c "echo HOGE_@_ | sed s/HOGE/GEGE/&& touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB CCCC
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
@@ -2308,8 +2319,8 @@ test_log_format_and_desync_option() {
     assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
 
     # Check synchronized or not
-    echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-    tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
     assertEquals 1 $?
 
     close_tmux_session "$_socket_file"
@@ -2350,8 +2361,8 @@ test_log_format_and_desync_option() {
         assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
 
         # Check synchronized or not
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         assertEquals 1 $?
 
         close_tmux_session "$_socket_file"
@@ -2422,8 +2433,8 @@ test_log_format_and_desync_option_pipe() {
         assertEquals 1 $(cat ${_logdir}/$_log_file | grep -ac 'GEGE_CCCC_')
 
         # Check synchronized or not
-        echo "tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-        tmux -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'
         assertEquals 1 $?
 
         close_tmux_session "$_socket_file"
@@ -2436,15 +2447,11 @@ test_log_format_and_desync_option_pipe() {
 
 # TODO : test with logging + empty string argument
 
-# Directory name of this file
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
-readonly TEST_TMP="$THIS_DIR/test_tmp"
-readonly OLD_PATH="${PATH}"
-
+readonly TMUX_EXEC=$(get_tmux_full_path)
 if [ -n "$BASH_VERSION" ]; then
   # This is bash
   echo "Testing for bash $BASH_VERSION"
-  echo "            $(tmux -V)"
+  echo "            $(${TMUX_EXEC} -V)"
 fi
 
 if [ -n "$TMUX" ]; then
@@ -2457,7 +2464,6 @@ BIN_DIR="${THIS_DIR}/../bin/"
 # BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
 BIN_NAME="xpanes"
 EXEC="./${BIN_NAME}"
-
 check_version
 
 # Test start
