@@ -308,7 +308,6 @@ xpns_normalize_directory() {
 xpns_is_valid_directory() {
   local _dir="$1"
   local _checkfile="${XP_THIS_FILE_NAME}.$$"
-
   # Check directory.
   if [[ ! -d "${_dir}" ]]; then
     # Create directory
@@ -319,7 +318,6 @@ xpns_is_valid_directory() {
       exit ${XP_ELOGDIR}
     fi
   fi
-
   # Try to create file.
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
@@ -408,10 +406,10 @@ xpns_split_window() {
 
 # Enable logging feature to the all the panes in the target window.
 xpns_enable_logging() {
-  local _window_name="$1" ; shift
-  local _index_offset="$1" ; shift
-  local _log_dir="$1" ; shift
-  local _log_format="$1" ; shift
+  local _window_name="$1"     ; shift
+  local _index_offset="$1"    ; shift
+  local _log_dir="$1"         ; shift
+  local _log_format="$1"      ; shift
   local _unprintable_str="$1" ; shift
   local _args=("$@")
   local _args_num=$(($# - 1))
@@ -434,10 +432,10 @@ xpns_enable_logging() {
 
 # Send command to the all the panes in the target window.
 xpns_send_commands() {
-  local _window_name="$1" ; shift
+  local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
-  local _repstr="$1" ; shift
-  local _cmd="$1" ; shift
+  local _repstr="$1"       ; shift
+  local _cmd="$1"          ; shift
   local _index=0
   for arg in "$@"
   do
@@ -450,7 +448,6 @@ xpns_send_commands() {
 xpns_arrange_pane_location() {
   local _window_name="$1" ; shift
   local _args_num="$1"
-
   ## ----------------
   # Default behavior
   ## ----------------
@@ -473,11 +470,10 @@ xpns_arrange_pane_location() {
 #    xpns_prepare_window <window name> <offset of index> <number of pane>
 #
 xpns_prepare_window() {
-  local _window_name="$1" ; shift
-  local _pane_base_index="$1"; shift
-  local _pane_num="$1"; shift
+  local _window_name="$1"     ; shift
+  local _pane_base_index="$1" ; shift
+  local _pane_num="$1"        ; shift
   local _attach_flg="$1"
-
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
@@ -666,7 +662,6 @@ xpns_execution() {
     "$(echo "${_window_name}" | xpns_key2value)"
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
-
 }
 
 ## ----------------
@@ -675,7 +670,6 @@ xpns_execution() {
 #  * stdin -> argument
 ## ----------------
 xpns_switch_pipe_mode() {
-
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
     xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
