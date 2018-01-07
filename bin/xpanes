@@ -511,8 +511,7 @@ xpns_check_env() {
     fi
   done < <(echo "$_cmds" | tr ' ' '\n')
 
-  mkdir -p "$XP_CACHE_HOME"
-  if [ $? -eq 1 ];then
+  if ! mkdir -p "$XP_CACHE_HOME";then
     xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
