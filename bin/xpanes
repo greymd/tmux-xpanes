@@ -206,7 +206,7 @@ xpns_get_tmux_conf() {
   local _conf_name="$1"
   local _session="${2-}"
   {
-    if [ -z "${_session-}" ];then
+    if [[ -z "${_session-}" ]];then
       $TMUX_XPANES_EXEC show-window-options -g
     else
       $TMUX_XPANES_EXEC -S "$_session" show-window-options -g
@@ -225,7 +225,7 @@ xpns_suppress_allow_rename () {
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     ## Temporary, disable "allow-rename"
     # xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
-    if [ -z "${_session-}" ];then
+    if [[ -z "${_session-}" ]];then
       $TMUX_XPANES_EXEC set-window-option -g allow-rename off
     else
       $TMUX_XPANES_EXEC -S "$_session" set-window-option -g allow-rename off
@@ -241,7 +241,7 @@ xpns_restore_allow_rename () {
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     # xpns_msg "Info" "Restore original value of 'allow-rename' option."
-    if [ -z "${_session-}" ];then
+    if [[ -z "${_session-}" ]];then
       $TMUX_XPANES_EXEC set-window-option -g allow-rename on
     else
       $TMUX_XPANES_EXEC -S "$_session" set-window-option -g allow-rename on
@@ -310,7 +310,7 @@ xpns_is_valid_directory() {
   local _checkfile="${XP_THIS_FILE_NAME}.$$"
 
   # Check directory.
-  if [ ! -d "${_dir}" ]; then
+  if [[ ! -d "${_dir}" ]]; then
     # Create directory
     if mkdir "${_dir}"; then
       xpns_msg "Info" "${_dir} is created."
@@ -342,7 +342,7 @@ xpns_is_valid_directory() {
 xpns_arr2args() {
   local _arg=""
   # If there is no argument, usage will be shown.
-  if [ $# -lt 1 ]; then
+  if [[ $# -lt 1 ]]; then
     return 0
   fi
   for i in "$@" ;do
@@ -537,7 +537,7 @@ Version $XP_SUPPORT_TMUX_VERSION_LOWER and over is officially supported."
 
 xpns_pipe_filter() {
   local _number="${1-}"
-  if [ -z "${_number-}" ]; then
+  if [[ -z "${_number-}" ]]; then
     cat
   else
     xargs -n "${_number}"
@@ -565,12 +565,12 @@ xpns_pre_execution() {
 
   # Append -- flag.
   # Because any arguments may have `-`
-  if [ $XP_NO_OPT -eq 1 ]; then
+  if [[ $XP_NO_OPT -eq 1 ]]; then
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
   # Is there is any options, escape them.
-  if [ ! -z "${XP_OPTIONS[*]-}" ]; then
+  if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
@@ -583,9 +583,9 @@ xpns_pre_execution() {
     send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
 
   # Avoid attaching (for unit testing).
-  if [ $XP_OPT_ATTACH -eq 1 ]; then
+  if [[ $XP_OPT_ATTACH -eq 1 ]]; then
     if ! $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME" \
-      && [ $XP_IS_PIPE_MODE -eq 1 ]; then
+      && [[ $XP_IS_PIPE_MODE -eq 1 ]]; then
       xpns_msg "Recovery" \
 "Execute below command line to re-attach the new session.
 
@@ -604,7 +604,7 @@ $TMUX_XPANES_EXEC -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
 # Execute from inside of tmux session
 xpns_execution() {
 
-  if [ $XP_IS_PIPE_MODE -eq 0 ] && [ -n "${XP_MAX_PANE_ARGS-}" ];then
+  if [[ $XP_IS_PIPE_MODE -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
@@ -629,7 +629,7 @@ xpns_execution() {
     "$_last_args_idx" \
     "$XP_OPT_ATTACH"
 
-  if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+  if [[ $XP_OPT_LOG_STORE -eq 1 ]]; then
     xpns_enable_logging \
       "$_window_name" \
       "$_pane_base_index" \
@@ -654,7 +654,7 @@ xpns_execution() {
     $_last_args_idx
 
   # Enable broadcasting
-  if [ $XP_OPT_IS_SYNC -eq 1 ]; then
+  if [[ $XP_OPT_IS_SYNC -eq 1 ]]; then
     $TMUX_XPANES_EXEC \
       set-window-option -t "${_window_name}" \
       synchronize-panes on
@@ -677,12 +677,12 @@ xpns_execution() {
 xpns_switch_pipe_mode() {
 
   local _pane_num4new_term=""
-  if [ ! -z "${XP_ARGS[*]-}" ] && [ ! -z "${XP_CMD_UTILITY-}" ]; then
+  if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
     xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
     exit $XP_EINVAL
   fi
 
-  if [ -z "${TMUX-}" ]; then
+  if [[ -z "${TMUX-}" ]]; then
     xpns_msg "Warning" "'Pipe mode' requires attached session."
     # This condition is used when the following situations.
     #   * Executed outside of tmux session
@@ -701,7 +701,7 @@ xpns_switch_pipe_mode() {
     # In order to create such the query,
     # separate all the argument into minimum tokens
     # with xargs -n 1
-    if [ -n "${XP_MAX_PANE_ARGS-}" ]; then
+    if [[ -n "${XP_MAX_PANE_ARGS-}" ]]; then
       _pane_num4new_term=1
     fi
   fi
@@ -719,7 +719,7 @@ xpns_switch_pipe_mode() {
 
 
   # Merge them into utility.
-  if [ ! -z "${XP_ARGS[*]-}" ]; then
+  if [[ ! -z "${XP_ARGS[*]-}" ]]; then
     # Attention: It might be wrong result if IFS is changed.
     XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
@@ -733,9 +733,9 @@ xpns_switch_pipe_mode() {
   # Whith is same as
   #   $ echo 10 | xargs -I@ seq @
   #     => seq 10
-  if [ -z "$XP_REPSTR" ]; then
+  if [[ -z "$XP_REPSTR" ]]; then
     XP_REPSTR="$XP_DEFAULT_REPSTR"
-    if [ ! -z "${XP_ARGS[*]-}" ]; then
+    if [[ ! -z "${XP_ARGS[*]-}" ]]; then
       XP_CMD_UTILITY="${XP_ARGS[*]-} $XP_REPSTR"
     fi
   fi
@@ -902,7 +902,7 @@ xpns_parse_options() {
   do
     case "$1" in
       --)
-      if [ $XP_NO_OPT -eq 1 ]; then
+      if [[ $XP_NO_OPT -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
@@ -915,21 +915,21 @@ xpns_parse_options() {
       # Long options
       ## ----------------
       --*)
-      if [ $XP_NO_OPT -eq 1 ]; then
+      if [[ $XP_NO_OPT -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
         local _shift_count="0"
         xpns_load_long_options "$@"
         _shift_count="$?"
-        [ "$_shift_count" = "1" ] && XP_OPTIONS+=("$1") && shift
+        [[ "$_shift_count" = "1" ]] && XP_OPTIONS+=("$1") && shift
       fi
       ;;
       ## ----------------
       # Short options
       ## ----------------
       -*)
-      if [ $XP_NO_OPT -eq 1 ]; then
+      if [[ $XP_NO_OPT -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
@@ -937,7 +937,7 @@ xpns_parse_options() {
         if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]];then
           xpns_load_arg_options "$@"
           XP_OPTIONS+=("$1") && shift
-        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [ -n "${2-}" ];then
+        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [[ -n "${2-}" ]];then
           xpns_load_arg_options "$@"
           _shift_count="$?"
           XP_OPTIONS+=("$1" "$2") && shift && shift
@@ -968,13 +968,13 @@ xpns_parse_options() {
 
   # If there is any standard input from pipe,
   # 1 line handled as 1 argument.
-  if [ ! -t 0 ]; then
+  if [[ ! -t 0 ]]; then
     XP_IS_PIPE_MODE=1
     xpns_switch_pipe_mode
   fi
 
   # When no argument arr given, exit.
-  if [ -z "${XP_ARGS[*]-}" ]; then
+  if [[ -z "${XP_ARGS[*]-}" ]]; then
     xpns_msg "Error" "No arguments are given."
     xpns_usage
     echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
@@ -986,7 +986,7 @@ xpns_parse_options() {
   XP_REPSTR="${XP_REPSTR:-$XP_DEFAULT_REPSTR}"
 
   # To set utility on pre_execution, set -c option manually.
-  if [ $XP_OPT_CMD_UTILITY -eq 0 ];then
+  if [[ $XP_OPT_CMD_UTILITY -eq 0 ]];then
     XP_OPTIONS+=("-c" "$XP_CMD_UTILITY")
   fi
 }
@@ -1001,11 +1001,11 @@ xpns_main() {
   # Parameter validation
   ## --------------------------------
   # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-  if [ $XP_OPT_DRY_RUN -eq 1 ]; then
+  if [[ $XP_OPT_DRY_RUN -eq 1 ]]; then
     return 0
   fi
   # Validate log directory.
-  if [ $XP_OPT_LOG_STORE -eq 1 ]; then
+  if [[ $XP_OPT_LOG_STORE -eq 1 ]]; then
     XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
     xpns_is_valid_directory "$XP_LOG_DIR" && \
     XP_LOG_DIR=$(cd "$XP_LOG_DIR" && pwd)
@@ -1013,7 +1013,7 @@ xpns_main() {
   ## --------------------------------
   # If current shell is outside of tmux session.
   ## --------------------------------
-  if [ -z "${TMUX-}" ]; then
+  if [[ -z "${TMUX-}" ]]; then
     xpns_pre_execution
   ## --------------------------------
   # If current shell is already inside of tmux session.
