@@ -39,7 +39,7 @@ TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
-readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
+readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 readonly XP_ABS_THIS_FILE_NAME="$XP_THIS_DIR/$XP_THIS_FILE_NAME"
 
 # Prevent cache directory being created under root / directory in any case.
@@ -169,8 +169,7 @@ xpns_version() {
 # Get version number for tmux
 xpns_get_tmux_version() {
   local _tmux_version=""
-  $TMUX_XPANES_EXEC -V &> /dev/null
-  if [ $? -ne 0 ]; then
+  if $TMUX_XPANES_EXEC -V &> /dev/null; then
     # From tmux 0.9 to 1.3, there is no -V option.
     _tmux_version="tmux 0.9-1.3"
   else
@@ -196,7 +195,7 @@ xpns_tmux_is_greater_equals() {
   local _check_version="$1"
   local _tmux_version="${2:-$(xpns_get_tmux_version)}"
   # Simple numerical comparison does not work because there is the version like "1.9a".
-  if [[ "$((echo "$_tmux_version"; echo "$_check_version") | sort -n | head -n 1)" != "$_check_version" ]];then
+  if [[ "$( (echo "$_tmux_version"; echo "$_check_version") | sort -n | head -n 1)" != "$_check_version" ]];then
     return 1
   else
     return 0
@@ -212,7 +211,7 @@ xpns_get_tmux_conf() {
     else
       $TMUX_XPANES_EXEC -S "$_session" show-window-options -g
     fi
-  } | grep "^${1}" \
+  } | grep "^${_conf_name}" \
     | head -n 1 \
     | perl -anle 'print $F[1]'
 }
@@ -267,12 +266,13 @@ xpns_restore_allow_rename () {
 #
 xpns_log_filenames () {
   local _arg_fmt="$1"
-  local _full_fmt="$(date '+'$_arg_fmt)"
+  local _full_fmt=
+  _full_fmt="$(date "+${_arg_fmt}")"
   cat \
     | \
     # 1st argument + '-' + unique number (avoid same argument has same name)
     perl -nle 'print $_."-".(($h{$_}++)+1)' \
-    | while read _arg
+    | while read -r _arg
     do
       cat <<<"$_full_fmt" \
         | sed "s/\[:ARG:\]/$_arg/g" \
@@ -323,8 +323,7 @@ xpns_is_valid_directory() {
   # Try to create file.
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
-  touch "${_dir}/$_checkfile"
-  if [ $? -ne 0 ]; then
+  if touch "${_dir}/$_checkfile"; then
     xpns_msg "Error" "${_dir} is not writable."
     rm -f "${_dir}/$_checkfile"
     exit $XP_ELOGWRITE
@@ -395,13 +394,13 @@ xpns_key2value() {
 xpns_split_window() {
   local _window_name="$1" ; shift
   local _args_num="$1"
-  for i in $(seq 0 $_args_num)
+  for i in $(seq 0 "${_args_num}")
   do
     $TMUX_XPANES_EXEC split-window -t "${_window_name}" -h -d
     $TMUX_XPANES_EXEC select-layout even-horizontal
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
-    if [ $i -ge 2 ]; then
+    if [[ "${i}" -ge 2 ]]; then
       $TMUX_XPANES_EXEC select-layout -t "${_window_name}" tiled
     fi
   done
@@ -428,7 +427,7 @@ xpns_enable_logging() {
   do
     # Start logging
     $TMUX_XPANES_EXEC \
-      pipe-pane -t "${_window_name}.$(($i + ${_index_offset}))" \
+      pipe-pane -t "${_window_name}.$(( i + _index_offset ))" \
       "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
   done
 }
@@ -442,8 +441,8 @@ xpns_send_commands() {
   local _index=0
   for arg in "$@"
   do
-    $TMUX_XPANES_EXEC send-keys -t "$_window_name.$(($_index + ${_index_offset}))" "${_cmd//$_repstr/$arg}" C-m
-    _index=$(($_index + 1))
+    $TMUX_XPANES_EXEC send-keys -t "$_window_name.$(( _index + _index_offset ))" "${_cmd//$_repstr/$arg}" C-m
+    _index=$(( _index + 1 ))
   done
 }
 
@@ -455,9 +454,9 @@ xpns_arrange_pane_location() {
   ## ----------------
   # Default behavior
   ## ----------------
-  if [ $_args_num -eq 1 ]; then
+  if [[ "${_args_num}" -eq 1 ]]; then
     $TMUX_XPANES_EXEC select-layout -t "${_window_name}" even-horizontal
-  elif [ $_args_num -gt 1 ]; then
+  elif [[ "${_args_num}" -gt 1 ]]; then
     $TMUX_XPANES_EXEC select-layout -t "${_window_name}" tiled
   fi
   ## ----------------
@@ -480,7 +479,7 @@ xpns_prepare_window() {
   local _attach_flg="$1"
 
   # Create new window.
-  if [ $_attach_flg -eq 1 ]; then
+  if [[ "${_attach_flg}" -eq 1 ]]; then
     $TMUX_XPANES_EXEC new-window -n "$_window_name"
   else
     # Keep background
@@ -505,9 +504,8 @@ xpns_prepare_window() {
 # Check whether given command is in the PATH or not.
 xpns_check_env() {
   local _cmds="$1"
-  while read cmd ; do
-    type "$cmd" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+  while read -r cmd ; do
+    if type "$cmd" > /dev/null 2>&1; then
       xpns_msg "Error" "$cmd is required to work."
       exit $XP_ENOCMD
     fi
@@ -520,8 +518,8 @@ xpns_check_env() {
 
   XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
-    $XP_SUPPORT_TMUX_VERSION_LOWER \
-    $XP_CURRENT_TMUX_VERSION ) ;then
+    "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
+    "${XP_CURRENT_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
     xpns_msg "Warning" \
@@ -545,7 +543,7 @@ xpns_pipe_filter() {
 xpns_set_args_per_pane() {
   local _pane_num="$1"; shift
   local _filtered_args=()
-  while read _line; do
+  while read -r _line; do
     _filtered_args+=("$_line")
   done < <(xargs -n "${_pane_num}" <<<"$(xpns_arr2args "${XP_ARGS[@]}")")
   XP_ARGS=("${_filtered_args[@]}")
@@ -557,7 +555,8 @@ xpns_pre_execution() {
   local _args4args=""
   # Create new session.
   $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" new-session -s "$XP_SESSION_NAME" -n "$XP_TMP_WIN_NAME" -d
-  local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "$XP_SOCKET_PATH")"
+  local _def_allow_rename=
+  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "$XP_SOCKET_PATH")"
   xpns_suppress_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
 
   # Append -- flag.
@@ -581,8 +580,8 @@ xpns_pre_execution() {
 
   # Avoid attaching (for unit testing).
   if [ $XP_OPT_ATTACH -eq 1 ]; then
-    $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME"
-    if [ $? -ne 0 ] && [ $XP_IS_PIPE_MODE -eq 1 ]; then
+    if $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME" \
+      && [ $XP_IS_PIPE_MODE -eq 1 ]; then
       xpns_msg "Recovery" \
 "Execute below command line to re-attach the new session.
 
@@ -605,14 +604,18 @@ xpns_execution() {
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
-  local _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=$(
+  local _pane_base_index=
+  _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
+  local _window_name=
+  _window_name=$(
     xpns_generate_window_name \
       "$XP_EMPTY_STR" \
       "${XP_ARGS[0]}" \
       | xpns_value2key)
-  local _last_args_idx=$((${#XP_ARGS[@]} - 1))
-  local _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
+  local _last_args_idx=
+  _last_args_idx=$((${#XP_ARGS[@]} - 1))
+  local _def_allow_rename=
+  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
@@ -699,7 +702,7 @@ xpns_switch_pipe_mode() {
     fi
   fi
 
-  while read line;
+  while read -r line;
   do
     XP_STDIN+=("$line")
   done < <(cat \
@@ -749,8 +752,7 @@ xpns_layout_short2long() {
 
 xpns_is_valid_layout() {
   local _layout="$1"
-  echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
-  if [ $? -ne 0 ]; then
+  if echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'; then
     xpns_msg "Error" "Invalid layout '$_layout'."
     exit $XP_ELAYOUT
   fi
@@ -989,7 +991,7 @@ xpns_parse_options() {
 # Main function
 ## --------------------------------
 xpns_main() {
-  xpns_parse_options ${1+"$@"}
+  xpns_parse_options "${1+"$@"}"
   xpns_check_env "$XP_DEPENDENCIES"
   ## --------------------------------
   # Parameter validation
@@ -1021,4 +1023,4 @@ xpns_main() {
 ## --------------------------------
 # Entry Point
 ## --------------------------------
-xpns_main ${1+"$@"}
+xpns_main "${1+"$@"}"
