@@ -1,28 +1,30 @@
 #!/bin/bash
 
-if [ -n "$BASH_VERSION" ]; then
-  # This is bash
-  echo "Testing for bash $BASH_VERSION"
-  echo "            $(tmux -V)"
-fi
+# func 0 -- Restore old PATH.
+# func 1 -- make PATH include tmux.
+switch_tmux_path () {
+  local _flag="${1:-0}"
+  local _tmux_path="${2:-${TRAVIS_BUILD_DIR}/tmp/bin}"
 
-if [ -n "$TMUX" ]; then
- echo "Do not execute this test inside TMUX session." >&2
- exit 1
-fi
-
-# Directory name of this file
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
-readonly TEST_TMP="$THIS_DIR/test_tmp"
-
-BIN_DIR="${THIS_DIR}/../bin/"
-# Get repository name which equals to bin name.
-# BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
-BIN_NAME="xpanes"
-EXEC="./${BIN_NAME}"
+  # --------------------
+  # Testing for TravisCI
+  # --------------------
+  if [[ $_flag -eq 0 ]]; then
+    # Remove tmux from the PATH
+    export PATH="${OLD_PATH}"
+  elif [[ $_flag -eq 1 ]]; then
+    if type tmux &> /dev/null;then
+      return 0
+    fi
+    # Make PATH include tmux
+    export PATH="${PATH}:${_tmux_path}"
+  fi
+  return 0
+}
 
 tmux_version_number() {
     local _tmux_version=""
+    switch_tmux_path 1
     tmux -V &> /dev/null
     if [ $? -ne 0 ]; then
         # From tmux 0.9 to 1.3, there is no -V option.
@@ -32,6 +34,7 @@ tmux_version_number() {
         _tmux_version="$(tmux -V)"
     fi
     echo "$_tmux_version" | perl -anle 'printf $F[1]'
+    switch_tmux_path 0
 }
 
 # Check whether the given version is less than current tmux version.
@@ -46,7 +49,7 @@ tmux_version_number() {
 #   2.0  -> 0
 is_less_than() {
     # Simple numerical comparison does not work because there is the version like "1.9a".
-    if [[ "$((echo "$(tmux_version_number)"; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
+    if [[ "$( (echo "$(tmux_version_number)"; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
         return 0
     else
         return 1
@@ -63,8 +66,6 @@ check_version() {
         exit 0
     fi
 }
-
-check_version
 
 create_tmux_session() {
     local _socket_file="$1"
@@ -451,24 +452,30 @@ divide_three_panes_eh_impl() {
     assertEquals 1 "$(( $b_height == $c_height ))"
 }
 
-set_tmux_exec_randomly () {
-  local _num=$(($RANDOM % 3));
-  local _exec=tmux
+get_tmux_full_path () {
+  switch_tmux_path 1
+  which tmux
+  switch_tmux_path 0
+}
 
-  # --------------------
-  # Testing for TravisCI
-  # --------------------
-  local _travis_exec_dir="${TRAVIS_BUILD_DIR}/tmp/bin"
-  local _travis_exec="${_travis_exec_dir}/tmux"
-  [[ -x "${_travis_exec}" ]] && _exec="${_travis_exec}"
+set_tmux_exec_randomly () {
+  local _num
+  local _exec
+  _num=$(($RANDOM % 4));
+  _exec="$(get_tmux_full_path)"
 
   if [[ $_num -eq 0 ]];then
     export TMUX_XPANES_EXEC="${_exec} -2"
+    switch_tmux_path 0
   elif [[ $_num -eq 1 ]];then
     export TMUX_XPANES_EXEC="${_exec}"
-  else
-    [[ -d "${_travis_exec_dir}" ]] && export PATH="${PATH}:${_travis_exec_dir}"
+    switch_tmux_path 0
+  elif [[ $_num -eq 2 ]];then
     unset TMUX_XPANES_EXEC
+    switch_tmux_path 1
+  elif [[ $_num -eq 3 ]];then
+    export TMUX_XPANES_EXEC="tmux -2"
+    switch_tmux_path 1
   fi
 }
 
@@ -2429,4 +2436,29 @@ test_log_format_and_desync_option_pipe() {
 
 # TODO : test with logging + empty string argument
 
+# Directory name of this file
+readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+readonly TEST_TMP="$THIS_DIR/test_tmp"
+readonly OLD_PATH="${PATH}"
+
+if [ -n "$BASH_VERSION" ]; then
+  # This is bash
+  echo "Testing for bash $BASH_VERSION"
+  echo "            $(tmux -V)"
+fi
+
+if [ -n "$TMUX" ]; then
+ echo "Do not execute this test inside TMUX session." >&2
+ exit 1
+fi
+
+BIN_DIR="${THIS_DIR}/../bin/"
+# Get repository name which equals to bin name.
+# BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
+BIN_NAME="xpanes"
+EXEC="./${BIN_NAME}"
+
+check_version
+
+# Test start
 . ${THIS_DIR}/shunit2/source/2.1/src/shunit2

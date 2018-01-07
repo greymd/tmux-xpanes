@@ -214,4 +214,4 @@ before_script:
 
 script:
     # - shellcheck ./bin/xpanes
-  - $SH ./test/test.sh
+  - TRAVIS_BUILD_DIR="${TRAVIS_BUILD_DIR}" $SH ./test/test.sh
