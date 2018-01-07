@@ -453,11 +453,21 @@ divide_three_panes_eh_impl() {
 
 set_tmux_exec_randomly () {
   local _num=$(($RANDOM % 3));
+  local _exec=tmux
+
+  # --------------------
+  # Testing for TravisCI
+  # --------------------
+  local _travis_exec_dir="${TRAVIS_BUILD_DIR}/tmp/bin"
+  local _travis_exec="${_travis_exec_dir}/tmux"
+  [[ -x "${_travis_exec}" ]] && _exec="${_travis_exec}"
+
   if [[ $_num -eq 0 ]];then
-    export TMUX_XPANES_EXEC="tmux -2"
+    export TMUX_XPANES_EXEC="${_exec} -2"
   elif [[ $_num -eq 1 ]];then
-    export TMUX_XPANES_EXEC="tmux"
+    export TMUX_XPANES_EXEC="${_exec}"
   else
+    [[ -d "${_travis_exec_dir}" ]] && export PATH="${PATH}:${_travis_exec_dir}"
     unset TMUX_XPANES_EXEC
   fi
 }
