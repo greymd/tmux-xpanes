@@ -1,6 +1,14 @@
 language: bash
+
 dist: precise
 sudo: required
+
+addons:
+  apt:
+    sources:
+    - debian-sid    # Grab ShellCheck from the Debian repo
+    packages:
+    - shellcheck
 
 branches:
     only:
@@ -197,7 +205,7 @@ matrix:
           #        #   env: SH=bash SH_VERSION=default TMUX_VERSION=2.3
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get -qq update && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl shellcheck;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ;then sudo apt-get -qq update && sudo apt-get install -y ncurses-dev libevent-dev gcc make curl;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$TMUX_VERSION" == "default" && ! $(which tmux) ]] ; then sudo apt-get install -y tmux ;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$SH_VERSION"   == "default" && ! $(which $SH)  ]] ;then sudo apt-get install -y $SH ;fi
 #   - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ;then brew update; brew install shellcheck ;fi
