@@ -1,14 +1,6 @@
 language: bash
-
 dist: precise
 sudo: required
-
-addons:
-  apt:
-    sources:
-    - debian-sid    # Grab ShellCheck from the Debian repo
-    packages:
-    - shellcheck
 
 branches:
     only:
@@ -221,5 +213,5 @@ before_script:
   - printf "set-window-option -g automatic-rename off\nset-option -g allow-rename off\n" >> "$HOME/.tmux.conf"
 
 script:
-  - shellcheck ./bin/xpanes
+    # - shellcheck ./bin/xpanes
   - $SH ./test/test.sh
