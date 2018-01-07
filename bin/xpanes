@@ -523,9 +523,10 @@ xpns_check_env() {
     : "Supported tmux version"
   else
     xpns_msg "Warning" \
-"'${XP_THIS_FILE_NAME}' may not work correctly!
-Current tmux version ${XP_CURRENT_TMUX_VERSION} is out of support.
-Version ${XP_SUPPORT_TMUX_VERSION_LOWER} and over is officially supported."
+"'${XP_THIS_FILE_NAME}' may not work correctly! Please check followings.
+* tmux is installed correctly.
+* Supported tmux version is installed.
+  Version ${XP_SUPPORT_TMUX_VERSION_LOWER} and over is officially supported."
   fi
 
   return 0
@@ -677,7 +678,7 @@ xpns_switch_pipe_mode() {
   fi
 
   if [[ -z "${TMUX-}" ]]; then
-    xpns_msg "Warning" "'Pipe mode' requires attached session."
+    xpns_msg "Warning" "Attached session is required for 'Pipe mode'."
     # This condition is used when the following situations.
     #   * Executed outside of tmux session
     #   * Pipe mode.
