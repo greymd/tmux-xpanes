@@ -20,7 +20,7 @@ command ... | `xpanes` [`OPTIONS`] [<*utility*> ...]
 DESCRIPTION
 -----------
 
-`xpanes` or `tmux-xpanes` (alias of `xpanes`) commands have following features.
+`xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes.
   * Build command lines from given arguments & execute them on the panes.
