@@ -40,7 +40,7 @@ TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
 readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
-readonly XP_ABS_THIS_FILE_NAME="$XP_THIS_DIR/$XP_THIS_FILE_NAME"
+readonly XP_ABS_THIS_FILE_NAME="${XP_THIS_DIR}/${XP_THIS_FILE_NAME}"
 
 # Prevent cache directory being created under root / directory in any case.
 # This is quite rare case (but it can be happened).
@@ -48,11 +48,11 @@ readonly XP_USER_HOME="${HOME:-/etc}"
 
 # Basically xpanes follows XDG Base Direcotry Specification.
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html
-XDG_CACHE_HOME="${XDG_CACHE_HOME:-$XP_USER_HOME/.cache}"
+XDG_CACHE_HOME="${XDG_CACHE_HOME:-${XP_USER_HOME}/.cache}"
 readonly XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
 
 # This is supposed to be xpanes-12345(PID)
-readonly XP_SESSION_NAME="$XP_THIS_FILE_NAME-$$"
+readonly XP_SESSION_NAME="${XP_THIS_FILE_NAME}-$$"
 # Temporary window name is tmp-12345(PID)
 readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
@@ -79,14 +79,14 @@ XP_OPT_IS_SYNC=1
 XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
-XP_LOG_DIR="${XP_LOG_DIR:-$XP_CACHE_HOME/logs}"
+XP_LOG_DIR="${XP_LOG_DIR:-${XP_CACHE_HOME}/logs}"
 XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 XP_REPSTR=""
-XP_SOCKET_PATH="${XP_SOCKET_PATH:-$XP_CACHE_HOME/socket}"
+XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_CACHE_HOME}/socket}"
 XP_NO_OPT=0
 XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
-XP_LAYOUT="$XP_DEFAULT_LAYOUT"
+XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
 
 ## --------------------------------
@@ -103,17 +103,17 @@ XP_MAX_PANE_ARGS=""
 xpns_msg() {
   local _loglevel="$1"
   local _msgbody="$2"
-  local _msg="$XP_THIS_FILE_NAME:$_loglevel: ${_msgbody}"
+  local _msg="${XP_THIS_FILE_NAME}:${_loglevel}: ${_msgbody}"
   echo "${_msg}" >&2
 }
 
 xpns_usage() {
   cat << _EOS_
 Usage:
-  $XP_THIS_FILE_NAME [OPTIONS] [argument ...]
+  ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
 Usage(pipe mode):
-  command ... | $XP_THIS_FILE_NAME [OPTIONS] [<utility> ...]
+  command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<utility> ...]
 
 OPTIONS:
   -h,--help                    Show this screen.
@@ -141,7 +141,7 @@ _EOS_
 xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
-    Default value is "$XP_LOG_FORMAT"
+    Default value is "${XP_LOG_FORMAT}"
     Interpreted sequences are:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
@@ -163,19 +163,19 @@ _EOS_
 
 # Show version number
 xpns_version() {
-  echo "$XP_THIS_FILE_NAME $XP_VERSION"
+  echo "${XP_THIS_FILE_NAME} ${XP_VERSION}"
 }
 
 # Get version number for tmux
 xpns_get_tmux_version() {
   local _tmux_version=""
-  if ! $TMUX_XPANES_EXEC -V &> /dev/null; then
+  if ! ${TMUX_XPANES_EXEC} -V &> /dev/null; then
     # From tmux 0.9 to 1.3, there is no -V option.
     _tmux_version="tmux 0.9-1.3"
   else
-    _tmux_version="$($TMUX_XPANES_EXEC -V)"
+    _tmux_version="$( ${TMUX_XPANES_EXEC} -V )"
   fi
-  echo "$_tmux_version" | perl -anle 'printf "%s", "$F[1]"'
+  echo "${_tmux_version}" | perl -anle 'printf "%s", "$F[1]"'
 }
 
 # Check whether the given version is greater than current tmux version.
@@ -195,7 +195,7 @@ xpns_tmux_is_greater_equals() {
   local _check_version="$1"
   local _tmux_version="${2:-$(xpns_get_tmux_version)}"
   # Simple numerical comparison does not work because there is the version like "1.9a".
-  if [[ "$( (echo "$_tmux_version"; echo "$_check_version") | sort -n | head -n 1)" != "$_check_version" ]];then
+  if [[ "$( (echo "${_tmux_version}"; echo "${_check_version}") | sort -n | head -n 1)" != "${_check_version}" ]];then
     return 1
   else
     return 0
@@ -207,9 +207,9 @@ xpns_get_tmux_conf() {
   local _session="${2-}"
   {
     if [[ -z "${_session-}" ]];then
-      $TMUX_XPANES_EXEC show-window-options -g
+      ${TMUX_XPANES_EXEC} show-window-options -g
     else
-      $TMUX_XPANES_EXEC -S "$_session" show-window-options -g
+      ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" \
     | head -n 1 \
@@ -226,9 +226,9 @@ xpns_suppress_allow_rename () {
     ## Temporary, disable "allow-rename"
     # xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
     if [[ -z "${_session-}" ]];then
-      $TMUX_XPANES_EXEC set-window-option -g allow-rename off
+      ${TMUX_XPANES_EXEC} set-window-option -g allow-rename off
     else
-      $TMUX_XPANES_EXEC -S "$_session" set-window-option -g allow-rename off
+      ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename off
     fi
   fi
 }
@@ -242,9 +242,9 @@ xpns_restore_allow_rename () {
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     # xpns_msg "Info" "Restore original value of 'allow-rename' option."
     if [[ -z "${_session-}" ]];then
-      $TMUX_XPANES_EXEC set-window-option -g allow-rename on
+      ${TMUX_XPANES_EXEC} set-window-option -g allow-rename on
     else
-      $TMUX_XPANES_EXEC -S "$_session" set-window-option -g allow-rename on
+      ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
     fi
   fi
 }
@@ -274,8 +274,8 @@ xpns_log_filenames () {
     perl -nle 'print $_."-".(($h{$_}++)+1)' \
     | while read -r _arg
     do
-      cat <<<"$_full_fmt" \
-        | sed "s/\[:ARG:\]/$_arg/g" \
+      cat <<<"${_full_fmt}" \
+        | sed "s/\[:ARG:\]/${_arg}/g" \
         | sed "s/\[:PID:\]/$$/g"
     done
 }
@@ -294,8 +294,8 @@ xpns_normalize_directory() {
   # Remove end of slash '/'
   _dir="${_dir%/}"
   # tilde expansion
-  _dir="${_dir/#~/$HOME}"
-  echo "$_dir"
+  _dir="${_dir/#~/${HOME}}"
+  echo "${_dir}"
 }
 
 ## --------------------------------
@@ -316,19 +316,19 @@ xpns_is_valid_directory() {
       xpns_msg "Info" "${_dir} is created."
     else
       xpns_msg "Error" "Failed to create ${_dir}"
-      exit $XP_ELOGDIR
+      exit ${XP_ELOGDIR}
     fi
   fi
 
   # Try to create file.
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
-  if ! touch "${_dir}/$_checkfile"; then
+  if ! touch "${_dir}/${_checkfile}"; then
     xpns_msg "Error" "${_dir} is not writable."
-    rm -f "${_dir}/$_checkfile"
-    exit $XP_ELOGWRITE
+    rm -f "${_dir}/${_checkfile}"
+    exit ${XP_ELOGWRITE}
   fi
-  rm -f "${_dir}/$_checkfile"
+  rm -f "${_dir}/${_checkfile}"
 }
 
 # Convert array to string which is can be used as command line argument.
@@ -346,10 +346,10 @@ xpns_arr2args() {
     return 0
   fi
   for i in "$@" ;do
-    _arg="$i"
+    _arg="${i}"
     # Use 'cat <<<"input"' command instead of 'echo',
     # because such the command recognizes option like '-e'.
-    cat <<<"$_arg" \
+    cat <<<"${_arg}" \
       | \
       # Escaping single quotations.
       sed "s/'/'\"'\"'/g" \
@@ -367,7 +367,7 @@ xpns_arr2args() {
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
-  cat <<<"${1:-$_unprintable_str}" \
+  cat <<<"${1:-${_unprintable_str}}" \
     | \
       # Leave first 200 characters to prevent
       # the name exceed the maximum length of tmux window name (2000 byte).
@@ -396,12 +396,12 @@ xpns_split_window() {
   local _args_num="$1"
   for i in $(seq 0 "${_args_num}")
   do
-    $TMUX_XPANES_EXEC split-window -t "${_window_name}" -h -d
-    $TMUX_XPANES_EXEC select-layout even-horizontal
+    ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
+    ${TMUX_XPANES_EXEC} select-layout even-horizontal
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
     if [[ "${i}" -ge 2 ]]; then
-      $TMUX_XPANES_EXEC select-layout -t "${_window_name}" tiled
+      ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" tiled
     fi
   done
 }
@@ -417,16 +417,16 @@ xpns_enable_logging() {
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
   local _logfiles=($(
-  for i in $(seq 0 "$_args_num")
+  for i in $(seq 0 "${_args_num}")
   do
     # Replace empty string.
-    printf "%s\n" "${_args[i]:-$_unprintable_str}"
-  done | xpns_log_filenames "$_log_format"
+    printf "%s\n" "${_args[i]:-${_unprintable_str}}"
+  done | xpns_log_filenames "${_log_format}"
   ))
-  for i in $(seq 0 "$_args_num")
+  for i in $(seq 0 "${_args_num}")
   do
     # Start logging
-    $TMUX_XPANES_EXEC \
+    ${TMUX_XPANES_EXEC} \
       pipe-pane -t "${_window_name}.$(( i + _index_offset ))" \
       "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
   done
@@ -441,7 +441,7 @@ xpns_send_commands() {
   local _index=0
   for arg in "$@"
   do
-    $TMUX_XPANES_EXEC send-keys -t "$_window_name.$(( _index + _index_offset ))" "${_cmd//$_repstr/$arg}" C-m
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.$(( _index + _index_offset ))" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
   done
 }
@@ -455,15 +455,15 @@ xpns_arrange_pane_location() {
   # Default behavior
   ## ----------------
   if [[ "${_args_num}" -eq 1 ]]; then
-    $TMUX_XPANES_EXEC select-layout -t "${_window_name}" even-horizontal
+    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" even-horizontal
   elif [[ "${_args_num}" -gt 1 ]]; then
-    $TMUX_XPANES_EXEC select-layout -t "${_window_name}" tiled
+    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" tiled
   fi
   ## ----------------
   # Update layout
   ## ----------------
-  if [[ "$XP_LAYOUT" != "$XP_DEFAULT_LAYOUT" ]]; then
-    $TMUX_XPANES_EXEC select-layout -t "${_window_name}" "$XP_LAYOUT"
+  if [[ "${XP_LAYOUT}" != "${XP_DEFAULT_LAYOUT}" ]]; then
+    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" "${XP_LAYOUT}"
   fi
 }
 
@@ -480,25 +480,25 @@ xpns_prepare_window() {
 
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
-    $TMUX_XPANES_EXEC new-window -n "$_window_name"
+    ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
   else
     # Keep background
-    $TMUX_XPANES_EXEC new-window -n "$_window_name" -d
+    ${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -d
   fi
 
   # specify a pane which has the youngest number of index.
-  $TMUX_XPANES_EXEC select-pane -t "${_window_name}.${_pane_base_index}"
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "$_window_name" "$_pane_num"
+  xpns_split_window "${_window_name}" "${_pane_num}"
 
   ### If the first pane is still remaining,
   ### panes cannot be organized well.
   # Delete the first pane
-  $TMUX_XPANES_EXEC kill-pane -t "${_window_name}.${_pane_base_index}"
+  ${TMUX_XPANES_EXEC} kill-pane -t "${_window_name}.${_pane_base_index}"
 
   # Select second pane
-  $TMUX_XPANES_EXEC select-pane -t "${_window_name}.${_pane_base_index}"
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 }
 
 # Check whether given command is in the PATH or not.
@@ -508,15 +508,15 @@ xpns_check_env() {
     if ! type "${cmd}" > /dev/null 2>&1; then
       if [[ "${cmd}" == "tmux" ]] && [[ "${TMUX_XPANES_EXEC}" == "tmux" ]]; then
         xpns_msg "Error" "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
-        exit $XP_ENOCMD
+        exit ${XP_ENOCMD}
       elif [[ "${cmd}" != "tmux" ]]; then
         xpns_msg "Error" "${cmd} is required."
-        exit $XP_ENOCMD
+        exit ${XP_ENOCMD}
       fi
     fi
-  done < <(echo "$_cmds" | tr ' ' '\n')
+  done < <(echo "${_cmds}" | tr ' ' '\n')
 
-  if ! mkdir -p "$XP_CACHE_HOME";then
+  if ! mkdir -p "${XP_CACHE_HOME}";then
     xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
@@ -527,9 +527,9 @@ xpns_check_env() {
     : "Supported tmux version"
   else
     xpns_msg "Warning" \
-"'$XP_THIS_FILE_NAME' may not work correctly!
-Current tmux version $XP_CURRENT_TMUX_VERSION is out of support.
-Version $XP_SUPPORT_TMUX_VERSION_LOWER and over is officially supported."
+"'${XP_THIS_FILE_NAME}' may not work correctly!
+Current tmux version ${XP_CURRENT_TMUX_VERSION} is out of support.
+Version ${XP_SUPPORT_TMUX_VERSION_LOWER} and over is officially supported."
   fi
 
   return 0
@@ -548,7 +548,7 @@ xpns_set_args_per_pane() {
   local _pane_num="$1"; shift
   local _filtered_args=()
   while read -r _line; do
-    _filtered_args+=("$_line")
+    _filtered_args+=("${_line}")
   done < <(xargs -n "${_pane_num}" <<<"$(xpns_arr2args "${XP_ARGS[@]}")")
   XP_ARGS=("${_filtered_args[@]}")
 }
@@ -558,14 +558,14 @@ xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
   # Create new session.
-  $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" new-session -s "$XP_SESSION_NAME" -n "$XP_TMP_WIN_NAME" -d
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
   local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "$XP_SOCKET_PATH")"
-  xpns_suppress_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
+  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
+  xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
 
   # Append -- flag.
   # Because any arguments may have `-`
-  if [[ $XP_NO_OPT -eq 1 ]]; then
+  if [[ ${XP_NO_OPT} -eq 1 ]]; then
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
@@ -575,36 +575,36 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" \
-    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" \
-    "$XP_ABS_THIS_FILE_NAME $_opts4args $_args4args" C-m
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
+    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
+    "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
 
-  $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" \
-    send-keys -t "$XP_SESSION_NAME:$XP_TMP_WIN_NAME" "exit" C-m
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
+    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
 
   # Avoid attaching (for unit testing).
-  if [[ $XP_OPT_ATTACH -eq 1 ]]; then
-    if ! $TMUX_XPANES_EXEC -S "$XP_SOCKET_PATH" attach-session -t "$XP_SESSION_NAME" \
-      && [[ $XP_IS_PIPE_MODE -eq 1 ]]; then
+  if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
+    if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
+      && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
       xpns_msg "Recovery" \
 "Execute below command line to re-attach the new session.
 
-$TMUX_XPANES_EXEC -S $XP_SOCKET_PATH attach-session -t $XP_SESSION_NAME
+${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
 
 "
       # It might be failed. Before applying changes, first window might be closed.
-      xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
-      exit $XP_ETTY
+      xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
+      exit ${XP_ETTY}
     fi
   fi
   # It might be failed. Before applying changes, first window might be closed.
-  xpns_restore_allow_rename "${_def_allow_rename-}" "$XP_SOCKET_PATH"
+  xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
 }
 
 # Execute from inside of tmux session
 xpns_execution() {
 
-  if [[ $XP_IS_PIPE_MODE -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
+  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
@@ -613,7 +613,7 @@ xpns_execution() {
   local _window_name=
   _window_name=$(
     xpns_generate_window_name \
-      "$XP_EMPTY_STR" \
+      "${XP_EMPTY_STR}" \
       "${XP_ARGS[0]}" \
       | xpns_value2key)
   local _last_args_idx=
@@ -624,46 +624,46 @@ xpns_execution() {
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
   xpns_prepare_window \
-    "$_window_name" \
-    "$_pane_base_index" \
-    "$_last_args_idx" \
-    "$XP_OPT_ATTACH"
+    "${_window_name}" \
+    "${_pane_base_index}" \
+    "${_last_args_idx}" \
+    "${XP_OPT_ATTACH}"
 
-  if [[ $XP_OPT_LOG_STORE -eq 1 ]]; then
+  if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
-      "$_window_name" \
-      "$_pane_base_index" \
-      "$XP_LOG_DIR" \
-      "$XP_LOG_FORMAT" \
-      "$XP_EMPTY_STR" \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_LOG_DIR}" \
+      "${XP_LOG_FORMAT}" \
+      "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
   fi
 
   # Sending ssh operations for each pane.
   xpns_send_commands \
-    "$_window_name" \
-    "$_pane_base_index" \
-    "$XP_REPSTR" \
-    "$XP_CMD_UTILITY" \
+    "${_window_name}" \
+    "${_pane_base_index}" \
+    "${XP_REPSTR}" \
+    "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
   # This is just the author's preference
   # (It means you can remove next statement as you like.)
   xpns_arrange_pane_location \
-    "$_window_name" \
-    $_last_args_idx
+    "${_window_name}" \
+    ${_last_args_idx}
 
   # Enable broadcasting
-  if [[ $XP_OPT_IS_SYNC -eq 1 ]]; then
-    $TMUX_XPANES_EXEC \
+  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]]; then
+    ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
       synchronize-panes on
   fi
 
   # Restore original window name.
-  $TMUX_XPANES_EXEC \
-    rename-window -t "$_window_name" \
-    "$(echo "$_window_name" | xpns_key2value)"
+  ${TMUX_XPANES_EXEC} \
+    rename-window -t "${_window_name}" \
+    "$(echo "${_window_name}" | xpns_key2value)"
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 
@@ -679,7 +679,7 @@ xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
     xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
-    exit $XP_EINVAL
+    exit ${XP_EINVAL}
   fi
 
   if [[ -z "${TMUX-}" ]]; then
@@ -708,13 +708,13 @@ xpns_switch_pipe_mode() {
 
   while read -r line;
   do
-    XP_STDIN+=("$line")
+    XP_STDIN+=("${line}")
   done < <(cat \
              | \
              # Remove empty lines
              perl -anle '$#F >= 0 and print' \
              | \
-             xpns_pipe_filter "${_pane_num4new_term:-$XP_MAX_PANE_ARGS}"
+             xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}"
            )
 
 
@@ -733,10 +733,10 @@ xpns_switch_pipe_mode() {
   # Whith is same as
   #   $ echo 10 | xargs -I@ seq @
   #     => seq 10
-  if [[ -z "$XP_REPSTR" ]]; then
-    XP_REPSTR="$XP_DEFAULT_REPSTR"
+  if [[ -z "${XP_REPSTR}" ]]; then
+    XP_REPSTR="${XP_DEFAULT_REPSTR}"
     if [[ ! -z "${XP_ARGS[*]-}" ]]; then
-      XP_CMD_UTILITY="${XP_ARGS[*]-} $XP_REPSTR"
+      XP_CMD_UTILITY="${XP_ARGS[*]-} ${XP_REPSTR}"
     fi
   fi
 
@@ -757,13 +757,13 @@ xpns_layout_short2long() {
 xpns_is_valid_layout() {
   local _layout="$1"
   if ! echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'; then
-    xpns_msg "Error" "Invalid layout '$_layout'."
-    exit $XP_ELAYOUT
+    xpns_msg "Error" "Invalid layout '${_layout}'."
+    exit ${XP_ELAYOUT}
   fi
 }
 
 xpns_load_flag_options() {
-  if   [[ "$1" =~ h ]]; then
+  if [[ "$1" =~ h ]]; then
     xpns_usage
     xpns_usage_verbose
     exit 0
@@ -784,7 +784,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(cat <<<"$1" | perl -nle "/^-$XP_FLAG_OPTIONS+/ and print $&")" > /dev/null
+  xpns_load_flag_options "$(cat <<<"$1" | perl -nle "/^-${XP_FLAG_OPTIONS}+/ and print $&")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
@@ -800,20 +800,20 @@ xpns_load_arg_options() {
       return 0
     else
       xpns_msg "Error" "invalid argument '$2' for -I option"
-      exit $XP_EINVAL
+      exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
       XP_LAYOUT="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
-      xpns_is_valid_layout "$XP_LAYOUT"
+      xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
-      xpns_is_valid_layout "$XP_LAYOUT"
+      xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     else
       xpns_msg "Error" "invalid argument '$2' for -l option"
-      exit $XP_EINVAL
+      exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
@@ -826,7 +826,7 @@ xpns_load_arg_options() {
       return 0
     else
       xpns_msg "Error" "invalid argument '$2' for -c option"
-      exit $XP_EINVAL
+      exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
@@ -837,7 +837,7 @@ xpns_load_arg_options() {
       return 0
     else
       xpns_msg "Error" "invalid argument '$2' for -n option"
-      exit $XP_EINVAL
+      exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
     if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
@@ -848,14 +848,14 @@ xpns_load_arg_options() {
       return 0
     else
       xpns_msg "Error" "invalid argument '$2' for -S option"
-      exit $XP_EINVAL
+      exit ${XP_EINVAL}
     fi
   fi
   return 0
 }
 
 xpns_load_long_options() {
-  if   [[ "$1" =~ ^--help$ ]]; then
+  if [[ "$1" =~ ^--help$ ]]; then
     xpns_usage
     xpns_usage_verbose
     exit 0
@@ -876,7 +876,7 @@ xpns_load_long_options() {
     fi
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
-    XP_CMD_UTILITY="$XP_SSH_CMD_UTILITY"
+    XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
@@ -892,8 +892,8 @@ xpns_load_long_options() {
   else
     xpns_msg "Error" "invalid option -- '${1#--}'"
     xpns_usage
-    echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
-    exit $XP_EINVAL
+    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    exit ${XP_EINVAL}
   fi
 }
 
@@ -902,7 +902,7 @@ xpns_parse_options() {
   do
     case "$1" in
       --)
-      if [[ $XP_NO_OPT -eq 1 ]]; then
+      if [[ ${XP_NO_OPT} -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
@@ -915,21 +915,21 @@ xpns_parse_options() {
       # Long options
       ## ----------------
       --*)
-      if [[ $XP_NO_OPT -eq 1 ]]; then
+      if [[ ${XP_NO_OPT} -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
         local _shift_count="0"
         xpns_load_long_options "$@"
         _shift_count="$?"
-        [[ "$_shift_count" = "1" ]] && XP_OPTIONS+=("$1") && shift
+        [[ "${_shift_count}" = "1" ]] && XP_OPTIONS+=("$1") && shift
       fi
       ;;
       ## ----------------
       # Short options
       ## ----------------
       -*)
-      if [[ $XP_NO_OPT -eq 1 ]]; then
+      if [[ ${XP_NO_OPT} -eq 1 ]]; then
         XP_ARGS+=("$1")
         shift
       else
@@ -950,8 +950,8 @@ xpns_parse_options() {
         else
           xpns_msg "Error" "Invalid option -- '${1#-}'"
           xpns_usage
-          echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
-          exit $XP_EINVAL
+          echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+          exit ${XP_EINVAL}
         fi
       fi
       ;;
@@ -977,17 +977,17 @@ xpns_parse_options() {
   if [[ -z "${XP_ARGS[*]-}" ]]; then
     xpns_msg "Error" "No arguments are given."
     xpns_usage
-    echo "Try '$XP_THIS_FILE_NAME --help' for more information." >&2
-    exit $XP_EINVAL
+    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    exit ${XP_EINVAL}
   fi
 
   # Set default value in case of empty.
-  XP_CMD_UTILITY="${XP_CMD_UTILITY:-$XP_DEFAULT_CMD_UTILITY}"
-  XP_REPSTR="${XP_REPSTR:-$XP_DEFAULT_REPSTR}"
+  XP_CMD_UTILITY="${XP_CMD_UTILITY:-${XP_DEFAULT_CMD_UTILITY}}"
+  XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
 
   # To set utility on pre_execution, set -c option manually.
-  if [[ $XP_OPT_CMD_UTILITY -eq 0 ]];then
-    XP_OPTIONS+=("-c" "$XP_CMD_UTILITY")
+  if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
+    XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
 }
 
@@ -996,19 +996,19 @@ xpns_parse_options() {
 ## --------------------------------
 xpns_main() {
   xpns_parse_options "${1+"$@"}"
-  xpns_check_env "$XP_DEPENDENCIES"
+  xpns_check_env "${XP_DEPENDENCIES}"
   ## --------------------------------
   # Parameter validation
   ## --------------------------------
   # When do dry-run flag is enabled, skip running (this is used to execute unit test of itself).
-  if [[ $XP_OPT_DRY_RUN -eq 1 ]]; then
+  if [[ ${XP_OPT_DRY_RUN} -eq 1 ]]; then
     return 0
   fi
   # Validate log directory.
-  if [[ $XP_OPT_LOG_STORE -eq 1 ]]; then
-    XP_LOG_DIR=$(xpns_normalize_directory "$XP_LOG_DIR")
-    xpns_is_valid_directory "$XP_LOG_DIR" && \
-    XP_LOG_DIR=$(cd "$XP_LOG_DIR" && pwd)
+  if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
+    XP_LOG_DIR=$(xpns_normalize_directory "${XP_LOG_DIR}")
+    xpns_is_valid_directory "${XP_LOG_DIR}" && \
+    XP_LOG_DIR=$(cd "${XP_LOG_DIR}" && pwd)
   fi
   ## --------------------------------
   # If current shell is outside of tmux session.
