@@ -20,7 +20,7 @@ command ... | `xpanes` [`OPTIONS`] [<*utility*> ...]
 DESCRIPTION
 -----------
 
-`xpanes` or `tmux-xpanes` (alias of `xpanes`) commands have following features.
+`xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes.
   * Build command lines from given arguments & execute them on the panes.
@@ -116,7 +116,7 @@ When the tmux is already opened and `xpanes` command is executed from within the
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is already being opened and `xpanes` command is executed on the tmux (which means Normal mode2). In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`.
+When the tmux is already being opened and `xpanes` command is executed on the tmux (Normal mode2)and the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`.
 
 Pipe mode has two features.
 

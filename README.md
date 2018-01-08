@@ -101,7 +101,7 @@ $ sudo install -m 0755 xpanes /usr/local/bin/xpanes
 
 # Usage
 
-Two commands `xpanes` and `tmux-xpanes` will be installed. They are actually same commands (`tmux-xpanes` is alias of `xpanes`). Use one you like.
+Two commands `xpanes` and `tmux-xpanes` will be installed. They are actually same commands (`tmux-xpanes` is alias of `xpanes`). Use whichever you like.
 
 ```
 Usage:
@@ -229,7 +229,7 @@ As you can see, `{}` is replaced each arguments. This placeholder can be changed
 $ xpanes -I@ -c 'seq @' 1 2 3 4
 ```
 
-`echo {}` is used as the default placeholder when no commands is specified by `-c` option.
+`echo {}` is used as the default placeholder when no command is specified by `-c` option.
 
 [Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
 
@@ -240,7 +240,8 @@ $ xpanes {1..4}
 
 ## Behavior modes.
 
-Basic usages are shown above. Before showing further usages, it is good to know about the conditional behavior of `xpanes`  command.
+It is good to know about the conditional behavior of `xpanes`  command, before checking further usages.
+
 
 ### [Normal mode1] Outside of tmux session.
 
@@ -260,8 +261,8 @@ When the tmux is already open and `xpanes` command is executed from within the e
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is open and `xpanes` command is executed from within tmux (which means Normal mode2).
-In addition, when the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode".
+When the tmux is open and `xpanes` command is executed from within tmux (Normal mode2)
+and the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode".
 It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
@@ -332,7 +333,7 @@ The result is like this.
     +------------------------------------------+------------------------------------------+
 ```
 
-Hmm? you want to monitor those files through the SSH? Just do it like this.
+Hmm? Do you want to monitor those files through the SSH? Just do it like this.
 
 ```sh
 # 'ssh user@host' is added.
@@ -622,7 +623,7 @@ When this command is executed on the tmux session, **it will create new window**
     +-------------------------------+-------------------------------+
 ```
 
-Same phenomenon will be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed itself. Finally, just the three windows will be left.
+Same phenomenon will also be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed itself. Finally, just the three windows will be left.
 
 ## Pipe mode
 
@@ -723,6 +724,7 @@ $ echo test | xpanes -c 'echo {}' echo
 
 ### Connecting to multiple hosts given by `~/.ssh/config`
 
+Pipe mode allows you to make combinations between tmux and other general UNIX commands.
 For example, let's prepare `~/.ssh/config` file like this.
 
 ```text
@@ -781,13 +783,11 @@ The results would be like this.
     +------------------------------+------------------------------+
 ```
 
-Pipe mode allows you to make combinations between tmux and other general UNIX commands like this.
-
 ## Change default `tmux` command
 
 Environment variable `TMUX_XPANES_EXEC` is preferentially used as a internal `tmux` command.
-Pure `tmux` is used in case of empty.
-Add the statement to your default login shell's configure file (i.e `.bashrc`, `.zshrc`) to change the environment variable .
+`TMUX_XPANES_EXEC=tmux` is used by default.
+Add the statement to your default login shell's configure file (i.e `.bashrc`, `.zshrc`) to change the environment variable.
 It is helpful if you want to use specific tmux version, or enable specific options always.
 
 ```sh
