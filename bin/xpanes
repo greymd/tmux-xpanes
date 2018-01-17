@@ -395,7 +395,6 @@ xpns_split_window() {
   for i in $(seq 0 "${_args_num}")
   do
     ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
-    ${TMUX_XPANES_EXEC} select-layout even-horizontal
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
     if [[ "${i}" -ge 2 ]]; then
