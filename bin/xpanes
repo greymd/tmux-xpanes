@@ -4,7 +4,7 @@
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="2.2.2"
+readonly XP_VERSION="2.2.3"
 
 ## --------------------------------
 # Error constants
