@@ -317,13 +317,22 @@ EXAMPLES
     │                               │                              │
     +-------------------------------+------------------------------+
 
+SEE ALSO
+--------
+
+tmux(1)
+
+
 AUTHOR AND COPYRIGHT
 ------
 
 Copyright (c) 2018 Yamada, Yasuhiro <greengregson@gmail.com> Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 
-SEE ALSO
---------
 
-tmux(1)
+ACKNOWLEDGEMENTS
+------
+
+Thanks to Yamada, Yuka for her awesome [logo](https://github.com/greymd/tmux-xpanes/wiki/Image-Library).
+
+
