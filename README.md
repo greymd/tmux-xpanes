@@ -71,7 +71,6 @@ $ sudo apt install tmux-xpanes
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
 
 ```sh
-$ brew tap greymd/tools
 $ brew install tmux-xpanes
 ```
 
