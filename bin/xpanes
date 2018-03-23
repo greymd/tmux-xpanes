@@ -245,6 +245,7 @@ ssh_opt_parse () {
   fi
   shift # remove beginning of "ssh"
   ssh_opt_parse_options "${1+"$@"}"
+  # TODO: Parse .ssh/config
   ssh_opt_show_result
 }
 
@@ -770,8 +771,7 @@ xpns_execution() {
     set-window-option -t "${_window_name}" \
     pane-border-format "#(${XP_ABS_THIS_FILE_NAME} --sshparse #{pane_pid})"
 
-  ${TMUX_XPANES_EXEC} \
-    refresh-clients -S
+  # nohup sh -c "sleep 5; say hello; ${TMUX_XPANES_EXEC} refresh-clients -t $(tmux display-message -p '#{client_name}')" >/dev/null 2>&1 &
 
   # Restore original window name.
   ${TMUX_XPANES_EXEC} \
