@@ -413,20 +413,20 @@ xpns_enable_logging() {
   local _args=("$@")
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
-  local _logfiles=($(
+  local _idx=0
+  while read -r _logfile ; do
+    # Start logging
+    ${TMUX_XPANES_EXEC} \
+      pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
+      "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
+    _idx=$(( _idx + 1 ))
+  done < <(
   for i in $(seq 0 "${_args_num}")
   do
     # Replace empty string.
     printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
   done | xpns_log_filenames "${_log_format}"
-  ))
-  for i in $(seq 0 "${_args_num}")
-  do
-    # Start logging
-    ${TMUX_XPANES_EXEC} \
-      pipe-pane -t "${_window_name}.$(( i + _index_offset ))" \
-      "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
-  done
+  )
 }
 
 # Send command to the all the panes in the target window.
