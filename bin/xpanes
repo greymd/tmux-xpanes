@@ -635,7 +635,7 @@ xpns_execution() {
       "${XP_ARGS[@]}"
   fi
 
-  # Sending ssh operations for each pane.
+  # Sending operations for each pane.
   xpns_send_commands \
     "${_window_name}" \
     "${_pane_base_index}" \
