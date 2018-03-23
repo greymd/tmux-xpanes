@@ -61,6 +61,18 @@ readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
 ## --------------------------------
+# SSH related options
+## --------------------------------
+## Options work individually
+readonly SSH_SINGLE_OPTS="[1246AaCfGgKkMNnqsTtVvXxYy]"
+## Options require its argument(s).
+readonly SSH_MULTI_OPTS="[bcDEeFIiJLlmOopQRSWw]"
+SSH_PORT=22
+SSH_USER=$(whoami)
+SSH_HOST=
+SSH_COMMAND=()
+
+## --------------------------------
 # Initialize Options
 ## --------------------------------
 # options which work individually.
@@ -164,6 +176,99 @@ _EOS_
 # Show version number
 xpns_version() {
   echo "${XP_THIS_FILE_NAME} ${XP_VERSION}"
+}
+
+ssh_opt_show_result () {
+  printf "SSH_PORT\\t%s\\n" "${SSH_PORT}"
+  printf "SSH_USER\\t%s\\n" "${SSH_USER}"
+  printf "SSH_HOST\\t%s\\n" "${SSH_HOST-}"
+  printf "SSH_COMMAND\\t%s\\n" "${SSH_COMMAND[*]## }"
+}
+
+ssh_opt_parse_options () {
+  while (( $# > 0 )) ;do
+    case "$1" in
+      --)
+        break
+        ;;
+
+      -*)
+        if [[ "$1" =~ -${SSH_SINGLE_OPTS}*p$ ]]; then
+          SSH_PORT="$2"
+          shift
+          shift
+        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*p. ]]; then
+          SSH_PORT=$(sed "s/-${SSH_SINGLE_OPTS}*p//" <<<"$1")
+          shift
+        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*l$ ]] ;then
+          SSH_USER="$2"
+          shift
+          shift
+        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*l. ]] ;then
+          SSH_USER=$(sed "s/-${SSH_SINGLE_OPTS}*l//" <<<"$1")
+          shift
+        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}+$ ]] ;then
+          shift
+        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*${SSH_MULTI_OPTS}$ ]] ;then
+          shift
+          shift
+        fi
+        ;;
+
+      *)
+        if [[ -n "${SSH_HOST}" ]] ; then
+          break
+        fi
+        if [[ -z "${SSH_HOST}" ]] && [[ "$1" =~ ^.*@.*$ ]] ; then
+          SSH_USER="${1%%@*}"
+        fi
+        if [[ -z "${SSH_HOST}" ]] ;then
+          SSH_HOST="${1##*@}"
+        fi
+        shift
+        ;;
+    esac
+  done
+  # Rest of arguments may be command line
+  if (( $# > 0 )); then
+    SSH_COMMAND=("$1")
+    shift
+  fi
+  for _arg in "$@"; do
+    SSH_COMMAND=("${SSH_COMMAND[@]-}" "$_arg")
+  done
+}
+
+ssh_opt_parse () {
+  if ! [[ "$1" =~ ssh ]]; then
+    return
+  fi
+  shift # remove beginning of "ssh"
+  ssh_opt_parse_options "${1+"$@"}"
+  ssh_opt_show_result
+}
+
+xpns_get_ps_cmd () {
+  local _pane_pid="$1"
+  # TODO: Use perl
+  ps -o ppid,pid,command | \
+    awk -v pane_pid="${_pane_pid}" -v OFS=" " '$1==pane_pid{$1=$1;print}' | \
+    cut -d" " -f3-
+}
+
+xpns_get_ssh_detail () {
+  local _pane_pid="$1"
+  local _ps_cmd _ssh_parse_result _ssh_user _ssh_host
+  IFS=' ' read -r -a _ps_cmd <<<"$(xpns_get_ps_cmd "$_pane_pid")"
+  if [[ "${_ps_cmd[*]-}" =~ ssh ]] ; then
+    _ssh_parse_result="$(ssh_opt_parse "${_ps_cmd[@]}" )"
+    _ssh_user=$(echo "${_ssh_parse_result}" | awk '$1=="SSH_USER"{print $2}') # TODO: Use perl
+    _ssh_host=$(echo "${_ssh_parse_result}" | awk '$1=="SSH_HOST"{print $2}') # TODO: Use perl
+    echo " #[bg=green,fg=black]ssh:${_ssh_user}@${_ssh_host}#[default]"
+    return 0 # TODO: Define error code
+  else
+    return 1 # TODO: Define error code
+  fi
 }
 
 # Get version number for tmux
@@ -656,6 +761,18 @@ xpns_execution() {
       synchronize-panes on
   fi
 
+  # Set ssh connection detail on each pane
+  ${TMUX_XPANES_EXEC} \
+    set-window-option -t "${_window_name}" \
+    pane-border-status bottom
+
+  ${TMUX_XPANES_EXEC} \
+    set-window-option -t "${_window_name}" \
+    pane-border-format "#(${XP_ABS_THIS_FILE_NAME} --sshparse #{pane_pid})"
+
+  ${TMUX_XPANES_EXEC} \
+    refresh-clients -S
+
   # Restore original window name.
   ${TMUX_XPANES_EXEC} \
     rename-window -t "${_window_name}" \
@@ -892,6 +1009,10 @@ xpns_load_long_options() {
 }
 
 xpns_parse_options() {
+  if [[ "$1" =~ ^--sshparse$  ]]; then
+    xpns_get_ssh_detail "$2"
+    exit $?
+  fi
   while (( $# > 0 ))
   do
     case "$1" in
