@@ -275,8 +275,8 @@ xpns_log_filenames () {
     | while read -r _arg
     do
       cat <<<"${_full_fmt}" \
-        | sed "s/\[:ARG:\]/${_arg}/g" \
-        | sed "s/\[:PID:\]/$$/g"
+        | sed "s/\\[:ARG:\\]/${_arg}/g" \
+        | sed "s/\\[:PID:\\]/$$/g"
     done
 }
 
@@ -417,7 +417,7 @@ xpns_enable_logging() {
   for i in $(seq 0 "${_args_num}")
   do
     # Replace empty string.
-    printf "%s\n" "${_args[i]:-${_unprintable_str}}"
+    printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
   done | xpns_log_filenames "${_log_format}"
   ))
   for i in $(seq 0 "${_args_num}")
