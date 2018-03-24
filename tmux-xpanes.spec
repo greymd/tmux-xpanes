@@ -1,7 +1,7 @@
 
 Name:       tmux-xpanes
 Summary:    Ultimate terminal divider powered by tmux
-Version:    2.2.3
+Version:    3.0.0-alpha
 Group:      Applications
 License:    MIT
 Release:    %(date '+%'s)
