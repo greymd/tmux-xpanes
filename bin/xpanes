@@ -61,22 +61,10 @@ readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
 ## --------------------------------
-# SSH related options
-## --------------------------------
-## Options work individually
-readonly SSH_SINGLE_OPTS="[1246AaCfGgKkMNnqsTtVvXxYy]"
-## Options require its argument(s).
-readonly SSH_MULTI_OPTS="[bcDEeFIiJLlmOopQRSWw]"
-SSH_PORT=22
-SSH_USER=$(whoami)
-SSH_HOST=
-SSH_COMMAND=()
-
-## --------------------------------
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVde]"
+readonly XP_FLAG_OPTIONS="[hVdetT]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -100,6 +88,10 @@ XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
 XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
+XP_OPT_SET_TITLE=0
+XP_OPT_CHANGE_BORDER=0
+XP_PANE_BORDER_FORMAT="${XP_PANE_BORDER_FORMAT:-#[bg=green,fg=black]#T#[default]}"
+XP_PANE_BORDER_STATUS="${XP_PANE_BORDER_STATUS:-bottom}"
 
 ## --------------------------------
 # Logger
@@ -141,10 +133,13 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
+  -t                           Set each argument as each pane title.
+  -T                           In addition to -t, show the title as a part of each pane's border.
   -S <socket-path>             Specify a full alternative path to the server socket.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
+  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}' and enable -T option.
+  --stay                       Do not switch to new window.
   --stay                       Do not switch to new window.
 
 _EOS_
@@ -176,100 +171,6 @@ _EOS_
 # Show version number
 xpns_version() {
   echo "${XP_THIS_FILE_NAME} ${XP_VERSION}"
-}
-
-ssh_opt_show_result () {
-  printf "SSH_PORT\\t%s\\n" "${SSH_PORT}"
-  printf "SSH_USER\\t%s\\n" "${SSH_USER}"
-  printf "SSH_HOST\\t%s\\n" "${SSH_HOST-}"
-  printf "SSH_COMMAND\\t%s\\n" "${SSH_COMMAND[*]## }"
-}
-
-ssh_opt_parse_options () {
-  while (( $# > 0 )) ;do
-    case "$1" in
-      --)
-        break
-        ;;
-
-      -*)
-        if [[ "$1" =~ -${SSH_SINGLE_OPTS}*p$ ]]; then
-          SSH_PORT="$2"
-          shift
-          shift
-        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*p. ]]; then
-          SSH_PORT=$(sed "s/-${SSH_SINGLE_OPTS}*p//" <<<"$1")
-          shift
-        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*l$ ]] ;then
-          SSH_USER="$2"
-          shift
-          shift
-        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*l. ]] ;then
-          SSH_USER=$(sed "s/-${SSH_SINGLE_OPTS}*l//" <<<"$1")
-          shift
-        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}+$ ]] ;then
-          shift
-        elif [[ "$1" =~ -${SSH_SINGLE_OPTS}*${SSH_MULTI_OPTS}$ ]] ;then
-          shift
-          shift
-        fi
-        ;;
-
-      *)
-        if [[ -n "${SSH_HOST}" ]] ; then
-          break
-        fi
-        if [[ -z "${SSH_HOST}" ]] && [[ "$1" =~ ^.*@.*$ ]] ; then
-          SSH_USER="${1%%@*}"
-        fi
-        if [[ -z "${SSH_HOST}" ]] ;then
-          SSH_HOST="${1##*@}"
-        fi
-        shift
-        ;;
-    esac
-  done
-  # Rest of arguments may be command line
-  if (( $# > 0 )); then
-    SSH_COMMAND=("$1")
-    shift
-  fi
-  for _arg in "$@"; do
-    SSH_COMMAND=("${SSH_COMMAND[@]-}" "$_arg")
-  done
-}
-
-ssh_opt_parse () {
-  if ! [[ "$1" =~ ssh ]]; then
-    return
-  fi
-  shift # remove beginning of "ssh"
-  ssh_opt_parse_options "${1+"$@"}"
-  # TODO: Parse .ssh/config
-  ssh_opt_show_result
-}
-
-xpns_get_ps_cmd () {
-  local _pane_pid="$1"
-  # TODO: Use perl
-  ps -o ppid,pid,command | \
-    awk -v pane_pid="${_pane_pid}" -v OFS=" " '$1==pane_pid{$1=$1;print}' | \
-    cut -d" " -f3-
-}
-
-xpns_get_ssh_detail () {
-  local _pane_pid="$1"
-  local _ps_cmd _ssh_parse_result _ssh_user _ssh_host
-  IFS=' ' read -r -a _ps_cmd <<<"$(xpns_get_ps_cmd "$_pane_pid")"
-  if [[ "${_ps_cmd[*]-}" =~ ssh ]] ; then
-    _ssh_parse_result="$(ssh_opt_parse "${_ps_cmd[@]}" )"
-    _ssh_user=$(echo "${_ssh_parse_result}" | awk '$1=="SSH_USER"{print $2}') # TODO: Use perl
-    _ssh_host=$(echo "${_ssh_parse_result}" | awk '$1=="SSH_HOST"{print $2}') # TODO: Use perl
-    echo " #[bg=green,fg=black]ssh:${_ssh_user}@${_ssh_host}#[default]"
-    return 0 # TODO: Define error code
-  else
-    return 1 # TODO: Define error code
-  fi
 }
 
 # Get version number for tmux
@@ -540,11 +441,18 @@ xpns_send_commands() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
   local _repstr="$1"       ; shift
+  local _title_flag="$1"   ; shift
   local _cmd="$1"          ; shift
   local _index=0
+  local _pane_index
   for arg in "$@"
   do
-    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.$(( _index + _index_offset ))" "${_cmd//${_repstr}/${arg}}" C-m
+    _pane_index=$(( _index + _index_offset ))
+    if [[ $_title_flag -eq 1 ]]; then
+      _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_window_name}.${_pane_index}" -p "#{pane_tty}" )"
+      printf "\\033]2;%s\\033" "${arg}" > "${_pane_tty}"
+    fi
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
   done
 }
@@ -621,10 +529,10 @@ xpns_check_env() {
     xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
-  XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
+  XP_HOST_TMUX_VERSION="${XP_HOST_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
     "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
-    "${XP_CURRENT_TMUX_VERSION}" ) ;then
+    "${XP_HOST_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
     xpns_msg "Warning" \
@@ -746,6 +654,7 @@ xpns_execution() {
     "${_window_name}" \
     "${_pane_base_index}" \
     "${XP_REPSTR}" \
+    "${XP_OPT_SET_TITLE}" \
     "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
@@ -762,16 +671,17 @@ xpns_execution() {
       synchronize-panes on
   fi
 
-  # Set ssh connection detail on each pane
-  ${TMUX_XPANES_EXEC} \
-    set-window-option -t "${_window_name}" \
-    pane-border-status bottom
-
-  ${TMUX_XPANES_EXEC} \
-    set-window-option -t "${_window_name}" \
-    pane-border-format "#(${XP_ABS_THIS_FILE_NAME} --sshparse #{pane_pid})"
-
-  # nohup sh -c "sleep 5; say hello; ${TMUX_XPANES_EXEC} refresh-clients -t $(tmux display-message -p '#{client_name}')" >/dev/null 2>&1 &
+  ## In case of -T option
+  if [[ ${XP_OPT_SET_TITLE} -eq 1 ]] && [[ ${XP_OPT_CHANGE_BORDER} -eq 1 ]]; then
+    # Set border format
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-format "${XP_PANE_BORDER_FORMAT}"
+    # Show border status
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-status "${XP_PANE_BORDER_STATUS}"
+  fi
 
   # Restore original window name.
   ${TMUX_XPANES_EXEC} \
@@ -890,6 +800,16 @@ xpns_load_flag_options() {
     XP_REPSTR="{}"
     XP_CMD_UTILITY="{}"
   fi
+  if [[ "$1" =~ t ]]; then
+    # TODO: Check tmux version upper 2.3
+    xpns_tmux_is_greater_equals 2.3
+    XP_OPT_SET_TITLE=1
+  fi
+  if [[ "$1" =~ T ]]; then
+    # TODO: Check tmux version upper 2.3
+    XP_OPT_SET_TITLE=1
+    XP_OPT_CHANGE_BORDER=1
+  fi
   return 1
 }
 
@@ -988,6 +908,8 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
     XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
+    XP_OPT_SET_TITLE=1
+    XP_OPT_CHANGE_BORDER=1
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
@@ -1009,10 +931,6 @@ xpns_load_long_options() {
 }
 
 xpns_parse_options() {
-  if [[ "$1" =~ ^--sshparse$  ]]; then
-    xpns_get_ssh_detail "$2"
-    exit $?
-  fi
   while (( $# > 0 ))
   do
     case "$1" in
