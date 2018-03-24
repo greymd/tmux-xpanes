@@ -673,6 +673,13 @@ xpns_execution() {
       "${XP_OPT_ATTACH}"
   fi
 
+  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+    # Avoid sending command to the original window
+    _pane_base_index=$((_pane_base_index + 1))
+    # Avoid to make layout even-horizontal even if there are many panes.
+    _last_args_idx=$((_last_args_idx + _pane_count))
+  fi
+
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
       "${_window_name}" \
@@ -681,13 +688,6 @@ xpns_execution() {
       "${XP_LOG_FORMAT}" \
       "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
-  fi
-
-  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
-    # Avoid sending command to the original window
-    _pane_base_index=$((_pane_base_index + 1))
-    # Avoid to make layout even-horizontal even if there are many panes.
-    _last_args_idx=$((_last_args_idx + _pane_count))
   fi
 
   # Sending operations for each pane.
