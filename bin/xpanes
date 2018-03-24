@@ -90,7 +90,7 @@ XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
-XP_PANE_BORDER_FORMAT="${XP_PANE_BORDER_FORMAT:-#[bg=green,fg=black]#T#[default]}"
+XP_PANE_BORDER_FORMAT="${XP_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
 XP_PANE_BORDER_STATUS="${XP_PANE_BORDER_STATUS:-bottom}"
 
 ## --------------------------------
@@ -133,13 +133,12 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -t                           Set each argument as each pane title.
+  -t                           Set each argument as each pane's "pane_title" (see tmux(1) FORMATS section).
   -T                           In addition to -t, show the title as a part of each pane's border.
   -S <socket-path>             Specify a full alternative path to the server socket.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}' and enable -T option.
-  --stay                       Do not switch to new window.
   --stay                       Do not switch to new window.
 
 _EOS_
@@ -185,9 +184,9 @@ xpns_get_tmux_version() {
   echo "${_tmux_version}" | perl -anle 'printf "%s", "$F[1]"'
 }
 
-# Check whether the given version is greater than current tmux version.
-# $1 ... Target version.
-# $2 ... Current tmux version.
+# Check whether the prefered tmux version is greater than host's tmux version.
+# $1 ... Prefered version.
+# $2 ... Host tmux version(optional).
 # In case of tmux version is 1.7, the result will be like this.
 # 0 is true, 1 is false.
 ##  arg  -> result
@@ -801,14 +800,21 @@ xpns_load_flag_options() {
     XP_CMD_UTILITY="{}"
   fi
   if [[ "$1" =~ t ]]; then
-    # TODO: Check tmux version upper 2.3
-    xpns_tmux_is_greater_equals 2.3
-    XP_OPT_SET_TITLE=1
+    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
+      XP_OPT_SET_TITLE=1
+    else
+      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
+      sleep 1
+    fi
   fi
   if [[ "$1" =~ T ]]; then
-    # TODO: Check tmux version upper 2.3
-    XP_OPT_SET_TITLE=1
-    XP_OPT_CHANGE_BORDER=1
+    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
+      XP_OPT_SET_TITLE=1
+      XP_OPT_CHANGE_BORDER=1
+    else
+      xpns_msg "Warning" "-T option cannot be used by tmux version less than 2.3. Disabled."
+      sleep 1
+    fi
   fi
   return 1
 }
