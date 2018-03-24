@@ -451,7 +451,7 @@ xpns_send_commands() {
     _pane_index=$(( _index + _index_offset ))
     if [[ $_title_flag -eq 1 ]]; then
       _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_window_name}.${_pane_index}" -p "#{pane_tty}" )"
-      printf "\\033]2;%s\\033" "${arg}" > "${_pane_tty}"
+      printf "\\033]2;%s\\033\\\\" "${arg}" > "${_pane_tty}"
     fi
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
