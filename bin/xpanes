@@ -4,7 +4,7 @@
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="2.2.3"
+readonly XP_VERSION="3.0.0-alpha"
 
 ## --------------------------------
 # Error constants
@@ -64,7 +64,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVdetT]"
+readonly XP_FLAG_OPTIONS="[ahVdetT]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -92,6 +92,7 @@ XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_PANE_BORDER_FORMAT="${XP_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
 XP_PANE_BORDER_STATUS="${XP_PANE_BORDER_STATUS:-bottom}"
+XP_OPT_APPEND=0
 
 ## --------------------------------
 # Logger
@@ -122,6 +123,7 @@ Usage(pipe mode):
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
+  -a                           Create additional panes in the current active window.
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
@@ -133,9 +135,9 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
+  -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Set each argument as each pane's "pane_title" (see tmux(1) FORMATS section).
   -T                           In addition to -t, show the title as a part of each pane's border.
-  -S <socket-path>             Specify a full alternative path to the server socket.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}' and enable -T option.
@@ -477,9 +479,25 @@ xpns_arrange_pane_location() {
 }
 
 #
+# Create new panes to the  existing window.
+# Usage:
+#    func <window name> <offset of index> <number of pane>
+#
+xpns_append_panes_to_window() {
+  local _window_name="$1"     ; shift
+  local _pane_base_index="$1" ; shift
+  local _pane_num="$1"
+  # specify a pane which has the biggest index number.
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
+
+  # split window into multiple panes
+  xpns_split_window "${_window_name}" "${_pane_num}"
+}
+
+#
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#    xpns_prepare_window <window name> <offset of index> <number of pane>
+#    xpns_prepare_window <window name> <offset of index> <number of pane> <attach or not>
 #
 xpns_prepare_window() {
   local _window_name="$1"     ; shift
@@ -612,31 +630,48 @@ ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
 
 # Execute from inside of tmux session
 xpns_execution() {
+  local _pane_base_index=
+  local _window_name=
+  local _last_args_idx=
+  local _def_allow_rename=
+  local _pane_count=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
-  local _pane_base_index=
   _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=
-  _window_name=$(
-    xpns_generate_window_name \
-      "${XP_EMPTY_STR}" \
-      "${XP_ARGS[0]}" \
-      | xpns_value2key)
-  local _last_args_idx=
   _last_args_idx=$((${#XP_ARGS[@]} - 1))
-  local _def_allow_rename=
   _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
-  xpns_prepare_window \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${_last_args_idx}" \
-    "${XP_OPT_ATTACH}"
+  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+    # Reuse existing window name
+    # TODO: does tmux 1.6 support #{window_name} or #{window_id}?
+    _window_name="$(${TMUX_XPANES_EXEC} display -p -F "#{window_id}")"
+    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
+    _pane_base_index=$((_pane_base_index + _pane_count - 1))
+  else
+    _window_name=$(
+      xpns_generate_window_name \
+        "${XP_EMPTY_STR}" \
+        "${XP_ARGS[0]}" \
+        | xpns_value2key)
+  fi
+
+  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+    xpns_append_panes_to_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${_last_args_idx}"
+  else
+    xpns_prepare_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${_last_args_idx}" \
+      "${XP_OPT_ATTACH}"
+  fi
 
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
@@ -648,6 +683,13 @@ xpns_execution() {
       "${XP_ARGS[@]}"
   fi
 
+  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+    # Avoid sending command to the original window
+    _pane_base_index=$((_pane_base_index + 1))
+    # Avoid to make layout even-horizontal even if there are many panes.
+    _last_args_idx=$((_last_args_idx + _pane_count))
+  fi
+
   # Sending operations for each pane.
   xpns_send_commands \
     "${_window_name}" \
@@ -657,14 +699,12 @@ xpns_execution() {
     "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
-  # This is just the author's preference
-  # (It means you can remove next statement as you like.)
   xpns_arrange_pane_location \
     "${_window_name}" \
-    ${_last_args_idx}
+    "${_last_args_idx}"
 
   # Enable broadcasting
-  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]]; then
+  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_APPEND} -eq 0 ]]; then
     ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
       synchronize-panes on
@@ -792,6 +832,9 @@ xpns_load_flag_options() {
     xpns_version
     exit 0
   fi
+  if [[ "$1" =~ a ]]; then
+    XP_OPT_APPEND=1
+  fi
   if [[ "$1" =~ d ]]; then
     XP_OPT_IS_SYNC=0
   fi
@@ -914,6 +957,7 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
     XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
+    # Enable -t and -T option as well
     XP_OPT_SET_TITLE=1
     XP_OPT_CHANGE_BORDER=1
     return 1
