@@ -36,6 +36,9 @@ readonly XP_ENOCMD=127
 # Used tmux command by default.
 # i.e, the command can be another one like 'export TMUX_XPANES_EXEC="tmux -2"'
 TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
+TMUX_XPANES_PANE_BORDER_FORMAT="${TMUX_XPANES_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
+TMUX_XPANES_PANE_BORDER_STATUS="${TMUX_XPANES_PANE_BORDER_STATUS:-bottom}"
+# TODO: TMUX_XPANES_LOG_FORMAT
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
@@ -90,8 +93,6 @@ XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
-XP_PANE_BORDER_FORMAT="${XP_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
-XP_PANE_BORDER_STATUS="${XP_PANE_BORDER_STATUS:-bottom}"
 XP_OPT_APPEND=0
 
 ## --------------------------------
@@ -136,12 +137,12 @@ OPTIONS:
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
-  -t                           Set each argument as each pane's "pane_title" (see tmux(1) FORMATS section).
-  -T                           In addition to -t, show the title as a part of each pane's border.
+  -t                           Display each argument on the each pane's border as their title.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}' and enable -T option.
+  --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -t\`.
   --stay                       Do not switch to new window.
+  --pane-title-off             Do not update \`#{pane_title}\` (see tmux(1) FORMATS section).
 
 _EOS_
 }
@@ -546,6 +547,7 @@ xpns_check_env() {
     xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
+  # Do not omit this part, this is used by testing.
   XP_HOST_TMUX_VERSION="${XP_HOST_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
     "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
@@ -715,11 +717,11 @@ xpns_execution() {
     # Set border format
     ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
-      pane-border-format "${XP_PANE_BORDER_FORMAT}"
+      pane-border-format "${TMUX_XPANES_PANE_BORDER_FORMAT}"
     # Show border status
     ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
-      pane-border-status "${XP_PANE_BORDER_STATUS}"
+      pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
   fi
 
   # Restore original window name.
