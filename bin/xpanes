@@ -452,6 +452,10 @@ xpns_send_commands() {
     _pane_index=$(( _index + _index_offset ))
     if [[ $_title_flag -eq 1 ]]; then
       _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_window_name}.${_pane_index}" -p "#{pane_tty}" )"
+    fi
+    # TODO: Do not update title in case of --pane-title-off
+    # TODO: Get tmux version defined previously
+    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
       printf "\\033]2;%s\\033\\\\" "${arg}" > "${_pane_tty}"
     fi
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
@@ -651,7 +655,7 @@ xpns_execution() {
   if [[ ${XP_OPT_APPEND} -eq 1 ]];then
     # Reuse existing window name
     # TODO: does tmux 1.6 support #{window_name} or #{window_id}?
-    _window_name="$(${TMUX_XPANES_EXEC} display -p -F "#{window_id}")"
+    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
     _pane_base_index=$((_pane_base_index + _pane_count - 1))
   else
@@ -712,7 +716,7 @@ xpns_execution() {
       synchronize-panes on
   fi
 
-  ## In case of -T option
+  ## In case of -t option
   if [[ ${XP_OPT_SET_TITLE} -eq 1 ]] && [[ ${XP_OPT_CHANGE_BORDER} -eq 1 ]]; then
     # Set border format
     ${TMUX_XPANES_EXEC} \
@@ -847,17 +851,9 @@ xpns_load_flag_options() {
   if [[ "$1" =~ t ]]; then
     if ( xpns_tmux_is_greater_equals 2.3 ) ; then
       XP_OPT_SET_TITLE=1
-    else
-      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
-      sleep 1
-    fi
-  fi
-  if [[ "$1" =~ T ]]; then
-    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
-      XP_OPT_SET_TITLE=1
       XP_OPT_CHANGE_BORDER=1
     else
-      xpns_msg "Warning" "-T option cannot be used by tmux version less than 2.3. Disabled."
+      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
       sleep 1
     fi
   fi
@@ -959,7 +955,7 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
     XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
-    # Enable -t and -T option as well
+    # Enable -t and -t option as well
     XP_OPT_SET_TITLE=1
     XP_OPT_CHANGE_BORDER=1
     return 1
