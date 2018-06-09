@@ -507,6 +507,8 @@ test_tmux_path_invalid() {
     switch_tmux_path 0
     TMUX_XPANES_EXEC="tmux" ${EXEC} 1 2 3
     assertEquals "127" "$?"
+  else
+    echo "Skip test"
   fi
 }
 
