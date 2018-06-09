@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Syntastic is quite heavy. Execute :SyntasticToggleMode if you use Vim and syntastic/shellcheck.vim
+
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 readonly TEST_TMP="$THIS_DIR/test_tmp"
@@ -501,9 +503,11 @@ tearDown(){
 ###################### START TESTING ######################
 
 test_tmux_path_invalid() {
-  switch_tmux_path 0
-  TMUX_XPANES_EXEC="tmux" ${EXEC} 1 2 3
-  assertEquals "127" "$?"
+  if [ -n "${TRAVIS_BUILD_DIR}" ]; then
+    switch_tmux_path 0
+    TMUX_XPANES_EXEC="tmux" ${EXEC} 1 2 3
+    assertEquals "127" "$?"
+  fi
 }
 
 test_normalize_log_directory() {
@@ -527,7 +531,7 @@ test_normalize_log_directory() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB"
+    _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB && ${TMUX_EXEC} detach-client"
     printf "\n $ $_cmd\n"
     # Execute command (slightly different)
     HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB
