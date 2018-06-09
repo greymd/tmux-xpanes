@@ -452,7 +452,7 @@ xpns_enable_logging() {
   )
 }
 
-xpns_set_pane_title() {
+xpns_inject_title() {
   local _target_pane="$1" ;shift
   local _message="$1"     ;shift
   local _pane_tty
@@ -461,29 +461,40 @@ xpns_set_pane_title() {
 }
 
 # Send command to the all the panes in the target window.
-xpns_send_commands() {
+xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
-  local _repstr="$1"       ; shift
   local _title_flag="$1"   ; shift
   local _append_flag="$1"  ; shift
-  local _cmd="$1"          ; shift
   local _index=0
   local _pane_index _pane_border_status
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
     _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
-
     if [[ $_title_flag -eq 1 ]]; then
-      xpns_set_pane_title "${_window_name}.${_pane_index}" "${arg}"
+      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     elif [[ ${_append_flag} -eq 1 ]] && \
          [[ "${_pane_border_status}" != "off" ]] && \
          [[ -n "${_pane_border_status}" ]] ;then
       ## For -a option
-      xpns_set_pane_title "${_window_name}.${_pane_index}" "${arg}"
+      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     fi
+    _index=$(( _index + 1 ))
+  done
+}
 
+# Send command to the all the panes in the target window.
+xpns_send_commands() {
+  local _window_name="$1"  ; shift
+  local _index_offset="$1" ; shift
+  local _repstr="$1"       ; shift
+  local _cmd="$1"          ; shift
+  local _index=0
+  local _pane_index
+  for arg in "$@"
+  do
+    _pane_index=$(( _index + _index_offset ))
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
   done
@@ -722,13 +733,19 @@ xpns_execution() {
       "${XP_ARGS[@]}"
   fi
 
+  # Set pane titles for each pane.
+  xpns_set_titles \
+    "${_window_name}" \
+    "${_pane_base_index}" \
+    "${XP_OPT_SET_TITLE}" \
+    "${XP_OPT_APPEND}" \
+    "${XP_ARGS[@]}"
+
   # Sending operations for each pane.
   xpns_send_commands \
     "${_window_name}" \
     "${_pane_base_index}" \
     "${XP_REPSTR}" \
-    "${XP_OPT_SET_TITLE}" \
-    "${XP_OPT_APPEND}" \
     "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
