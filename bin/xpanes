@@ -867,6 +867,7 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ a ]]; then
     XP_OPT_APPEND=1
+    # TODO: Show warning message in case of syncronized pane.
   fi
   if [[ "$1" =~ d ]]; then
     XP_OPT_IS_SYNC=0
