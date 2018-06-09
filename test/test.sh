@@ -1311,7 +1311,7 @@ test_argument_and_utility_pipe() {
 }
 
 test_unsupported_version() {
-    XP_CURRENT_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
+    XP_HOST_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
     assertEquals "0" "$?"
 }
 
