@@ -211,7 +211,21 @@ xpns_tmux_is_greater_equals() {
   fi
 }
 
-xpns_get_tmux_conf() {
+xpns_get_local_tmux_conf() {
+  local _conf_name="$1"
+  local _session="${2-}"
+  {
+    if [[ -z "${_session-}" ]];then
+      ${TMUX_XPANES_EXEC} show-window-options
+    else
+      ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
+    fi
+  } | grep "^${_conf_name}" \
+    | head -n 1 \
+    | perl -anle 'print $F[1]'
+}
+
+xpns_get_global_tmux_conf() {
   local _conf_name="$1"
   local _session="${2-}"
   {
@@ -438,26 +452,38 @@ xpns_enable_logging() {
   )
 }
 
+xpns_set_pane_title() {
+  local _target_pane="$1" ;shift
+  local _message="$1"     ;shift
+  local _pane_tty
+  _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
+  printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
+}
+
 # Send command to the all the panes in the target window.
 xpns_send_commands() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
   local _repstr="$1"       ; shift
   local _title_flag="$1"   ; shift
+  local _append_flag="$1"  ; shift
   local _cmd="$1"          ; shift
   local _index=0
-  local _pane_index
+  local _pane_index _pane_border_status
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
+    _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
+
     if [[ $_title_flag -eq 1 ]]; then
-      _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_window_name}.${_pane_index}" -p "#{pane_tty}" )"
+      xpns_set_pane_title "${_window_name}.${_pane_index}" "${arg}"
+    elif [[ ${_append_flag} -eq 1 ]] && \
+         [[ "${_pane_border_status}" != "off" ]] && \
+         [[ -n "${_pane_border_status}" ]] ;then
+      ## For -a option
+      xpns_set_pane_title "${_window_name}.${_pane_index}" "${arg}"
     fi
-    # TODO: Do not update title in case of --pane-title-off
-    # TODO: Get tmux version defined previously
-    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
-      printf "\\033]2;%s\\033\\\\" "${arg}" > "${_pane_tty}"
-    fi
+
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
   done
@@ -593,7 +619,7 @@ xpns_pre_execution() {
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
   local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
   xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
 
   # Append -- flag.
@@ -646,9 +672,9 @@ xpns_execution() {
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
-  _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
+  _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
   _last_args_idx=$((${#XP_ARGS[@]} - 1))
-  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
@@ -702,6 +728,7 @@ xpns_execution() {
     "${_pane_base_index}" \
     "${XP_REPSTR}" \
     "${XP_OPT_SET_TITLE}" \
+    "${XP_OPT_APPEND}" \
     "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
