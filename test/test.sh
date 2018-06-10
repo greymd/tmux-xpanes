@@ -65,8 +65,8 @@ is_less_than() {
 check_version() {
     switch_tmux_path 1
     ${BIN_DIR}${EXEC} --dry-run A
-    # If tmux version is less than 1.6, skip rest of the tests.
-    if is_less_than "1.6" ;then
+    # If tmux version is less than 1.8, skip rest of the tests.
+    if is_less_than "1.8" ;then
         echo "Skip rest of the tests." >&2
         echo "Because this version is out of support." >&2
         exit 0

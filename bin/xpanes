@@ -60,7 +60,7 @@ readonly XP_SESSION_NAME="${XP_THIS_FILE_NAME}-$$"
 readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
 
-readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
+readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 
 ## --------------------------------
@@ -691,7 +691,7 @@ xpns_execution() {
 
   if [[ ${XP_OPT_APPEND} -eq 1 ]];then
     # Reuse existing window name
-    # TODO: does tmux 1.6 support #{window_name} or #{window_id}?
+    # tmux 1.6 does not support -F option
     _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
     _pane_base_index=$((_pane_base_index + _pane_count - 1))
