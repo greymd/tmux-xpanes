@@ -1,0 +1,11 @@
+shell:bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
+tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7
+Feature1:-h,--help,-V,--version,-a,-c,-d,--desync,-e,-I,-l,-n,-S,-t,--log,--log[=<directory>],--log-format=<FORMAT>,--stay
+Feature2:-h,--help,-V,--version,-a,-c,-d,--desync,-e,-I,-l,-n,-S,-t,--log,--log[=<directory>],--log-format=<FORMAT>,--stay,none
+Modes:NormalMode1,NormalMode2,PipeMode
+
+if [Feature1] = "-h"
+or  [Feature1] = "-v"
+or  [Feature1] = "--help"
+or  [Feature1] = "--version"
+then [Feature2] = "none";
