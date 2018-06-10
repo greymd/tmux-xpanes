@@ -28,6 +28,10 @@ readonly XP_ELOGDIR=20
 ## Could not directory to store logs is not writable.
 readonly XP_ELOGWRITE=21
 
+# User's intentional exit is 3x
+## User exit the process by following warning message.
+readonly XP_EINTENT=30
+
 # Necessary commands are not found
 readonly XP_ENOCMD=127
 
@@ -872,6 +876,20 @@ xpns_is_valid_layout() {
   fi
 }
 
+xpns_warning_before_append() {
+  local _ans _synchronized
+  _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
+  if [[ "on" == "${_synchronized}" ]];then
+    xpns_msg "Warning" "Panes are now synchronized.
+'-a' option may cause unexpected behavior on the synchronized panes."
+    printf "Are you really sure? [y/n]: "
+    read -r _ans
+    if grep -iqv '^y' <<<"${_ans}" ; then
+      return 1
+    fi
+  fi
+}
+
 xpns_load_flag_options() {
   if [[ "$1" =~ h ]]; then
     xpns_usage
@@ -884,7 +902,9 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ a ]]; then
     XP_OPT_APPEND=1
-    # TODO: Show warning message in case of syncronized pane.
+    if ! xpns_warning_before_append; then
+      exit ${XP_EINTENT}
+    fi
   fi
   if [[ "$1" =~ d ]]; then
     XP_OPT_IS_SYNC=0
