@@ -146,7 +146,6 @@ OPTIONS:
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -t\`.
   --stay                       Do not switch to new window.
-  --pane-title-off             Do not update \`#{pane_title}\` (see tmux(1) FORMATS section).
 
 _EOS_
 }
