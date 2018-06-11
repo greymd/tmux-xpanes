@@ -185,7 +185,7 @@ wait_existing_file_number(){
     # Wait until specific number of files are created.
     for i in $(seq "${_wait_seconds}") ;do
         sleep 1
-        _num_of_files=$(ls "${_target_dir}" | grep -c .)
+        _num_of_files=$(printf "%s\\n" "${_target_dir}"/* | grep -c .)
         if [ "${_num_of_files}" = "${_expected_num}" ]; then
             break
         fi
@@ -206,13 +206,13 @@ between_plus_minus() {
 # Returns the index of the window and number of it's panes.
 # The reason why it does not use #{window_panes} is, tmux 1.6 does not support the format.
 get_window_having_panes() {
-    local _socket_file="$1"
-    local _pane_num="$2"
-    ${TMUX_EXEC}  -S "${_socket_file}" list-windows -F '#{window_index}' \
-        | while read idx;
-            do
-                echo -n "${idx} "; ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${idx}" -F '#{pane_index}' | grep -c .
-            done | awk '$2=='${_pane_num}'{print $1}' | head -n 1
+  local _socket_file="$1"
+  local _pane_num="$2"
+  while read -r idx;
+  do
+    echo -n "${idx} "; ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${idx}" -F '#{pane_index}' | grep -c .
+  done < <(${TMUX_EXEC}  -S "${_socket_file}" list-windows -F '#{window_index}') \
+    | awk '$2==pane_num{print $1}' pane_num="${_pane_num}" | head -n 1
 }
 
 divide_two_panes_impl() {
@@ -234,14 +234,14 @@ divide_two_panes_impl() {
     echo "A:${a_width} B:${b_width}"
     # true:1, false:0
     # a_width +- 1 is b_width
-    assertEquals 1 "$(between_plus_minus 1 ${a_width} ${b_width})"
+    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
     b_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==2')
     echo "A:${a_height} B:${b_height}"
     # In this case, height must be same.
-    assertEquals 1 "$(( ${a_height} == ${b_height} ))"
+    assertEquals 1 "$(( a_height == b_height ))"
 }
 
 divide_three_panes_impl() {
@@ -263,8 +263,8 @@ divide_three_panes_impl() {
     b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
     c_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==3')
     echo "A:${a_width} B:${b_width} C:${c_width}"
-    assertEquals 1 "$(between_plus_minus 1 ${a_width} ${b_width})"
-    assertEquals 1 "$(( $(( ${a_width} + ${b_width} + 1 )) == ${c_width} ))"
+    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
+    assertEquals 1 "$(( $(( a_width + b_width + 1 )) == c_width ))"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
@@ -272,8 +272,8 @@ divide_three_panes_impl() {
     c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
     echo "A:${a_height} B:${b_height} C:${c_height}"
     # In this case, height must be same.
-    assertEquals 1 "$(( ${a_height} == ${b_height} ))"
-    assertEquals 1 "$(between_plus_minus 1 ${c_height} ${a_height})"
+    assertEquals 1 "$(( a_height == b_height ))"
+    assertEquals 1 "$(between_plus_minus 1 "${c_height}" "${a_height}")"
 }
 
 divide_four_panes_impl() {
@@ -294,10 +294,10 @@ divide_four_panes_impl() {
     d_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==4')
     echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width}"
 
-    assertEquals 1 "$((${a_width} == ${c_width}))"
-    assertEquals 1 "$((${b_width} == ${d_width}))"
-    assertEquals 1 "$(between_plus_minus 1 ${a_width} ${b_width})"
-    assertEquals 1 "$(between_plus_minus 1 ${c_width} ${d_width})"
+    assertEquals 1 "$((a_width == c_width))"
+    assertEquals 1 "$((b_width == d_width))"
+    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
+    assertEquals 1 "$(between_plus_minus 1 "${c_width}" "${d_width}")"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
@@ -306,10 +306,10 @@ divide_four_panes_impl() {
     d_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==4')
     echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height}"
     # In this case, height must be same.
-    assertEquals 1 "$(( ${a_height} == ${b_height} ))"
-    assertEquals 1 "$(( ${c_height} == ${d_height} ))"
-    assertEquals 1 "$(between_plus_minus 1 ${a_height} ${c_height})"
-    assertEquals 1 "$(between_plus_minus 1 ${b_height} ${d_height})"
+    assertEquals 1 "$(( a_height == b_height ))"
+    assertEquals 1 "$(( c_height == d_height ))"
+    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${c_height}")"
+    assertEquals 1 "$(between_plus_minus 1 "${b_height}" "${d_height}")"
 }
 
 divide_five_panes_impl() {
@@ -332,12 +332,12 @@ divide_five_panes_impl() {
     d_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==4')
     e_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==5')
     echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width} E:${e_width}"
-    assertEquals 1 "$((${a_width} == ${c_width}))"
-    assertEquals 1 "$((${b_width} == ${d_width}))"
-    assertEquals 1 "$(between_plus_minus 1 ${a_width} ${b_width})"
-    assertEquals 1 "$(between_plus_minus 1 ${c_width} ${d_width})"
+    assertEquals 1 "$((a_width == c_width))"
+    assertEquals 1 "$((b_width == d_width))"
+    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
+    assertEquals 1 "$(between_plus_minus 1 "${c_width}" "${d_width}")"
     # Width of A + B is greater than E with 1 px. Because of the border.
-    assertEquals 1 "$(( $(( ${a_width} + ${b_width} + 1 )) == ${e_width}))"
+    assertEquals 1 "$(( $(( a_width + b_width + 1 )) == e_width))"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
@@ -346,13 +346,13 @@ divide_five_panes_impl() {
     d_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==4')
     e_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==5')
     echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height} E:${e_height}"
-    assertEquals 1 "$(( ${a_height} == ${b_height} ))"
-    assertEquals 1 "$(( ${c_height} == ${d_height} ))"
-    assertEquals 1 "$(between_plus_minus 1 ${a_height} ${c_height})"
-    assertEquals 1 "$(between_plus_minus 1 ${b_height} ${d_height})"
+    assertEquals 1 "$(( a_height == b_height ))"
+    assertEquals 1 "$(( c_height == d_height ))"
+    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${c_height}")"
+    assertEquals 1 "$(between_plus_minus 1 "${b_height}" "${d_height}")"
     # On author's machine, following two tests does not pass with 1 ... somehow.
-    assertEquals 1 "$(between_plus_minus 2 ${a_height} ${e_height})"
-    assertEquals 1 "$(between_plus_minus 2 ${c_height} ${e_height})"
+    assertEquals 1 "$(between_plus_minus 2 "${a_height}" "${e_height}")"
+    assertEquals 1 "$(between_plus_minus 2 "${c_height}" "${e_height}")"
 }
 
 divide_two_panes_ev_impl() {
@@ -376,14 +376,14 @@ divide_two_panes_ev_impl() {
     echo "A:${a_width} B:${b_width}"
     # true:1, false:0
     # In this case, height must be same.
-    assertEquals 1 "$(( ${a_width} == ${b_width} ))"
+    assertEquals 1 "$(( a_width == b_width ))"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
     b_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==2')
     echo "A:${a_height} B:${b_height}"
     # a_height +- 1 is b_height
-    assertEquals 1 "$(between_plus_minus 1 ${a_height} ${b_height})"
+    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${b_height}")"
 }
 
 divide_two_panes_eh_impl() {
@@ -414,8 +414,8 @@ divide_three_panes_ev_impl() {
     echo "A:${a_width} B:${b_width} C:${c_width}"
     # true:1, false:0
     # In this case, height must be same.
-    assertEquals 1 "$(( ${a_width} == ${b_width} ))"
-    assertEquals 1 "$(( ${b_width} == ${c_width} ))"
+    assertEquals 1 "$(( a_width == b_width ))"
+    assertEquals 1 "$(( b_width == c_width ))"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
@@ -423,8 +423,8 @@ divide_three_panes_ev_impl() {
     c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
     echo "A:${a_height} B:${b_height} C:${c_height}"
 
-    assertEquals 1 "$(between_plus_minus 1 ${a_height} ${b_height})"
-    assertEquals 1 "$(between_plus_minus 2 ${b_height} ${c_height})"
+    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${b_height}")"
+    assertEquals 1 "$(between_plus_minus 2 "${b_height}" "${c_height}")"
 }
 
 divide_three_panes_eh_impl() {
@@ -447,8 +447,8 @@ divide_three_panes_eh_impl() {
     echo "A:${a_width} B:${b_width} C:${c_width}"
     # true:1, false:0
     # In this case, height must be same.
-    assertEquals 1 "$(between_plus_minus 1 ${a_width} ${b_width})"
-    assertEquals 1 "$(between_plus_minus 2 ${b_width} ${c_width})"
+    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
+    assertEquals 1 "$(between_plus_minus 2 "${b_width}" "${c_width}")"
 
     echo "Check height"
     a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
@@ -456,20 +456,20 @@ divide_three_panes_eh_impl() {
     c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
     echo "A:${a_height} B:${b_height} C:${c_height}"
 
-    assertEquals 1 "$(( ${a_height} == ${b_height} ))"
-    assertEquals 1 "$(( ${b_height} == ${c_height} ))"
+    assertEquals 1 "$(( a_height == b_height ))"
+    assertEquals 1 "$(( b_height == c_height ))"
 }
 
 get_tmux_full_path () {
   switch_tmux_path 1
-  which tmux
+  command -v tmux
   switch_tmux_path 0
 }
 
 set_tmux_exec_randomly () {
   local _num
   local _exec
-  _num=$((${RANDOM} % 4));
+  _num=$((RANDOM % 4));
   _exec="$(get_tmux_full_path)"
 
   if [[ ${_num} -eq 0 ]];then
@@ -488,8 +488,8 @@ set_tmux_exec_randomly () {
 }
 
 setUp(){
-    cd ${BIN_DIR}
-    mkdir -p ${TEST_TMP}
+    cd "${BIN_DIR}" || exit
+    mkdir -p "${TEST_TMP}"
     set_tmux_exec_randomly
     echo ">>>>>>>>>>" >&2
     echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
@@ -542,36 +542,36 @@ test_normalize_log_directory() {
     mkdir -p "${_tmpdir}/fin"
 
     _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S ${_socket_file} -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
-    printf "%s" "\\n $ ${_cmd}\\n"
+    printf "\\n%s\\n" "$ ${_cmd}"
     eval "${_cmd}"
     wait_panes_separation "${_socket_file}" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
     # Wait several seconds just in case.
     sleep 3
-    ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
     assertEquals 0 $?
-    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
-    assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_AAAA_')
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
 
-    ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
     assertEquals 0 $?
-    _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
-    assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_AAAA_')
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
 
-    ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
     assertEquals 0 $?
-    _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
-    assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_BBBB_')
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
     close_tmux_session "${_socket_file}"
-    rm -f ${_tmpdir}/logs/*
-    rmdir ${_tmpdir}/logs
-    rm -f ${_tmpdir}/fin/*
-    rmdir ${_tmpdir}/fin
+    rm -f "${_tmpdir}"/logs/*
+    rmdir "${_tmpdir}"/logs
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
 
     : "In TMUX session" && {
-        printf "\n $ TMUX(${_cmd})\n"
+        printf "\\n%s\\n" "$ TMUX(${_cmd})"
         mkdir -p "${_tmpdir}/fin"
 
         create_tmux_session "${_socket_file}"
@@ -581,27 +581,27 @@ test_normalize_log_directory() {
 
         # Wait several seconds just in case.
         sleep 3
-        ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$'
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
         assertEquals 0 $?
-        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-1\.log\..*$')
-        assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_AAAA_')
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
+        assertEquals 1 "$( grep -ac 'GEGE_AAAA_' < "${_log_file}" )"
 
-        ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$'
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
         assertEquals 0 $?
-        _log_file=$(ls ${_tmpdir}/logs | grep -E '^AAAA-2\.log\..*$')
-        assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_AAAA_')
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
+        assertEquals 1 "$( grep -ac 'GEGE_AAAA_' < "${_log_file}" )"
 
-        ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$'
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
         assertEquals 0 $?
-        _log_file=$(ls ${_tmpdir}/logs | grep -E '^BBBB-1\.log\..*$')
-        assertEquals 1 $(cat ${_tmpdir}/logs/${_log_file} | grep -ac 'GEGE_BBBB_')
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
+        assertEquals 1 "$( grep -ac 'GEGE_BBBB_' < "${_log_file}" )"
 
         close_tmux_session "${_socket_file}"
 
-        rm -f ${_tmpdir}/logs/*
-        rmdir ${_tmpdir}/logs
-        rm -f ${_tmpdir}/fin/*
-        rmdir ${_tmpdir}/fin
+        rm -f "${_tmpdir}"/logs/*
+        rmdir "${_tmpdir}"/logs
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
     }
 }
 
@@ -2481,4 +2481,5 @@ EXEC="./${BIN_NAME}"
 check_version
 
 # Test start
-. ${THIS_DIR}/shunit2/source/2.1/src/shunit2
+# shellcheck source=/dev/null
+. "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
