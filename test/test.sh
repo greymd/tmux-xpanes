@@ -31,8 +31,7 @@ switch_tmux_path () {
 
 tmux_version_number() {
     local _tmux_version=""
-    ${TMUX_EXEC} -V &> /dev/null
-    if [ $? -ne 0 ]; then
+    if ! ${TMUX_EXEC} -V &> /dev/null; then
         # From tmux 0.9 to 1.3, there is no -V option.
         # Adjust all to 0.9
         _tmux_version="tmux 0.9"
@@ -54,7 +53,7 @@ tmux_version_number() {
 #   2.0  -> 0
 is_less_than() {
     # Simple numerical comparison does not work because there is the version like "1.9a".
-    if [[ "$( (echo "$(tmux_version_number)"; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
+    if [[ "$( (tmux_version_number; echo; echo "$1") | sort -n | head -n 1)" != "$1" ]];then
         return 0
     else
         return 1
@@ -495,7 +494,7 @@ setUp(){
 }
 
 tearDown(){
-    rm -rf $TEST_TMP
+    rm -rf "${TEST_TMP}"
     echo "<<<<<<<<<<" >&2
     echo >&2
 }
@@ -534,10 +533,9 @@ test_normalize_log_directory() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" AAAA AAAA BBBB && ${TMUX_EXEC} detach-client"
+    _cmd="HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
     printf "\n $ $_cmd\n"
-    # Execute command (slightly different)
-    HOME=${_tmpdir} ${EXEC} --log=~/logs/ -I@ -S $_socket_file -c"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client" AAAA AAAA BBBB
+    eval "${_cmd}"
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
