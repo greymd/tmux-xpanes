@@ -534,7 +534,7 @@ test_tmux_path_invalid() {
 
 # @test: test_normalize_log_directory
 # @skip: 1.8,2.3
-_test_normalize_log_directory() {
+test_normalize_log_directory() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
