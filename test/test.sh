@@ -517,8 +517,7 @@ tearDown(){
     echo >&2
 }
 
-###################### START TESTING ######################
-
+###:-:-:START_TESTING:-:-:###
 
 # @test: test_tmux_path_invalid
 # @skip:
@@ -2558,6 +2557,10 @@ test_divide_five_panes_pipe() {
 ## }
 
 # TODO : test with logging + empty string argument
+
+###:-:-:END_TESTING:-:-:###
+
+###:-:-:INSERT_TESTING:-:-:###
 
 readonly TMUX_EXEC=$(get_tmux_full_path)
 if [ -n "$BASH_VERSION" ]; then

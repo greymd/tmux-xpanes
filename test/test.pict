@@ -19,7 +19,12 @@ IF[case] = "test_log_format_and_desync_option" THEN [tmux] <> "2.3";
 IF[case] = "test_log_format_and_desync_option_pipe" THEN [tmux] <> "1.8";
 IF[case] = "test_log_format_and_desync_option_pipe" THEN [tmux] <> "2.3";
 
+## Create exceptional conditions
 # cat test.sh | grep '@skip: .' -B1 | awk '{print $2,$3}' | awk 'NF{print $2}' | perl -ple 's/,/\n/g' | awk '{print a,$1}/test_/{a=$1}' | grep '[0-9].[0-9]$' | awk '{print "IF[case] = \""$1"\" THEN [tmux] <> \""$2"\";"}'
 
+## Generate .travis.yml
+# pict test.pict | sed 1d | sort -k1,2 | awk '{a[$1"-"$2]=a[$1"-"$2]" "$3}END{for(k in a){print k"    "a[k]}}' | sort -k1,1
+
+## Calculate
 # Normal: 55(environment combination) * 53 (test cases) = 2915 cases
 # Pairwise: 583 cases
