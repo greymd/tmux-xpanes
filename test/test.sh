@@ -521,7 +521,7 @@ tearDown(){
 
 # @test: test_tmux_path_invalid
 # @skip:
-test_tmux_path_invalid() {
+_test_tmux_path_invalid() {
   # Only for TravisCI
   if [ -n "${TRAVIS_BUILD_DIR}" ]; then
     switch_tmux_path 0
@@ -534,7 +534,7 @@ test_tmux_path_invalid() {
 
 # @test: test_normalize_log_directory
 # @skip: 1.8,2.3
-test_normalize_log_directory() {
+_test_normalize_log_directory() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
@@ -621,7 +621,7 @@ test_normalize_log_directory() {
 
 # @test: test_maximum_window_name
 # @skip:
-test_maximum_window_name() {
+_test_maximum_window_name() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _window_name=""
