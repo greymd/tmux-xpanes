@@ -144,8 +144,8 @@ wait_panes_separation() {
           | grep "^${_window_name_prefix}" \
           | head -n 1 \
           | perl -anle 'print $F[$#F]')
-        # printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
-        # tmux -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
+        printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
+        tmux -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
         if ! [ -z "${_window_id}" ]; then
             _pane_num="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}" | grep -c .)"
             # tmux -S "${_socket_file}" list-panes -t "${_window_name}"
