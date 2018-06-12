@@ -713,7 +713,7 @@ test_divide_five_panes_special_chars() {
 
 # @test: test_log_and_empty_arg
 # @skip: 1.8,2.3
-_test_log_and_empty_arg() {
+test_log_and_empty_arg() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
@@ -813,7 +813,7 @@ _test_log_and_empty_arg() {
 
 # @test: test_n_option
 # @skip:
-_test_n_option() {
+test_n_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -867,7 +867,7 @@ _test_n_option() {
 
 # @test: test_n_option_pipe
 # @skip:
-_test_n_option_pipe() {
+test_n_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -919,7 +919,7 @@ _test_n_option_pipe() {
 
 # @test: test_no_args_option
 # @skip:
-_test_no_args_option() {
+test_no_args_option() {
   local _cmd=""
   # Option which requires argument without any arguments
   _cmd="${EXEC} -n"
@@ -955,7 +955,7 @@ _test_no_args_option() {
 
 # @test: test_keep_allow_rename_opt
 # @skip:
-_test_keep_allow_rename_opt() {
+test_keep_allow_rename_opt() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _allow_rename_status=""
