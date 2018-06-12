@@ -521,7 +521,7 @@ tearDown(){
 
 # @test: test_tmux_path_invalid
 # @skip:
-_test_tmux_path_invalid() {
+test_tmux_path_invalid() {
   # Only for TravisCI
   if [ -n "${TRAVIS_BUILD_DIR}" ]; then
     switch_tmux_path 0
