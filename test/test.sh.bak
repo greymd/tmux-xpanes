@@ -1361,7 +1361,7 @@ test_unsupported_version() {
 
 # @test: test_invalid_args
 # @skip:
-_test_invalid_args() {
+test_invalid_args() {
     local _cmd="${EXEC} -Z"
     printf "\\n$ %s\\n" "${_cmd}"
     # execute
@@ -1378,7 +1378,7 @@ _test_invalid_args() {
 
 # @test: test_valid_and_invalid_args
 # @skip:
-_test_valid_and_invalid_args() {
+test_valid_and_invalid_args() {
     local _cmd="${EXEC} -Zc @@@"
     printf "\\n$ %s\\n" "${_cmd}"
     # execute
@@ -1388,7 +1388,7 @@ _test_valid_and_invalid_args() {
 
 # @test: test_invalid_long_args
 # @skip:
-_test_invalid_long_args() {
+test_invalid_long_args() {
     local _cmd="${EXEC} --hogehoge"
     printf "\\n$ %s\\n" "${_cmd}"
     # execute
@@ -1398,7 +1398,7 @@ _test_invalid_long_args() {
 
 # @test: test_no_args
 # @skip:
-_test_no_args() {
+test_no_args() {
     local _cmd="${EXEC}"
     printf "\\n$ %s\\n" "${_cmd}"
     # execute
@@ -1408,7 +1408,7 @@ _test_no_args() {
 
 # @test: test_hyphen_only
 # @skip:
-_test_hyphen_only() {
+test_hyphen_only() {
     local _cmd="${EXEC} --"
     printf "\\n$ %s\\n" "${_cmd}"
     # execute
@@ -1418,7 +1418,7 @@ _test_hyphen_only() {
 
 # @test: test_pipe_without_repstr
 # @skip:
-_test_pipe_without_repstr() {
+test_pipe_without_repstr() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd
     : "In TMUX session" && {
@@ -1439,7 +1439,7 @@ _test_pipe_without_repstr() {
 
 # @test: test_hyphen_and_option1
 # @skip:
-_test_hyphen_and_option1() {
+test_hyphen_and_option1() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
@@ -1481,7 +1481,7 @@ _test_hyphen_and_option1() {
 
 # @test: test_hyphen_and_option2
 # @skip:
-_test_hyphen_and_option2() {
+test_hyphen_and_option2() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
@@ -1523,7 +1523,7 @@ _test_hyphen_and_option2() {
 
 # @test: test_desync_option_1
 # @skip: 1.8
-_test_desync_option_1() {
+test_desync_option_1() {
     # If tmux version is less than 1.9, skip this test.
     if (is_less_than "1.9");then
         echo "Skip this test for $(tmux_version_number)." >&2
@@ -1590,7 +1590,7 @@ _test_desync_option_1() {
 
 # @test: test_desync_option_2
 # @skip: 1.8
-_test_desync_option_2() {
+test_desync_option_2() {
     # This test uses continuous options like '-dI@'
     # If tmux version is less than 1.9, skip this test.
     if (is_less_than "1.9");then
@@ -1657,7 +1657,7 @@ _test_desync_option_2() {
 
 # @test: test_failed_creat_directory
 # @skip:
-_test_failed_creat_directory() {
+test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
     local _cmd="${EXEC} --log=$_log_dir 1 2 3"
     printf "\\n$ %s\\n" "${_cmd}"
@@ -1668,7 +1668,7 @@ _test_failed_creat_directory() {
 
 # @test: test_non_writable_directory
 # @skip:
-_test_non_writable_directory() {
+test_non_writable_directory() {
     local _user=${USER:-$(whoami)}
     echo "USER:$_user"
     if [ "$_user" = "root" ]; then
@@ -1687,14 +1687,14 @@ _test_non_writable_directory() {
 
 # @test: test_insufficient_cmd
 # @skip:
-_test_insufficient_cmd() {
+test_insufficient_cmd() {
     XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
     assertEquals "127" "$?"
 }
 
 # @test: test_version
 # @skip:
-_test_version() {
+test_version() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1729,7 +1729,7 @@ _test_version() {
 
 # @test: test_help
 # @skip:
-_test_help() {
+test_help() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1765,7 +1765,7 @@ _test_help() {
 
 # @test: test_start_separation
 # @skip:
-_test_start_separation() {
+test_start_separation() {
     local _window_name=""
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
@@ -1802,7 +1802,7 @@ _test_start_separation() {
 
 # @test: test_divide_two_panes
 # @skip:
-_test_divide_two_panes() {
+test_divide_two_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1825,7 +1825,7 @@ _test_divide_two_panes() {
 
 # @test: test_divide_three_panes
 # @skip:
-_test_divide_three_panes() {
+test_divide_three_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1848,7 +1848,7 @@ _test_divide_three_panes() {
 
 # @test: test_divide_three_panes_tiled
 # @skip:
-_test_divide_three_panes_tiled() {
+test_divide_three_panes_tiled() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1872,7 +1872,7 @@ _test_divide_three_panes_tiled() {
 
 # @test: test_divide_four_panes
 # @skip:
-_test_divide_four_panes() {
+test_divide_four_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1895,7 +1895,7 @@ _test_divide_four_panes() {
 
 # @test: test_divide_four_panes_pipe
 # @skip:
-_test_divide_four_panes_pipe() {
+test_divide_four_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1919,7 +1919,7 @@ _test_divide_four_panes_pipe() {
 
 # @test: test_divide_five_panes
 # @skip:
-_test_divide_five_panes() {
+test_divide_five_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1942,7 +1942,7 @@ _test_divide_five_panes() {
 
 # @test: test_divide_five_panes_pipe
 # @skip:
-_test_divide_five_panes_pipe() {
+test_divide_five_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
