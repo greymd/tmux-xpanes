@@ -1,1 +1,2 @@
+# failed: test_no_more_options test_divide_five_panes_pipe
 sed -f <(cat test.sh | grep '^test_' | sed -n '1,/test_unsupported_version/p' | grep -oE '^[a-z_]*' | awk NF | awk '{print "s/^"$1"/_"$1"/"}') -i.bak test.sh

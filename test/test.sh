@@ -521,7 +521,7 @@ tearDown(){
 
 # @test: test_tmux_path_invalid
 # @skip:
-_test_tmux_path_invalid() {
+test_tmux_path_invalid() {
   # Only for TravisCI
   if [ -n "${TRAVIS_BUILD_DIR}" ]; then
     switch_tmux_path 0
@@ -534,7 +534,7 @@ _test_tmux_path_invalid() {
 
 # @test: test_normalize_log_directory
 # @skip: 1.8,2.3
-_test_normalize_log_directory() {
+test_normalize_log_directory() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
@@ -621,7 +621,7 @@ _test_normalize_log_directory() {
 
 # @test: test_maximum_window_name
 # @skip:
-_test_maximum_window_name() {
+test_maximum_window_name() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _window_name=""
@@ -641,7 +641,7 @@ _test_maximum_window_name() {
 
 # @test: test_window_name_having_special_chars
 # @skip:
-_test_window_name_having_special_chars() {
+test_window_name_having_special_chars() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -673,7 +673,7 @@ _test_window_name_having_special_chars() {
 
 # @test: test_divide_five_panes_special_chars
 # @skip:
-_test_divide_five_panes_special_chars() {
+test_divide_five_panes_special_chars() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -713,7 +713,7 @@ _test_divide_five_panes_special_chars() {
 
 # @test: test_log_and_empty_arg
 # @skip: 1.8,2.3
-_test_log_and_empty_arg() {
+test_log_and_empty_arg() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
@@ -813,7 +813,7 @@ _test_log_and_empty_arg() {
 
 # @test: test_n_option
 # @skip:
-_test_n_option() {
+test_n_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -867,7 +867,7 @@ _test_n_option() {
 
 # @test: test_n_option_pipe
 # @skip:
-_test_n_option_pipe() {
+test_n_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -919,7 +919,7 @@ _test_n_option_pipe() {
 
 # @test: test_no_args_option
 # @skip:
-_test_no_args_option() {
+test_no_args_option() {
   local _cmd=""
   # Option which requires argument without any arguments
   _cmd="${EXEC} -n"
@@ -955,7 +955,7 @@ _test_no_args_option() {
 
 # @test: test_keep_allow_rename_opt
 # @skip:
-_test_keep_allow_rename_opt() {
+test_keep_allow_rename_opt() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _allow_rename_status=""
@@ -991,7 +991,7 @@ _test_keep_allow_rename_opt() {
 
 # @test: test_no_more_options
 # @skip:
-_test_no_more_options() {
+test_no_more_options() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
     local _tmpdir="${SHUNIT_TMPDIR}"
@@ -1034,7 +1034,7 @@ _test_no_more_options() {
 
 # @test: test_invalid_layout
 # @skip:
-_test_invalid_layout() {
+test_invalid_layout() {
     # Option and arguments are continuous.
     ${EXEC} -lmem 1 2 3
     assertEquals "6" "$?"
@@ -1046,7 +1046,7 @@ _test_invalid_layout() {
 
 # @test: test_invalid_layout_pipe
 # @skip:
-_test_invalid_layout_pipe() {
+test_invalid_layout_pipe() {
     # Option and arguments are continuous.
     echo 1 2 3 | ${EXEC} -lmem
     assertEquals "6" "$?"
@@ -1059,7 +1059,7 @@ _test_invalid_layout_pipe() {
 
 # @test: test_divide_two_panes_ev
 # @skip:
-_test_divide_two_panes_ev() {
+test_divide_two_panes_ev() {
     # divide window into two panes even-vertically
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd
@@ -1101,7 +1101,7 @@ _test_divide_two_panes_ev() {
 
 # @test: test_divide_two_panes_eh
 # @skip:
-_test_divide_two_panes_eh() {
+test_divide_two_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1142,7 +1142,7 @@ _test_divide_two_panes_eh() {
 
 # @test: test_divide_three_panes_ev
 # @skip:
-_test_divide_three_panes_ev() {
+test_divide_three_panes_ev() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1181,7 +1181,7 @@ _test_divide_three_panes_ev() {
 
 # @test: test_divide_three_panes_eh
 # @skip:
-_test_divide_three_panes_eh() {
+test_divide_three_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1221,7 +1221,7 @@ _test_divide_three_panes_eh() {
 
 # @test: test_append_arg_to_utility_pipe
 # @skip:
-_test_append_arg_to_utility_pipe() {
+test_append_arg_to_utility_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1266,7 +1266,7 @@ _test_append_arg_to_utility_pipe() {
 
 # @test: test_execute_option
 # @skip:
-_test_execute_option() {
+test_execute_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1305,7 +1305,7 @@ _test_execute_option() {
 
 # @test: test_execute_option_pipe
 # @skip:
-_test_execute_option_pipe() {
+test_execute_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
     local _cmd=""
 
@@ -1347,14 +1347,14 @@ _test_execute_option_pipe() {
 
 # @test: test_argument_and_utility_pipe
 # @skip:
-_test_argument_and_utility_pipe() {
+test_argument_and_utility_pipe() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
     assertEquals "4" "$?"
 }
 
 # @test: test_unsupported_version
 # @skip:
-_test_unsupported_version() {
+test_unsupported_version() {
     XP_HOST_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
     assertEquals "0" "$?"
 }
