@@ -1,11 +1,6 @@
 shell:bash-4.0,bash-4.1,bash-4.2,bash-4.3,bash-4.4
 tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7
-Feature1:-h,--help,-V,--version,-a,-c,-d,--desync,-e,-I,-l,-n,-S,-t,--log,--log[=<directory>],--log-format=<FORMAT>,--stay
-Feature2:-h,--help,-V,--version,-a,-c,-d,--desync,-e,-I,-l,-n,-S,-t,--log,--log[=<directory>],--log-format=<FORMAT>,--stay,none
-Modes:NormalMode1,NormalMode2,PipeMode
+case:test_tmux_path_invalid,test_normalize_log_directory,test_maximum_window_name,test_window_name_having_special_chars,test_divide_five_panes_special_chars,test_log_and_empty_arg,test_n_option,test_n_option_pipe,test_no_args_option,test_keep_allow_rename_opt,test_no_more_options,test_invalid_layout,test_invalid_layout_pipe,test_divide_two_panes_ev,test_divide_two_panes_eh,test_divide_three_panes_ev,test_divide_three_panes_eh,test_append_arg_to_utility_pipe,test_execute_option,test_execute_option_pipe,test_argument_and_utility_pipe,test_unsupported_version,test_invalid_args,test_valid_and_invalid_args,test_invalid_long_args,test_no_args,test_hyphen_only,test_pipe_without_repstr,test_hyphen_and_option1,test_hyphen_and_option2,test_desync_option_1,test_desync_option_2,test_failed_creat_directory,test_non_writable_directory,test_insufficient_cmd,test_version,test_help,test_start_separation,test_divide_two_panes,test_divide_three_panes,test_divide_three_panes_tiled,test_divide_four_panes,test_divide_four_panes_pipe,test_divide_five_panes,test_divide_five_panes_pipe,test_command_option,test_repstr_command_option,test_repstr_command_option_pipe,test_log_option,test_log_format_option,test_log_format_option2,test_log_format_and_desync_option,test_log_format_and_desync_option_pipe
 
-if [Feature1] = "-h"
-or  [Feature1] = "-v"
-or  [Feature1] = "--help"
-or  [Feature1] = "--version"
-then [Feature2] = "none";
+# Normal: 55(environment combination) * 53 (test cases) = 2915 cases
+# Pairwise: 583 cases
