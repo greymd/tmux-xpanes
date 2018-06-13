@@ -34,4 +34,4 @@ IF[case] = 53 THEN [tmux] <> "2.3";
 
 ## Calculate
 # Normal: 55(environment combination) * 53 (test cases) = 2915 cases
-# Pairwise: 583 cases
+# Pairwise: 568 cases

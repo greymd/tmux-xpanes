@@ -818,7 +818,7 @@ $ git clone --recursive https://github.com/greymd/tmux-xpanes.git
 $ cd tmux-xpanes
 
 ## Run
-$ bash test/test.sh
+$ bash test/cases_smoke.sh
 
 ## => Testing will start ...
 ```

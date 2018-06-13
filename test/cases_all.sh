@@ -144,11 +144,11 @@ wait_panes_separation() {
           | grep "^${_window_name_prefix}" \
           | head -n 1 \
           | perl -anle 'print $F[$#F]')
-        printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
-        ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
-        printf "_window_id:[%s]\\n" "${_window_id}"
+        # printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
+        # ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
+        # printf "_window_id:[%s]\\n" "${_window_id}"
         if [ -n "${_window_id}" ]; then
-            ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}"
+            # ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}"
             _pane_num="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}" | grep -c .)"
             # tmux -S "${_socket_file}" list-panes -t "${_window_name}"
             if [ "${_pane_num}" = "${_expected_pane_num}" ]; then
@@ -2574,7 +2574,7 @@ if [ -n "$BASH_VERSION" ]; then
 fi
 
 if [ -n "$TMUX" ]; then
- echo "[Error] Do not execute this test inside of TMUX session." >&2
+ echo "[Error] Do NOT execute this test inside of TMUX session." >&2
  exit 1
 fi
 
