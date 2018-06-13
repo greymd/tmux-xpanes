@@ -1964,597 +1964,597 @@ test_divide_five_panes_pipe() {
     }
 }
 
-## # @test: test_command_option
-## # @skip:
-## test_command_option() {
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-## 
-##     _cmd="${EXEC} -S \"$_socket_file\" -c 'seq {} > ${_tmpdir}/{}.result' --stay 3 4 5"
-##     printf "\\n$ %s\\n" "${_cmd}"
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "3" "3"
-##     wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
-##     diff "${_tmpdir}/3.result" <(seq 3)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/4.result" <(seq 4)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/5.result" <(seq 5)
-##     assertEquals 0 $?
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_tmpdir}"/*.result
-## 
-##     : "In TMUX session" && {
-##         printf "\\nTMUX(%s)\\n" "${_cmd}"
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "3" "3"
-##         wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
-##         diff "${_tmpdir}/3.result" <(seq 3)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/4.result" <(seq 4)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/5.result" <(seq 5)
-##         assertEquals 0 $?
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_tmpdir}"/*.result
-##     }
-## }
-## 
-## # @test: test_repstr_command_option
-## # @skip:
-## test_repstr_command_option() {
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-## 
-##     _cmd="${EXEC} -I@ -S \"$_socket_file\" -c \"seq @ > ${_tmpdir}/@.result\" --stay 3 4 5 6"
-##     printf "\\n$ %s\\n" "${_cmd}"
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "3" "4"
-##     wait_all_files_creation "${_tmpdir}"/{3,4,5,6}.result
-##     diff "${_tmpdir}/3.result" <(seq 3)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/4.result" <(seq 4)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/5.result" <(seq 5)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/6.result" <(seq 6)
-##     assertEquals 0 $?
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_tmpdir}"/*.result
-## 
-##     : "In TMUX session" && {
-##         printf "\\nTMUX(%s)\\n" "${_cmd}"
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "3" "4"
-##         wait_all_files_creation "${_tmpdir}"/{3,4,5,6}.result
-##         diff "${_tmpdir}/3.result" <(seq 3)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/4.result" <(seq 4)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/5.result" <(seq 5)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/6.result" <(seq 6)
-##         assertEquals 0 $?
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_tmpdir}"/*.result
-##     }
-## }
-## 
-## # @test: test_repstr_command_option_pipe
-## # @skip:
-## test_repstr_command_option_pipe() {
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-## 
-##     _cmd="${EXEC} -I GE -S \"$_socket_file\" -c\"seq GE 10 | tail > ${_tmpdir}/GE.result\" --stay 3 4 5"
-##     printf "\\n$ %s\\n" "${_cmd}"
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "3" "3"
-##     wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
-##     diff "${_tmpdir}/3.result" <(seq 3 10 | tail)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/4.result" <(seq 4 10 | tail)
-##     assertEquals 0 $?
-##     diff "${_tmpdir}/5.result" <(seq 5 10 | tail)
-##     assertEquals 0 $?
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_tmpdir}"/*.result
-## 
-##     : "In TMUX session" && {
-##         printf "\\nTMUX(%s)\\n" "${_cmd}"
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "3" "3"
-##         wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
-##         diff "${_tmpdir}/3.result" <(seq 3 10 | tail)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/4.result" <(seq 4 10 | tail)
-##         assertEquals 0 $?
-##         diff "${_tmpdir}/5.result" <(seq 5 10 | tail)
-##         assertEquals 0 $?
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_tmpdir}"/*.result
-##     }
-## }
-## 
-## # @test: test_log_option
-## # @skip: 1.8,2.3
-## test_log_option() {
-##     if [ "$(tmux_version_number)" == "1.8" ] ;then
-##         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
-##         echo "Because of following reasons." >&2
-##         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
-##         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
-##         echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
-##         return 0
-##     fi
-##     if [[ "$(tmux_version_number)" == "2.3" ]];then
-##         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
-##         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-##         return 0
-##     fi
-## 
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _log_file=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-##     mkdir -p "${_tmpdir}/fin"
-## 
-##     _cmd="XP_LOG_DIR=\"${_tmpdir}/logs\" ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
-##     printf "\\n$ %s\\n" "${_cmd}"
-##     # Execute command (slightly different)
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "AAAA" "3"
-##     wait_existing_file_number "${_tmpdir}/fin" "2"
-## 
-##     # Wait several seconds just in case.
-##     sleep 3
-##     printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
-##     assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_tmpdir}"/logs/*
-##     rmdir "${_tmpdir}"/logs
-##     rm -f "${_tmpdir}"/fin/*
-##     rmdir "${_tmpdir}"/fin
-## 
-##     : "In TMUX session" && {
-##         printf "\\nTMUX(%s)\\n" "${_cmd}"
-##         mkdir -p "${_tmpdir}/fin"
-## 
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "AAAA" "3"
-##         wait_existing_file_number "${_tmpdir}/fin" "2"
-## 
-##         # Wait several seconds just in case.
-##         sleep 3
-##         printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
-##         assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##         close_tmux_session "$_socket_file"
-## 
-##         rm -f "${_tmpdir}"/logs/*
-##         rmdir "${_tmpdir}"/logs
-##         rm -f "${_tmpdir}"/fin/*
-##         rmdir "${_tmpdir}"/fin
-##     }
-## }
-## 
-## # @test: test_log_format_option
-## # @skip: 1.8,2.3
-## test_log_format_option() {
-##     if [ "$(tmux_version_number)" == "1.8" ] ;then
-##         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
-##         echo "Because of following reasons." >&2
-##         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
-##         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
-##         echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
-##         return 0
-##     fi
-##     if [[ "$(tmux_version_number)" == "2.3" ]];then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-##         return 0
-##     fi
-## 
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _log_file=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-##     local _logdir="${_tmpdir}/hoge"
-##     local _year
-##     _year="$(date +%Y)"
-##     mkdir -p "${_tmpdir}/fin"
-## 
-##     _cmd="${EXEC} --log=\"${_logdir}\" --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
-##     echo $'\n'" $ $_cmd"$'\n'
-##     # Execute command
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "AAAA" "4"
-##     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##     # Wait several seconds just in case.
-##     sleep 3
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_logdir}"/*
-##     rmdir "${_logdir}"
-##     rm -f "${_tmpdir}"/fin/*
-##     rmdir "${_tmpdir}"/fin
-## 
-##     : "In TMUX session" && {
-##         echo $'\n'" $ TMUX($_cmd)"$'\n'
-##         mkdir -p "${_tmpdir}/fin"
-## 
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "AAAA" "4"
-##         wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##         # Wait several seconds just in case.
-##         sleep 3
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_logdir}"/*
-##         rmdir "${_logdir}"
-##         rm -f "${_tmpdir}"/fin/*
-##         rmdir "${_tmpdir}"/fin
-##     }
-## }
-## 
-## # @test: test_log_format_option2
-## # @skip: 1.8,2.3
-## test_log_format_option2() {
-##     if [ "$(tmux_version_number)" == "1.8" ] ;then
-##         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
-##         echo "Because of following reasons." >&2
-##         echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
-##         echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
-##         echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
-##         return 0
-##     fi
-##     if [[ "$(tmux_version_number)" == "2.3" ]];then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-##         return 0
-##     fi
-## 
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _log_file=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-##     local _logdir="${_tmpdir}/hoge"
-##     local _year
-##     mkdir -p "${_tmpdir}/fin"
-##     _year="$(date +%Y)"
-## 
-##     # Remove single quotation for --log-format.
-##     _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
-##     echo $'\n'" $ $_cmd"$'\n'
-##     # Execute command
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "AAAA" "4"
-##     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##     # Wait several seconds just in case.
-##     sleep 3
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_logdir}"/*
-##     rmdir "${_logdir}"
-##     rm -f "${_tmpdir}"/fin/*
-##     rmdir "${_tmpdir}"/fin
-## 
-##     : "In TMUX session" && {
-##         echo $'\n'" $ TMUX($_cmd)"$'\n'
-##         mkdir -p "${_tmpdir}/fin"
-## 
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "AAAA" "4"
-##         wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##         # Wait several seconds just in case.
-##         sleep 3
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_logdir}"/*
-##         rmdir "${_logdir}"
-##         rm -f "${_tmpdir}"/fin/*
-##         rmdir "${_tmpdir}"/fin
-##     }
-## }
-## 
-## # @test: test_log_format_and_desync_option
-## # @skip: 1.8,2.3
-## test_log_format_and_desync_option() {
-##     if (is_less_than "1.9");then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-##         echo '"#{pane_synchronnized}" is not yet implemented.' >&2
-##         echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
-##         return 0
-##     fi
-## 
-##     if [[ "$(tmux_version_number)" == "2.3" ]];then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-##         return 0
-##     fi
-## 
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _log_file=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-##     local _logdir="${_tmpdir}/hoge"
-##     local _year
-##     _year="$(date +%Y)"
-##     mkdir -p "${_tmpdir}/fin"
-## 
-##     # Remove single quotation for --log-format.
-##     _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
-##     echo $'\n'" $ $_cmd"$'\n'
-##     # Execute command
-##     eval "$_cmd"
-##     wait_panes_separation "$_socket_file" "AAAA" "4"
-##     wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##     # Wait several seconds just in case.
-##     sleep 3
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##     assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##     printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##     assertEquals 0 $?
-##     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##     # Check synchronized or not
-##     echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-##     ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
-##     assertEquals 1 $?
-## 
-##     close_tmux_session "$_socket_file"
-##     rm -f "${_logdir}"/*
-##     rmdir "${_logdir}"
-##     rm -f "${_tmpdir}"/fin/*
-##     rmdir "${_tmpdir}"/fin
-## 
-##     : "In TMUX session" && {
-##         echo $'\n'" $ TMUX($_cmd)"$'\n'
-##         mkdir -p "${_tmpdir}/fin"
-## 
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "AAAA" "4"
-##         wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##         # Wait several seconds just in case.
-##         sleep 3
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##         # Check synchronized or not
-##         echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-##         ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
-##         assertEquals 1 $?
-## 
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_logdir}"/*
-##         rmdir "${_logdir}"
-##         rm -f "${_tmpdir}"/fin/*
-##         rmdir "${_tmpdir}"/fin
-##     }
-## }
-## 
-## # @test: test_log_format_and_desync_option_pipe
-## # @skip: 1.8,2.3
-## test_log_format_and_desync_option_pipe() {
-##     if (is_less_than "1.9");then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-##         echo '"#{pane_synchronnized}" is not yet implemented.' >&2
-##         echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
-##         return 0
-##     fi
-## 
-##     if [[ "$(tmux_version_number)" == "2.3" ]];then
-##         echo "Skip this test for $(tmux_version_number)." >&2
-##         echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-##         return 0
-##     fi
-## 
-##     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-##     local _cmd=""
-##     local _log_file=""
-##     local _tmpdir="${SHUNIT_TMPDIR}"
-##     local _logdir="${_tmpdir}/hoge"
-##     local _year
-##     _year="$(date +%Y)"
-##     mkdir -p "${_tmpdir}/fin"
-## 
-##     # Remove single quotation for --log-format.
-##     _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
-## 
-##     # pipe mode only works in the tmux session
-##     : "In TMUX session" && {
-##         echo $'\n'" $ TMUX($_cmd)"$'\n'
-##         mkdir -p "${_tmpdir}/fin"
-## 
-##         create_tmux_session "$_socket_file"
-##         exec_tmux_session "$_socket_file" "$_cmd"
-##         wait_panes_separation "$_socket_file" "AAAA" "4"
-##         wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
-## 
-##         # Wait several seconds just in case.
-##         sleep 3
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
-##         assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-## 
-##         printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-##         assertEquals 0 $?
-##         _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-##         assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-## 
-##         # Check synchronized or not
-##         echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
-##         ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
-##         assertEquals 1 $?
-## 
-##         close_tmux_session "$_socket_file"
-##         rm -f "${_logdir}"/*
-##         rmdir "${_logdir}"
-##         rm -f "${_tmpdir}"/fin/*
-##         rmdir "${_tmpdir}"/fin
-##     }
-## }
+# @test: test_command_option
+# @skip:
+test_command_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -S \"$_socket_file\" -c 'seq {} > ${_tmpdir}/{}.result' --stay 3 4 5"
+    printf "\\n$ %s\\n" "${_cmd}"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "3" "3"
+    wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
+    diff "${_tmpdir}/3.result" <(seq 3)
+    assertEquals 0 $?
+    diff "${_tmpdir}/4.result" <(seq 4)
+    assertEquals 0 $?
+    diff "${_tmpdir}/5.result" <(seq 5)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*.result
+
+    : "In TMUX session" && {
+        printf "\\nTMUX(%s)\\n" "${_cmd}"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "3" "3"
+        wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
+        diff "${_tmpdir}/3.result" <(seq 3)
+        assertEquals 0 $?
+        diff "${_tmpdir}/4.result" <(seq 4)
+        assertEquals 0 $?
+        diff "${_tmpdir}/5.result" <(seq 5)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/*.result
+    }
+}
+
+# @test: test_repstr_command_option
+# @skip:
+test_repstr_command_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I@ -S \"$_socket_file\" -c \"seq @ > ${_tmpdir}/@.result\" --stay 3 4 5 6"
+    printf "\\n$ %s\\n" "${_cmd}"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "3" "4"
+    wait_all_files_creation "${_tmpdir}"/{3,4,5,6}.result
+    diff "${_tmpdir}/3.result" <(seq 3)
+    assertEquals 0 $?
+    diff "${_tmpdir}/4.result" <(seq 4)
+    assertEquals 0 $?
+    diff "${_tmpdir}/5.result" <(seq 5)
+    assertEquals 0 $?
+    diff "${_tmpdir}/6.result" <(seq 6)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*.result
+
+    : "In TMUX session" && {
+        printf "\\nTMUX(%s)\\n" "${_cmd}"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "3" "4"
+        wait_all_files_creation "${_tmpdir}"/{3,4,5,6}.result
+        diff "${_tmpdir}/3.result" <(seq 3)
+        assertEquals 0 $?
+        diff "${_tmpdir}/4.result" <(seq 4)
+        assertEquals 0 $?
+        diff "${_tmpdir}/5.result" <(seq 5)
+        assertEquals 0 $?
+        diff "${_tmpdir}/6.result" <(seq 6)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/*.result
+    }
+}
+
+# @test: test_repstr_command_option_pipe
+# @skip:
+test_repstr_command_option_pipe() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd
+    local _tmpdir="${SHUNIT_TMPDIR}"
+
+    _cmd="${EXEC} -I GE -S \"$_socket_file\" -c\"seq GE 10 | tail > ${_tmpdir}/GE.result\" --stay 3 4 5"
+    printf "\\n$ %s\\n" "${_cmd}"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "3" "3"
+    wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
+    diff "${_tmpdir}/3.result" <(seq 3 10 | tail)
+    assertEquals 0 $?
+    diff "${_tmpdir}/4.result" <(seq 4 10 | tail)
+    assertEquals 0 $?
+    diff "${_tmpdir}/5.result" <(seq 5 10 | tail)
+    assertEquals 0 $?
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*.result
+
+    : "In TMUX session" && {
+        printf "\\nTMUX(%s)\\n" "${_cmd}"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "3" "3"
+        wait_all_files_creation "${_tmpdir}"/{3,4,5}.result
+        diff "${_tmpdir}/3.result" <(seq 3 10 | tail)
+        assertEquals 0 $?
+        diff "${_tmpdir}/4.result" <(seq 4 10 | tail)
+        assertEquals 0 $?
+        diff "${_tmpdir}/5.result" <(seq 5 10 | tail)
+        assertEquals 0 $?
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/*.result
+    }
+}
+
+# @test: test_log_option
+# @skip: 1.8,2.3
+test_log_option() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="XP_LOG_DIR=\"${_tmpdir}/logs\" ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
+    printf "\\n$ %s\\n" "${_cmd}"
+    # Execute command (slightly different)
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "2"
+
+    # Wait several seconds just in case.
+    sleep 3
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/logs/*
+    rmdir "${_tmpdir}"/logs
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        printf "\\nTMUX(%s)\\n" "${_cmd}"
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        wait_existing_file_number "${_tmpdir}/fin" "2"
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-1\.log\..*$')
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'AAAA-2\.log\..*$')
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$'
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_tmpdir}"/logs/* | grep -E 'BBBB-1\.log\..*$')
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+
+        rm -f "${_tmpdir}"/logs/*
+        rmdir "${_tmpdir}"/logs
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @test: test_log_format_option
+# @skip: 1.8,2.3
+test_log_format_option() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="${EXEC} --log=\"${_logdir}\" --log-format='[:ARG:]_%Y_[:ARG:]' -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    # Wait several seconds just in case.
+    sleep 3
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_logdir}"/*
+    rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @test: test_log_format_option2
+# @skip: 1.8,2.3
+test_log_format_option2() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    mkdir -p "${_tmpdir}/fin"
+    _year="$(date +%Y)"
+
+    # Remove single quotation for --log-format.
+    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    # Wait several seconds just in case.
+    sleep 3
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_logdir}"/*
+    rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @test: test_log_format_and_desync_option
+# @skip: 1.8,2.3
+test_log_format_and_desync_option() {
+    if (is_less_than "1.9");then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # Remove single quotation for --log-format.
+    _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    # Wait several seconds just in case.
+    sleep 3
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+    # Check synchronized or not
+    echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+    ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+    assertEquals 1 $?
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_logdir}"/*
+    rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        # Check synchronized or not
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        assertEquals 1 $?
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @test: test_log_format_and_desync_option_pipe
+# @skip: 1.8,2.3
+test_log_format_and_desync_option_pipe() {
+    if (is_less_than "1.9");then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # Remove single quotation for --log-format.
+    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
+
+    # pipe mode only works in the tmux session
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        # Check synchronized or not
+        echo "${TMUX_EXEC} -S $_socket_file list-windows -F '#{pane_synchronized}' | grep -q '^1$'"
+        ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{pane_synchronized}' | grep -q '^1$'
+        assertEquals 1 $?
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
 
 # TODO : test with logging + empty string argument
 
