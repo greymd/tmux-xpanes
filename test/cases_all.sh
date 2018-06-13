@@ -2713,7 +2713,8 @@ test_a_option() {
     }
 }
 
-# TODO : test for -a, -e and -l options
+# TODO : test for -a, -e, -l and pipe mode
+# TODO : test -t options
 # TODO : test with logging + empty string argument
 
 ###:-:-:END_TESTING:-:-:###
