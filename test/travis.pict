@@ -1,3 +1,8 @@
+## Generate test cases in .travis.yml
+## 1. Install pict https://github.com/Microsoft/pict
+## 2. Execute following commands on Bash
+## $ pict travis.pict | sed 1d | sort -k1,2 -k3n | awk '{a[$1" "$2]=a[$1" "$2]" "$3}END{for(k in a){print k"    "a[k]}}' | sort -k1,1 | perl -anle 'print "- os: linux\n  env: SH=bash SH_VERSION=$F[0] TMUX_VERSION=$F[1] CASES=@{[join \",\", @F[2..$#F]]}"' | sed 's/^/        /'
+
 bash:4.0,4.1,4.2,4.3,4.4
 tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7
 
@@ -24,10 +29,6 @@ IF[case] = 52 THEN [tmux] <> "1.8";
 IF[case] = 52 THEN [tmux] <> "2.3";
 IF[case] = 53 THEN [tmux] <> "1.8";
 IF[case] = 53 THEN [tmux] <> "2.3";
-
-
-## Generate .travis.yml
-# pict test.pict | sed 1d | sort -k1,2 -k3n | awk '{a[$1" "$2]=a[$1" "$2]" "$3}END{for(k in a){print k"    "a[k]}}' | sort -k1,1 | perl -anle 'print "- os: linux\n  env: SH=bash SH_VERSION=$F[0] TMUX_VERSION=$F[1] CASES=@{[join \",\", @F[2..$#F]]}"' | sed 's/^/        /'
 
 ## Assign sequential number to the case
 # perl -i -ple 'BEGIN{my $num=0}; s/\@case: .*$/\@case: @{[++$num]}/;' cases_all.sh
