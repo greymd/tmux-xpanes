@@ -807,17 +807,20 @@ Please check out the [CONTRIBUTING](CONTRIBUTING.md) about how to proceed.
 
 Please note the following points before running the test.
 
-* Prepare [shunit2](https://github.com/kward/shunit2).
-* Run it from **outside of tmux session.**
+* Run it from **outside of tmux session**
+* Set `allow-rename` option **off**
 
 Follow this.
 
 ```sh
-## Clone repository together with shunit2.
+## Clone repository together with shunit2 (kward/shunit2).
 $ git clone --recursive https://github.com/greymd/tmux-xpanes.git
 $ cd tmux-xpanes
 
-## Run
+## Disable allow-rename
+$ echo 'set-window-option -g allow-rename off' >> ~/.tmux.conf
+
+## Run smoke test
 $ bash test/cases_smoke.sh
 
 ## => Testing will start ...
