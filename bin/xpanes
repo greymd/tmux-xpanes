@@ -29,7 +29,7 @@ readonly XP_ELOGDIR=20
 readonly XP_ELOGWRITE=21
 
 # User's intentional exit is 3x
-## User exit the process by following warning message.
+## User exit the process intentionally by following warning message.
 readonly XP_EINTENT=30
 
 # Necessary commands are not found
@@ -626,10 +626,16 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
-# Execute from outside of tmux session
+# Execute from Normal mode1
 xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
+
+  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+    xpns_msg "Error" "'-a' must be used within the running tmux session."
+    exit ${XP_EINVAL}
+  fi
+
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
   local _def_allow_rename=
@@ -642,7 +648,7 @@ xpns_pre_execution() {
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
-  # Is there is any options, escape them.
+  # If there is any options, escape them.
   if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
@@ -737,6 +743,8 @@ xpns_execution() {
   fi
 
   # Set pane titles for each pane.
+  # The reason why 'if' statement is not here is
+  # author believes setting title will be default feature in the future.
   xpns_set_titles \
     "${_window_name}" \
     "${_pane_base_index}" \
@@ -775,10 +783,13 @@ xpns_execution() {
       pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
   fi
 
-  # Restore original window name.
-  ${TMUX_XPANES_EXEC} \
-    rename-window -t "${_window_name}" \
-    "$(echo "${_window_name}" | xpns_key2value)"
+  # In case of -a, keep the original window name
+  if [[ ${XP_OPT_APPEND} -eq 0 ]];then
+    # Restore original window name.
+    ${TMUX_XPANES_EXEC} \
+      rename-window -t "${_window_name}" \
+      "$(echo "${_window_name}" | xpns_key2value)"
+  fi
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 }
@@ -798,12 +809,12 @@ xpns_switch_pipe_mode() {
   if [[ -z "${TMUX-}" ]]; then
     xpns_msg "Warning" "Attached session is required for 'Pipe mode'."
     # This condition is used when the following situations.
-    #   * Executed outside of tmux session
+    #   * Enter from outside of tmux session(Normal mode1)
     #   * Pipe mode.
     #   * -n option.
     #
     # For example:
-    #     (outside of tmux session)$ echo {a..g} | ./xpanes -n 2
+    #     (Normal mode1)$ echo {a..g} | ./xpanes -n 2
     # => This will once create the new window like this.
     #     (inside of tmux session)$ ./xpanes '-n' '2' 'a' 'b' 'c' 'd' 'e' 'f' 'g'
     #     => After the window is closed, following panes would be left.
