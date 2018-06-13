@@ -534,7 +534,7 @@ test_tmux_path_invalid() {
 
 # @test: test_normalize_log_directory
 # @skip: 1.8,2.3
-_test_normalize_log_directory() {
+test_normalize_log_directory() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
         echo "Because of following reasons." >&2
@@ -553,11 +553,14 @@ _test_normalize_log_directory() {
     local _cmd=""
     local _log_file=""
     local _tmpdir="${SHUNIT_TMPDIR}"
-    mkdir -p "${_tmpdir}/fin"
+    local _homebak="${HOME}"
 
+    mkdir -p "${_tmpdir}/fin"
     _cmd="export HOME=${_tmpdir}; ${EXEC} --log=~/logs/ -I@ -S ${_socket_file} -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ &&touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
     printf "\\n%s\\n" "$ ${_cmd}"
     eval "${_cmd}"
+    # Restore home
+    export HOME="${_homebak}"
     wait_panes_separation "${_socket_file}" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "2"
 
