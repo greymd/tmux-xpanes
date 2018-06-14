@@ -2597,7 +2597,7 @@ test_a_option_abort() {
 
 # @case: 55
 # @skip:
-test_a_option() {
+test_a_option_with_log() {
     if (is_less_than "1.9");then
         echo "Skip this test for $(tmux_version_number)." >&2
         echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
@@ -2713,8 +2713,85 @@ test_a_option() {
     }
 }
 
-# TODO : test for -a, -e, -l and pipe mode
-# TODO : test -t options
+# @case: 56
+# @skip:
+test_a_option_with_pipe() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # Remove single quotation for --log-format.
+    _cmd="echo AAAA | ${EXEC} -d -S $_socket_file -c \"echo {} > ${_tmpdir}/fin/{}\""
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "1"
+
+    # Append two more panes with log setting
+    _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -ae -lev -S $_socket_file"
+    echo $'\n'" $ $_cmd"$'\n'
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "3"
+    divide_three_panes_ev_impl "$_socket_file"
+
+    # Wait several seconds just in case.
+    sleep 3
+    assertEquals "BBBB" "$(cat "${_tmpdir}/fin/BBBB")"
+    assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        _cmd="echo AAAA | ${EXEC} -d -S $_socket_file -c \"echo {} > ${_tmpdir}/fin/{}\""
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "1"
+        wait_existing_file_number "${_tmpdir}/fin" "1"
+
+        # Append two more panes with log setting
+        _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -a -S $_socket_file -l eh -e"
+        exec_tmux_session "$_socket_file" "$_cmd"
+
+        wait_panes_separation "$_socket_file" "AAAA" "3"
+        wait_existing_file_number "${_tmpdir}/fin" "3"
+        divide_three_panes_eh_impl "$_socket_file"
+
+        # Wait several seconds just in case.
+        sleep 3
+        assertEquals "BBBB" "$(cat "${_tmpdir}/fin/BBBB")"
+        assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# TODO : test -t options (for newer tmux)
+
+## # @case: 57
+## # @skip:
+## test_t_option() {
+## }
+## 
+## ## tmux -S ~/.cache/xpanes/socket list-panes -F '#{pane_title}'
+## # @case: 58
+## # @skip:
+## test_t_option() {
+## }
+
+# TODO : test -t options (for older tmux)
+
 # TODO : test with logging + empty string argument
 
 ###:-:-:END_TESTING:-:-:###
