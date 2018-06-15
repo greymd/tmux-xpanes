@@ -162,7 +162,7 @@ wait_panes_separation() {
         fi
         # Still not separated.
         if [ "${i}" -eq "${_wait_seconds}" ]; then
-            echo "wait_panes_separation: Too long time for window separation. Aborted." >&2
+            fail "wait_panes_separation: Too long time for window separation. Aborted." >&2
             return 1
         fi
     done
@@ -686,7 +686,7 @@ test_divide_five_panes_special_chars() {
     _cmd="${EXEC} -S $_socket_file --stay '%s' '%d' ':' '-' ''"
     printf "\\n $ %s\\n" "$_cmd"
     eval "$_cmd"
-    wait_panes_separation "$_socket_file" '2573' '5' ## 2573 is hex of "%s"
+    wait_panes_separation "$_socket_file" '%s' '5'
     divide_five_panes_impl "$_socket_file"
     close_tmux_session "$_socket_file"
 
@@ -702,7 +702,7 @@ test_divide_five_panes_special_chars() {
         printf "\\n $ TMUX(%s)\\n" "$_cmd"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" '2573' '5' ## 2573 is hex of "%s"
+        wait_panes_separation "$_socket_file" '%s' '5'
         divide_five_panes_impl "$_socket_file"
         close_tmux_session "$_socket_file"
 
@@ -1453,7 +1453,7 @@ test_hyphen_and_option1() {
     _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
     printf "\\n$ %s\\n" "${_cmd}"
     ${EXEC} -I@ -S "${_socket_file}" -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
-    wait_panes_separation "$_socket_file" "2d6c" "4" ## "2d6c" is "-l" in hex
+    wait_panes_separation "$_socket_file" "-l" "4"
     wait_all_files_creation "${_tmpdir}"/{-l,-V,-h,-Z}.result
     diff "${_tmpdir}/-l.result" <(cat <<<-l)
     assertEquals 0 $?
@@ -1470,7 +1470,7 @@ test_hyphen_and_option1() {
         printf "\\nTMUX(%s)\\n" "${_cmd}"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "2d6c" "4"
+        wait_panes_separation "$_socket_file" "-l" "4"
         wait_all_files_creation "${_tmpdir}"/{-l,-V,-h,-Z}.result
         diff "${_tmpdir}/-l.result" <(cat <<<-l)
         assertEquals 0 $?
@@ -1495,7 +1495,7 @@ test_hyphen_and_option2() {
     _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -- AA --Z BB"
     printf "\\n$ %s\\n" "${_cmd}"
     ${EXEC} -I@ -S "${_socket_file}" -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -- AA --Z BB
-    wait_panes_separation "$_socket_file" "2d2d" "4"
+    wait_panes_separation "$_socket_file" "--" "4"
     wait_all_files_creation "${_tmpdir}"/{--,AA,--Z,BB}.result
     diff "${_tmpdir}/--.result" <(cat <<<--)
     assertEquals 0 $?
@@ -1512,7 +1512,7 @@ test_hyphen_and_option2() {
         printf "\\nTMUX(%s)\\n" "${_cmd}"
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "2d2d" "4"
+        wait_panes_separation "$_socket_file" "--" "4"
         wait_all_files_creation "${_tmpdir}"/{--,AA,--Z,BB}.result
         diff "${_tmpdir}/--.result" <(cat <<<--)
         assertEquals 0 $?
@@ -2562,6 +2562,70 @@ test_log_format_and_desync_option_pipe() {
     }
 }
 
+# @case: 53
+# @skip: 1.8,2.3
+test_log_format_empty() {
+    if (is_less_than "1.9");then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
+        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+        return 0
+    fi
+
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # Remove single quotation for --log-format.
+    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' BBBB CCCC"
+
+    # pipe mode only works in the tmux session
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "EMPTY" "3"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # '' BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E -- "-1_${_year}_-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E -- "-1_${_year}_-1$")
+        assertEquals 1 "$(grep -ac 'GEGE__' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
 # @case: 54
 # @skip:
 test_a_option_abort() {
@@ -2777,20 +2841,132 @@ test_a_option_with_pipe() {
     }
 }
 
-# TODO : test -t options (for newer tmux)
+# @case: 57
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
+test_t_and_a_option() {
 
-## # @case: 57
-## # @skip:
-## test_t_option() {
-## }
-## 
-## ## tmux -S ~/.cache/xpanes/socket list-panes -F '#{pane_title}'
-## # @case: 58
-## # @skip:
-## test_t_option() {
-## }
+    if (is_less_than "2.3");then
+        echo "This test is better to be executed for $(tmux_version_number)." >&2
+        echo 'Because -t option and "#{pane_title}" is not supported for this version.' >&2
+        startSkipping
+    fi
 
-# TODO : test -t options (for older tmux)
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="${EXEC} -t -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+    echo $'\n'" $ $_cmd"$'\n'
+    eval "$_cmd"
+
+    wait_panes_separation "$_socket_file" "AAAA" "2"
+    wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
+
+    assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
+
+    # Append two more panes with log setting
+    _cmd="${EXEC} -a -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
+    divide_four_panes_impl "$_socket_file"
+
+    assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        _cmd="${EXEC} -t -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
+
+        assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
+
+        # Append two more panes with log setting
+        _cmd="${EXEC} -a -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+        exec_tmux_session "$_socket_file" "$_cmd"
+
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
+        divide_four_panes_impl "$_socket_file"
+
+        assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @case: 58
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
+test_t_and_a_option_pipe() {
+
+    if (is_less_than "2.3");then
+        echo "This test is better to be executed for $(tmux_version_number)." >&2
+        echo 'Because -t option and "#{pane_title}" is not supported for this version.' >&2
+        startSkipping
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    mkdir -p "${_tmpdir}/fin"
+
+    : "In TMUX session" && {
+        _cmd="printf \"%s\\\\n\" AAAA BBBB | ${EXEC} -I@ -tS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\""
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "2"
+        wait_existing_file_number "${_tmpdir}/fin" "2"
+
+        assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @case: 59
+# @skip: 2.3,2.4,2.5,2.6,2.7
+test_t_option_warning() {
+    if ! (is_less_than "2.3");then
+        echo 'This tests checks -t option does not affect to other options' >&2
+        echo "It is better to be executed less than 2.3." >&2
+        return 0
+    fi
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    mkdir -p "${_tmpdir}/fin"
+
+    _cmd="${EXEC} -t -lev -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" -- --AA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    eval "$_cmd" 2>&1 | grep 'Warning: -t option cannot be used by tmux version less than 2.3'
+    assertEquals 0 $?   # Error message is properly shown
+
+    wait_panes_separation "$_socket_file" "--AA" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "3"
+    divide_three_panes_ev_impl "$_socket_file"
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+}
 
 # TODO : test with logging + empty string argument
 
