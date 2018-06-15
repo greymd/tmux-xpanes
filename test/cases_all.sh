@@ -2684,7 +2684,7 @@ test_a_option_abort() {
     local _exit_status
     mkdir -p "${_tmpdir}"
 
-    _cmd="${EXEC} -S $_socket_file -a AAAA AAAA BBBB CCCC"
+    _cmd="${EXEC} -S $_socket_file -x AAAA AAAA BBBB CCCC"
     eval "${_cmd}"
     # Run -a option with Normal mode1
     assertEquals 4 $?
@@ -2745,7 +2745,7 @@ test_a_option_with_log() {
     wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
     # Append two more panes with log setting
-    _cmd="${EXEC} -a --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+    _cmd="${EXEC} -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
     exec_tmux_session "$_socket_file" "$_cmd"
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -2791,7 +2791,7 @@ test_a_option_with_log() {
         wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
         # Append two more panes with log setting
-        _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} -a --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+        _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
         exec_tmux_session "$_socket_file" "$_cmd"
 
         wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -2846,7 +2846,7 @@ test_a_option_with_pipe() {
     wait_panes_separation "$_socket_file" "AAAA" "1"
 
     # Append two more panes with log setting
-    _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -ae -lev -S $_socket_file"
+    _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -xe -lev -S $_socket_file"
     echo $'\n'" $ $_cmd"$'\n'
     exec_tmux_session "$_socket_file" "$_cmd"
 
@@ -2874,7 +2874,7 @@ test_a_option_with_pipe() {
         wait_existing_file_number "${_tmpdir}/fin" "1"
 
         # Append two more panes with log setting
-        _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -a -S $_socket_file -l eh -e"
+        _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -x -S $_socket_file -l eh -e"
         exec_tmux_session "$_socket_file" "$_cmd"
 
         wait_panes_separation "$_socket_file" "AAAA" "3"
@@ -2944,7 +2944,7 @@ test_t_and_a_option() {
         assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
         # Append two more panes with log setting
-        _cmd="${EXEC} -a -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+        _cmd="${EXEC} -x -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
         exec_tmux_session "$_socket_file" "$_cmd"
 
         wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -2961,7 +2961,7 @@ test_t_and_a_option() {
 
 # @case: 59
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
-test_t_and_a_option_pipe() {
+test_t_option_pipe() {
 
     if (is_less_than "2.3");then
         echo "This test is better to be executed for $(tmux_version_number)." >&2

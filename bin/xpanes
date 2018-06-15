@@ -72,7 +72,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[ahVdetT]"
+readonly XP_FLAG_OPTIONS="[hVdetx]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -97,7 +97,7 @@ XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
-XP_OPT_APPEND=0
+XP_OPT_EXTRA=0
 
 ## --------------------------------
 # Logger
@@ -128,7 +128,6 @@ Usage(pipe mode):
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
-  -a                           Create additional panes in the current active window.
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
@@ -142,6 +141,7 @@ OPTIONS:
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
+  -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -t\`.
@@ -468,7 +468,7 @@ xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
   local _title_flag="$1"   ; shift
-  local _append_flag="$1"  ; shift
+  local _extra_flag="$1"  ; shift
   local _index=0
   local _pane_index _pane_border_status
   for arg in "$@"
@@ -477,7 +477,7 @@ xpns_set_titles() {
     _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
     if [[ $_title_flag -eq 1 ]]; then
       xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    elif [[ ${_append_flag} -eq 1 ]] && \
+    elif [[ ${_extra_flag} -eq 1 ]] && \
          [[ "${_pane_border_status}" != "off" ]] && \
          [[ -n "${_pane_border_status}" ]] ;then
       ## For -a option
@@ -528,7 +528,7 @@ xpns_arrange_pane_location() {
 # Usage:
 #    func <window name> <offset of index> <number of pane>
 #
-xpns_append_panes_to_window() {
+xpns_extra_panes_to_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _pane_num="$1"
@@ -631,7 +631,7 @@ xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
 
-  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     xpns_msg "Error" "'-a' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
@@ -698,7 +698,7 @@ xpns_execution() {
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
-  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     # Reuse existing window name
     # tmux 1.6 does not support -F option
     _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
@@ -712,8 +712,8 @@ xpns_execution() {
         | xpns_value2key)
   fi
 
-  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
-    xpns_append_panes_to_window \
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    xpns_extra_panes_to_window \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${_last_args_idx}"
@@ -725,7 +725,7 @@ xpns_execution() {
       "${XP_OPT_ATTACH}"
   fi
 
-  if [[ ${XP_OPT_APPEND} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     # Avoid sending command to the original window
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
@@ -749,7 +749,7 @@ xpns_execution() {
     "${_window_name}" \
     "${_pane_base_index}" \
     "${XP_OPT_SET_TITLE}" \
-    "${XP_OPT_APPEND}" \
+    "${XP_OPT_EXTRA}" \
     "${XP_ARGS[@]}"
 
   # Sending operations for each pane.
@@ -765,7 +765,7 @@ xpns_execution() {
     "${_last_args_idx}"
 
   # Enable broadcasting
-  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_APPEND} -eq 0 ]]; then
+  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
     ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
       synchronize-panes on
@@ -784,7 +784,7 @@ xpns_execution() {
   fi
 
   # In case of -a, keep the original window name
-  if [[ ${XP_OPT_APPEND} -eq 0 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
@@ -886,7 +886,7 @@ xpns_is_valid_layout() {
   fi
 }
 
-xpns_warning_before_append() {
+xpns_warning_before_extra() {
   local _ans _synchronized
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
@@ -910,9 +910,9 @@ xpns_load_flag_options() {
     xpns_version
     exit 0
   fi
-  if [[ "$1" =~ a ]]; then
-    XP_OPT_APPEND=1
-    if ! xpns_warning_before_append; then
+  if [[ "$1" =~ x ]]; then
+    XP_OPT_EXTRA=1
+    if ! xpns_warning_before_extra; then
       exit ${XP_EINTENT}
     fi
   fi
