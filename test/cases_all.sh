@@ -84,11 +84,16 @@ create_tmux_session() {
 
 is_allow_rename_value_on() {
   local _socket_file="${THIS_DIR}/.xpanes-shunit"
-  local _value
+  local _value_allow_rename
+  local _value_automatic_rename
   create_tmux_session "${_socket_file}"
-  _value="$(${TMUX_EXEC} -S "${_socket_file}" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+  _value_allow_rename="$(${TMUX_EXEC} -S "${_socket_file}" show-window-options -g | awk '$1=="allow-rename"{print $2}')"
+  _value_automatic_rename="$(${TMUX_EXEC} -S "${_socket_file}" show-window-options -g | awk '$1=="automatic-rename"{print $2}')"
   close_tmux_session "${_socket_file}"
-  if [ "${_value}" = "on" ] ;then
+  if [ "${_value_allow_rename}" = "on" ] ;then
+    return 0
+  fi
+  if [ "${_value_automatic_rename}" = "on" ] ;then
     return 0
   fi
   return 1
@@ -144,9 +149,9 @@ wait_panes_separation() {
           | grep "^${_window_name_prefix}" \
           | head -n 1 \
           | perl -anle 'print $F[$#F]')
-        # printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
-        # ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
-        # printf "_window_id:[%s]\\n" "${_window_id}"
+        printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
+        ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
+        printf "_window_id:[%s]\\n" "${_window_id}"
         if [ -n "${_window_id}" ]; then
             # ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}"
             _pane_num="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}" | grep -c .)"
@@ -2351,6 +2356,9 @@ test_log_format_env_var() {
         wait_panes_separation "$_socket_file" "AAAA" "4"
         wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
 
+        # Reset just in case
+        export TMUX_XPANES_LOG_FORMAT=
+
         # Wait several seconds just in case.
         sleep 3
         printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
@@ -2701,13 +2709,15 @@ test_a_option_abort() {
 }
 
 # @case: 56
-# @skip:
+# @skip: 1.8,2.3
 test_a_option_with_log() {
-    if (is_less_than "1.9");then
-        echo "Skip this test for $(tmux_version_number)." >&2
-        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
-        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
+
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
         return 0
     fi
 
@@ -3019,6 +3029,7 @@ if [ -n "$BASH_VERSION" ]; then
   echo "Testing for bash $BASH_VERSION"
   echo "tmux path: ${TMUX_EXEC}"
   echo "            $(${TMUX_EXEC} -V)"
+  echo
 fi
 
 if [ -n "$TMUX" ]; then
@@ -3026,11 +3037,20 @@ if [ -n "$TMUX" ]; then
  exit 1
 fi
 
+if [ -n "$TMUX_XPANES_LOG_FORMAT" ]; then
+ echo "[Warning] TMUX_XPANES_LOG_FORMAT is defined." >&2
+ echo "During the test, this variable is updated." >&2
+ echo "    Executed: export TMUX_XPANES_LOG_FORMAT=" >&2
+ echo "" >&2
+ export TMUX_XPANES_LOG_FORMAT=
+fi
+
 if is_allow_rename_value_on; then
-  echo "[Error] tmux's 'allow-rename' window option is now 'on'." >&2
+  echo "[Error] tmux's 'allow-rename' or 'automatic-rename' window option is now 'on'." >&2
   echo "Please make it off before starting testing." >&2
   echo "Execute this:
-    echo 'set-window-option -g allow-rename off' >> ~/.tmux.conf" >&2
+    echo 'set-window-option -g allow-rename off' >> ~/.tmux.conf
+    echo 'set-window-option -g automatic-rename off' >> ~/.tmux.conf" >&2
   exit 1
 fi
 
