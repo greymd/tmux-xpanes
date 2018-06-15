@@ -788,7 +788,7 @@ xpns_execution() {
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
-      "$(echo "${_window_name}" | xpns_key2value)"
+      -- "$(echo "${_window_name}" | xpns_key2value)"
   fi
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
