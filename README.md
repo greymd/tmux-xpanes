@@ -53,8 +53,8 @@ $ docker ps -q | xpanes -c "docker exec -it {} sh"
 * Bash (version 4.2 and more)
 * tmux (version 1.8 and more)
 
-If you prefer older ones,
-See stable version [v2.2.3](https://github.com/greymd/tmux-xpanes/tree/v2.2.3).
+If you prefer older requirements,
+Use stable version [v2.2.3](https://github.com/greymd/tmux-xpanes/tree/v2.2.3).
 
 # Installation
 
@@ -191,6 +191,14 @@ Don't worry. Just type `exit` and "Enter" key to close the panes.
 ```
 
 As shown above, input from keyboard is synchronized within multiple panes by default.
+
+#### Suppress input synchronization
+
+To disable the synchronization of keyboard input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
+
+```
+$ xpanes -d 1 2 3 4
+```
 
 ### `-c` option and `-I` option.
 `-c` option allows to execute original command line.
@@ -380,14 +388,6 @@ This is same as below.
 
 ```
 $ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
-```
-
-#### Suppress input synchronization
-
-To disable the synchronization of keyboard input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
-
-```
-$ xpanes -d -c "ssh {}" myuser1@host1 myuser2@host2
 ```
 
 #### Connecting multiple hosts over SSH **AND logging operations**.
