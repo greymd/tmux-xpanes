@@ -402,12 +402,12 @@ xpns_generate_window_name() {
 
 # Convert string to another string which can be handled as tmux window name.
 xpns_value2key() {
-  perl -nle 'printf unpack("H*", $_);'
+  perl -nle 'printf("%s", unpack("H*", $_));'
 }
 
 # Restore string encoded by xpns_value2key function.
 xpns_key2value() {
-  perl -nle 'printf pack("H*", $_);'
+  perl -nle 'printf("%s", pack("H*", $_));'
 }
 
 #
