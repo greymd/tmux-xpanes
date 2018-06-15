@@ -2918,7 +2918,7 @@ test_t_and_a_option() {
     assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
     # Append two more panes with log setting
-    _cmd="${EXEC} -a -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+    _cmd="${EXEC} -x -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
     exec_tmux_session "$_socket_file" "$_cmd"
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
