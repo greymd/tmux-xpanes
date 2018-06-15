@@ -2562,70 +2562,6 @@ test_log_format_and_desync_option_pipe() {
     }
 }
 
-# @case: 53
-# @skip: 1.8,2.3
-test_log_format_empty() {
-    if (is_less_than "1.9");then
-        echo "Skip this test for $(tmux_version_number)." >&2
-        echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-        echo '"#{pane_synchronnized}" is not yet implemented.' >&2
-        echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
-        return 0
-    fi
-
-    if [[ "$(tmux_version_number)" == "2.3" ]];then
-        echo "Skip this test for $(tmux_version_number)." >&2
-        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
-        return 0
-    fi
-
-    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-    local _cmd=""
-    local _log_file=""
-    local _tmpdir="${SHUNIT_TMPDIR}"
-    local _logdir="${_tmpdir}/hoge"
-    local _year
-    _year="$(date +%Y)"
-    mkdir -p "${_tmpdir}/fin"
-
-    # Remove single quotation for --log-format.
-    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' BBBB CCCC"
-
-    # pipe mode only works in the tmux session
-    : "In TMUX session" && {
-        echo $'\n'" $ TMUX($_cmd)"$'\n'
-        mkdir -p "${_tmpdir}/fin"
-
-        create_tmux_session "$_socket_file"
-        exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "EMPTY" "3"
-        wait_existing_file_number "${_tmpdir}/fin" "3" # '' BBBB CCCC
-
-        # Wait several seconds just in case.
-        sleep 3
-        printf "%s\\n" "${_logdir}"/* | grep -E -- "-1_${_year}_-1$"
-        assertEquals 0 $?
-        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E -- "-1_${_year}_-1$")
-        assertEquals 1 "$(grep -ac 'GEGE__' < "${_log_file}")"
-
-        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
-        assertEquals 0 $?
-        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
-        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
-
-        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
-        assertEquals 0 $?
-        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
-        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
-
-        close_tmux_session "$_socket_file"
-        rm -f "${_logdir}"/*
-        rmdir "${_logdir}"
-        rm -f "${_tmpdir}"/fin/*
-        rmdir "${_tmpdir}"/fin
-    }
-}
-
 # @case: 54
 # @skip:
 test_a_option_abort() {
@@ -2857,7 +2793,7 @@ test_t_and_a_option() {
     local _logdir="${_tmpdir}/hoge"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="${EXEC} -t -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+    _cmd="TMUX_XPANES_PANE_BORDER_STATUS=top TMUX_XPANES_PANE_BORDER_FORMAT=\"[[[#T]]]\" ${EXEC} -t -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
     echo $'\n'" $ $_cmd"$'\n'
     eval "$_cmd"
 
@@ -2967,8 +2903,6 @@ test_t_option_warning() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
 }
-
-# TODO : test with logging + empty string argument
 
 ###:-:-:END_TESTING:-:-:###
 
