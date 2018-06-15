@@ -2278,6 +2278,111 @@ test_log_format_option() {
 
 # @case: 51
 # @skip: 1.8,2.3
+test_log_format_env_var() {
+    if [ "$(tmux_version_number)" == "1.8" ] ;then
+        echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
+        echo "Because of following reasons." >&2
+        echo "1. Logging feature does not work when tmux version 1.8 and tmux session is NOT attached. " >&2
+        echo "2. If standard input is NOT a terminal, tmux session is NOT attached." >&2
+        echo "3. As of March 2017, macOS machines on Travis CI does not have a terminal." >&2
+        return 0
+    fi
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    mkdir -p "${_tmpdir}/fin"
+    _year="$(date +%Y)$(date +%Y)"
+
+    # Remove single quotation for --log-format.
+    _cmd="TMUX_XPANES_LOG_FORMAT=\"[:ARG:]_%Y%Y_[:ARG:]\" XP_LOG_DIR=${_logdir} ${EXEC} --log -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+    # Wait several seconds just in case.
+    sleep 3
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_logdir}"/*
+    rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        _year="$(date +%Y)"
+
+        ## Command line option is stronger than environment variable
+        _cmd="export TMUX_XPANES_LOG_FORMAT=\"hage\"; XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "3" # AAAA BBBB CCCC
+
+        # Wait several seconds just in case.
+        sleep 3
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-2_${_year}_AAAA-2$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
+
+# @case: 52
+# @skip: 1.8,2.3
 test_log_format_option2() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
         echo "Skip this test for $(${TMUX_EXEC} -V)." >&2
@@ -2377,7 +2482,7 @@ test_log_format_option2() {
     }
 }
 
-# @case: 52
+# @case: 53
 # @skip: 1.8,2.3
 test_log_format_and_desync_option() {
     if (is_less_than "1.9");then
@@ -2488,7 +2593,7 @@ test_log_format_and_desync_option() {
     }
 }
 
-# @case: 53
+# @case: 54
 # @skip: 1.8,2.3
 test_log_format_and_desync_option_pipe() {
     if (is_less_than "1.9");then
@@ -2562,7 +2667,7 @@ test_log_format_and_desync_option_pipe() {
     }
 }
 
-# @case: 54
+# @case: 55
 # @skip:
 test_a_option_abort() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2595,7 +2700,7 @@ test_a_option_abort() {
     }
 }
 
-# @case: 55
+# @case: 56
 # @skip:
 test_a_option_with_log() {
     if (is_less_than "1.9");then
@@ -2713,7 +2818,7 @@ test_a_option_with_log() {
     }
 }
 
-# @case: 56
+# @case: 57
 # @skip:
 test_a_option_with_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2777,7 +2882,7 @@ test_a_option_with_pipe() {
     }
 }
 
-# @case: 57
+# @case: 58
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_and_a_option() {
 
@@ -2844,7 +2949,7 @@ test_t_and_a_option() {
     }
 }
 
-# @case: 58
+# @case: 59
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_and_a_option_pipe() {
 
@@ -2878,7 +2983,7 @@ test_t_and_a_option_pipe() {
     }
 }
 
-# @case: 59
+# @case: 60
 # @skip: 2.3,2.4,2.5,2.6,2.7
 test_t_option_warning() {
     if ! (is_less_than "2.3");then

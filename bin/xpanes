@@ -42,7 +42,8 @@ readonly XP_ENOCMD=127
 TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 TMUX_XPANES_PANE_BORDER_FORMAT="${TMUX_XPANES_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
 TMUX_XPANES_PANE_BORDER_STATUS="${TMUX_XPANES_PANE_BORDER_STATUS:-bottom}"
-# TODO: TMUX_XPANES_LOG_FORMAT
+_XP_TMUX_XPANES_LOG_FORMAT_DEFAULT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+TMUX_XPANES_LOG_FORMAT="${TMUX_XPANES_LOG_FORMAT:-${_XP_TMUX_XPANES_LOG_FORMAT_DEFAULT}}"
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
@@ -87,7 +88,6 @@ XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
 XP_LOG_DIR="${XP_LOG_DIR:-${XP_CACHE_HOME}/logs}"
-XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 XP_REPSTR=""
 XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_CACHE_HOME}/socket}"
 XP_NO_OPT=0
@@ -153,7 +153,7 @@ _EOS_
 xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
-    Default value is "${XP_LOG_FORMAT}"
+    Default value is "${_XP_TMUX_XPANES_LOG_FORMAT_DEFAULT}"
     Interpreted sequences are:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
@@ -737,7 +737,7 @@ xpns_execution() {
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_LOG_DIR}" \
-      "${XP_LOG_FORMAT}" \
+      "${TMUX_XPANES_LOG_FORMAT}" \
       "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
   fi
@@ -1020,7 +1020,7 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--log-format=.*$ ]]; then
     XP_OPT_LOG_STORE=1
-    XP_LOG_FORMAT="${1#--log-format=}"
+    TMUX_XPANES_LOG_FORMAT="${1#--log-format=}"
     return 1
   elif [[ "$1" =~ ^--log ]]; then
     XP_OPT_LOG_STORE=1
