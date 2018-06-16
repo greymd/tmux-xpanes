@@ -470,8 +470,60 @@ It is useful if you want to keep checking the value of the argument even the ent
 (i.e, Login with SSH with `xpanes` and execute `top`. But host name is still visible with the `-t` option ).
 -->
 
+#### Create new panes to existing window
 
-#### Execute different commands on the different panes.
+`-x` option creates extra panes to the window.
+New window is not created then.
+
+Here is the example `xpanes` is executed on the one of the three panes.
+
+```
+    +-------------------------------+-------------------------------+
+    │$                              │$                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │ $ xpanes -x 4 5 6                                             │
+    │                                                               │
+    │                                                               │
+    │                                                               │
+    │                                                               │
+    │                                                               │
+    │                                                               │
+    │                                                               │
+    +-------------------------------+-------------------------------+
+```
+
+Additional three panes are created.
+
+```
+    +-------------------------------+-------------------------------+
+    │$                              │$                              │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ xpanes -x 4 5 6              │$ echo 4                       │
+    │$                              │4                              │
+    │                               │$                              │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+    │$ echo 5                       │$ echo 6                       │
+    │5                              │6                              │
+    │$                              │$                              │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
+```
+
+#### Execute different commands on the different panes
 
 `-e` option executes given argument as it is.
 
@@ -561,83 +613,6 @@ With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-ho
 ```
 
 ... then, user1 and user2 can share their screen each other.
-
-
-#### Create multiple windows and make each one divided into multiple panes.
-
-As mentioned above, `xpanes` command creates a new window when it starts to run on the tmux session. Utilizing this behavior, it is possible to create multiple windows easily.
-
-```sh
-$ xpanes -c "xpanes -I@ -c 'echo @' {}; exit" \
-  "groupA-host1 groupA-host2" \
-  "groupB-host1 groupB-host2 groupB-host3" \
-  "groupC-host1 groupC-host2"
-```
-
-Result will be this.
-
-| window  | pane1              | pane2              | pane3              |
-| ------  | -----              | -----              | -----              |
-| window1 | `ssh groupA-host1` | `ssh groupA-host2` | none               |
-| window2 | `ssh groupB-host1` | `ssh groupB-host2` | `ssh groupB-host3` |
-| window3 | `ssh groupC-host1` | `ssh groupC-host2` | none               |
-
-Can you guess why such the phenomenon happens?
-Running this command, such the window is supposed to be created at first.
-
-```
-    +-----------------------------------------------------+------------------------------------------------------+
-    │$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit │$ xpanes -I@ 'ssh @' groupB-host1 groupB-host2 \      │
-    │                                                     │                     groupB-host3; exit               │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │                                                     │                                                      │
-    │-----------------------------------------------------+------------------------------------------------------│
-    │$ xpanes -I@ 'ssh @' groupC-host1 groupC-host2; exit                                                        │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    │                                                                                                            │
-    +-----------------------------------------------------+------------------------------------------------------+
-```
-
-Let's focus on the upper left pane.
-
-```
-$ xpanes -I@ 'ssh @' groupA-host1 groupA-host2; exit
-```
-
-When this command is executed on the tmux session, **it will create new window** which separated into two panes like below. And as you can see, `; exit` statement will close the pane itself after the separation.
-
-```
-    +-------------------------------+-------------------------------+
-    │$ ssh groupA-host1             │ $ ssh groupA-host2            │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +-------------------------------+-------------------------------+
-```
-
-Same phenomenon will also be occurred on upper right and bottom panes. The window which had three `xpanes` statements is closed itself. Finally, just the three windows will be left.
 
 ## Pipe mode
 
