@@ -128,7 +128,7 @@ OPTIONS:
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
-  -t                           Display each argument on the each pane's border as their title.
+  -t                           Display each argument on the each pane's border.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
@@ -431,7 +431,7 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
     +------------------------------------+-------------------------------------+
 ```
 
-#### Showing host as title always
+#### Display host always
 
 ```sh
 $ xpanes -t -c "ping {}" 192.168.1.{5..8}
@@ -471,7 +471,7 @@ It is useful if you want to keep checking the value of the argument even the ent
 (i.e, Login with SSH with `xpanes` and execute `top`. But host name is still visible with the `-t` option ).
 -->
 
-#### Create new panes to existing window
+#### Create new panes on existing window
 
 `-x` option creates extra panes to the window.
 New window is not created then.
