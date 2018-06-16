@@ -799,7 +799,7 @@ It is ignored if the format is explicitly given by `--log-format=`.
 Example:
 
 ```sh
-export TMUX_XPANES_EXEC="[:ARG:]_mylog.log"
+export TMUX_XPANES_LOG_FORMAT="[:ARG:]_mylog.log"
 ```
 
 ### `TMUX_XPANES_PANE_BORDER_FORMAT`
