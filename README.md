@@ -13,26 +13,26 @@
 
 ## TL;DR
 
-#### Ping multiple hosts.
+#### Ping multiple hosts
 
 ```sh
 $ xpanes -c "ping {}" 192.168.0.{1..9}
 ```
 
-#### Connect to multiple hosts over SSH and record each operation log.
+#### Connect to multiple hosts over SSH and record each operation log
 
 ```sh
 $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
 ```
 
-#### Monitor CPU, Memory, Load, Processes and Disk info every seconds.
+#### Monitor CPU, Memory, Load, Processes and Disk info every seconds
 
 ```sh
 $ xpanes -e "top" "vmstat 1" "watch -n 1 df"
 ```
 
 
-#### Operate running Docker containers on the interactive screen.
+#### Operate running Docker containers on the interactive screen
 
 ```sh
 $ docker ps -q | xpanes -c "docker exec -it {} sh"
@@ -202,7 +202,7 @@ To disable the synchronization of keyboard input within panes, use `-d` (or `--d
 $ xpanes -d 1 2 3 4
 ```
 
-### `-c` option and `-I` option.
+### `-c` option and `-I` option
 `-c` option allows to execute original command line.
 For example, try this one.
 
@@ -250,12 +250,12 @@ $ xpanes -I@ -c 'seq @' 1 2 3 4
 $ xpanes {1..4}
 ```
 
-## Behavior modes.
+## Behavior modes
 
 It is good to know about the conditional behavior of `xpanes`  command, before checking further usages.
 
 
-### [Normal mode1] Outside of tmux session.
+### [Normal mode1] Outside of tmux session
 
 When the tmux is not open and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
 
@@ -263,7 +263,7 @@ When the tmux is not open and `xpanes` command is executed on the normal termina
  - In addition, it separates the window into multiple panes.
  - Finally, the session will be attached.
 
-### [Normal mode2] Inside of tmux session.
+### [Normal mode2] Inside of tmux session
 
 When the tmux is already open and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
 
@@ -271,7 +271,7 @@ When the tmux is already open and `xpanes` command is executed from within the e
  - In addition, it separates the window into multiple panes.
  - Finally, the window will be active window.
 
-### [Pipe mode] Inside of tmux session & Accepting standard input.
+### [Pipe mode] Inside of tmux session & Accepting standard input
 
 When the tmux is open and `xpanes` command is executed from within tmux (Normal mode2)
 and the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode".
@@ -346,7 +346,7 @@ $ xpanes -c "ssh myuser@{}" host1 host2
     +-------------------------------+-------------------------------+
 ```
 
-#### Use SSH with ignoring alert message.
+#### Use SSH with ignoring alert message
 
 `--ssh` option is helpful to ignore the alert message from OpenSSH. It is not required to answer yes/no question against it. Use it if you are fully sure that destination host is reliable one.
 
@@ -360,7 +360,7 @@ This is same as below.
 $ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
 ```
 
-#### Connecting multiple hosts over SSH **AND logging operations**.
+#### Connecting multiple hosts over SSH **AND logging operations**
 
 ```sh
 $ xpanes --log=~/operation_log -c "ssh {}" user1@host1 user2@host2
@@ -559,7 +559,7 @@ You will get the same result with this command line.
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 ```
 
-#### Changing layout of panes.
+#### Changing layout of panes
 
 To change the layout of panes, put an argument followed by `-l` option.
 This is the example that lines up some panes vertically.
@@ -596,7 +596,7 @@ It would be like this.
 
 With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
 
-#### Share terminal sessions with others.
+#### Share terminal sessions with others
 
  `~/.cache/xpanes/socket` file is automatically created when `xpanes` runs. Importing this socket file, different users can share their screens each other. Off course, you can specify the socket file name as you like with `-S` option.
 
@@ -678,12 +678,8 @@ The result will be like this.
     │                               │                              │
     │                               │                              │
     │                               │                              │
-    │                               │                              │
-    │                               │                              │
     +-------------------------------+------------------------------+
     │$ seq 3                        │$ seq 4                       │
-    │                               │                              │
-    │                               │                              │
     │                               │                              │
     │                               │                              │
     │                               │                              │
