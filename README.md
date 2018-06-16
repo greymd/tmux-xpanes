@@ -279,38 +279,6 @@ It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
 
-#### Ping multiple hosts
-
-```sh
-$ xpanes -c "ping {}" 192.168.1.{5..8}
-```
-
-The result is like this.
-
-```
-    +-------------------------------+-------------------------------+
-    │$ ping 192.168.1.5             │$ ping 192.168.1.6             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +-------------------------------+-------------------------------+
-    │$ ping 192.168.1.7             │$ ping 192.168.1.8             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +-------------------------------+-------------------------------+
-```
-
-This example is the one having [Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html).
-
 #### Monitor multiple files
 
 ```sh
@@ -462,6 +430,47 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
     +------------------------------------+-------------------------------------+
 ```
 
+#### Showing host as title always
+
+```sh
+$ xpanes -t -c "ping {}" 192.168.1.{5..8}
+```
+
+The result is like this.
+
+```
+    +-------------------------------+-------------------------------+
+    │$ ping 192.168.1.5             │$ ping 192.168.1.6             │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +--192.168.1.5------------------+--192.168.1.6------------------+
+    │$ ping 192.168.1.7             │$ ping 192.168.1.8             │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +--192.168.1.7------------------+--192.168.1.8------------------+
+```
+
+As you notices that, `-t` displays each argument on the each pane border.
+It is called "pane title". Example screen short is here.
+The pane title is displayed with green background and black characters by default.
+See [Environment variables](#environment-variables) section to change the default format.
+
+<!--
+It is useful if you want to keep checking the value of the argument even the entire terminal is masked by other command.
+(i.e, Login with SSH with `xpanes` and execute `top`. But host name is still visible with the `-t` option ).
+-->
+
+
 #### Execute different commands on the different panes.
 
 `-e` option executes given argument as it is.
@@ -552,6 +561,7 @@ With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-ho
 ```
 
 ... then, user1 and user2 can share their screen each other.
+
 
 #### Create multiple windows and make each one divided into multiple panes.
 
