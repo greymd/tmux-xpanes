@@ -97,7 +97,7 @@ In addition, sequences same as `date(1)` command are available.
     And etc.
 Other sequences are available. Please refer to `date(1)` manual.
 
-### ENVIRONMENT VARIABLES
+### SHELL VARIABLES
 
 `TMUX_XPANES_EXEC`
   Default value is `tmux`

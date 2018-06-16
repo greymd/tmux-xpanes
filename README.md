@@ -464,7 +464,7 @@ The result is like this.
 As you notices that, `-t` displays each argument on the each pane border.
 It is called "pane title". Example screen short is here.
 The pane title is displayed with green background and black characters by default.
-See [Environment variables](#environment-variables) section to change the default format.
+See [Environment variables](#shell-variables) section to change the default format.
 
 <!--
 It is useful if you want to keep checking the value of the argument even the entire terminal is masked by other command.
@@ -769,9 +769,9 @@ The results would be like this.
     +------------------------------+------------------------------+
 ```
 
-## Environment variables
+## Shell variables
 
-`xpanes` referes to following environment variables.
+`xpanes` referes to following shell variables.
 Add the statement to your default login shell's
 configure file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 
