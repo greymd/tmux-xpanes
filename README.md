@@ -127,9 +127,11 @@ OPTIONS:
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
+  -t                           Display each argument on the each pane's border as their title.
+  -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
+  --ssh                        Same as `-c 'ssh -o StrictHostKeyChecking=no {}' -t`.
   --stay                       Do not switch to new window.
 ```
 
