@@ -40,13 +40,14 @@ $ docker ps -q | xpanes -c "docker exec -it {} sh"
 
 
 # Features
-* Split tmux window into multiple panes.
-  + Build command lines from given arguments & execute them on the panes.
-* Runnable from outside of tmux session.
-* Runnable from inside of tmux session.
-* Record operation log.
-* Layout arrangement for panes.
-* Generate command lines from standard input (Pipe mode).
+* Split tmux window into multiple panes
+  + Build command lines from given arguments & execute them on the panes
+* Runnable from outside of tmux session
+* Runnable from inside of tmux session
+* Record operation log
+* Layout arrangement for panes
+* Displaying pane title on each pane
+* Generate command lines from standard input (Pipe mode)
 
 # Requirements
 
@@ -852,12 +853,13 @@ Please note the following points before running the test.
 Follow this.
 
 ```sh
-## Clone repository together with shunit2 (kward/shunit2).
+## Clone repository together with shunit2 (kward/shunit2)
 $ git clone --recursive https://github.com/greymd/tmux-xpanes.git
 $ cd tmux-xpanes
 
-## Disable allow-rename
+## Suppress window name change
 $ echo 'set-window-option -g allow-rename off' >> ~/.tmux.conf
+$ echo 'set-window-option -g automatic-rename off' >> ~/.tmux.conf
 
 ## Run smoke test
 $ bash test/cases_smoke.sh
