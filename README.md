@@ -439,31 +439,10 @@ $ xpanes -t -c "ping {}" 192.168.1.{5..8}
 
 The result is like this.
 
-```
-    +-------------------------------+-------------------------------+
-    │$ ping 192.168.1.5             │$ ping 192.168.1.6             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +--192.168.1.5------------------+--192.168.1.6------------------+
-    │$ ping 192.168.1.7             │$ ping 192.168.1.8             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +--192.168.1.7------------------+--192.168.1.8------------------+
-```
+![png image](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/ping_pane_title.png)
 
 As you notices that, `-t` displays each argument on the each pane border.
-It is called "pane title". Example screen short is [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
-The pane title is displayed with green background and black characters by default.
+It is called "pane title". The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
 
 <!--
