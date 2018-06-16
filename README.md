@@ -798,13 +798,13 @@ configure file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 **DEFAULT VALUE:** `tmux`
 
 It is preferentially used as a internal `tmux` command.
-It is helpful if you want to use specific tmux version, or enable specific options always.
+It is helpful if you want to use specific tmux version for xpanes, or enable specific options always.
 
 Example:
 
 ```sh
 export TMUX_XPANES_EXEC="/usr/local/bin/tmux1.8 -2"
-# => xpanes command calls "tmux1.8 -2" internally.
+# => xpanes command calls "/usr/local/bin/tmux1.8 -2" internally.
 ```
 
 ### `TMUX_XPANES_LOG_FORMAT`
@@ -824,10 +824,10 @@ export TMUX_XPANES_EXEC="[:ARG:]_mylog.log"
 
 **DEFAULT VALUE:** `#[bg=green,fg=black] #T #[default]`
 
-See [FORMATS section in man of tmux](http://man7.org/linux/man-pages/man1/tmux.1.html#FORMATS)
-
-This property is corresponding to the [pane-border-format](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
-It overwrites tmux's `pane-border-format` value in the `xpanes`'s session.
+It defines format of the pane's title.
+It is corresponding to the [pane-border-format](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
+See [FORMATS section in man of tmux](http://man7.org/linux/man-pages/man1/tmux.1.html#FORMATS) for further details.
+It overwrites tmux's `pane-border-format` in the `xpanes`'s session.
 
 Example:
 
@@ -844,8 +844,11 @@ $ xpanes -t -c 'ssh {}@host' user1 root user2
 
 **DEFAULT VALUE:** `bottom`
 
-This property is corresponding to the [pane-border-status](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
-It overwrites tmux's `pane-border-status` value in the `xpanes`'s session.
+It defines location of the pane's title.
+It is corresponding to the [pane-border-status](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
+It overwrites tmux's `pane-border-status` in the `xpanes`'s session.
+
+Example:
 
 ```sh
 # Change value from bottom to top
