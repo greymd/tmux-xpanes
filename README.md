@@ -462,7 +462,7 @@ The result is like this.
 ```
 
 As you notices that, `-t` displays each argument on the each pane border.
-It is called "pane title". Example screen short is here.
+It is called "pane title". Example screen short is [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
 The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
 
