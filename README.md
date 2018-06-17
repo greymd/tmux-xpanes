@@ -439,37 +439,11 @@ $ xpanes -t -c "ping {}" 192.168.1.{5..8}
 
 The result is like this.
 
-```
-    +-------------------------------+-------------------------------+
-    │$ ping 192.168.1.5             │$ ping 192.168.1.6             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +--192.168.1.5------------------+--192.168.1.6------------------+
-    │$ ping 192.168.1.7             │$ ping 192.168.1.8             │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    │                               │                               │
-    +--192.168.1.7------------------+--192.168.1.8------------------+
-```
+![png image](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/ping_pane_title.png)
 
 As you notices that, `-t` displays each argument on the each pane border.
-It is called "pane title". Example screen short is [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
-The pane title is displayed with green background and black characters by default.
+It is called "pane title". The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
-
-<!--
-It is useful if you want to keep checking the value of the argument even the entire terminal is masked by other command.
-(i.e, Login with SSH with `xpanes` and execute `top`. But host name is still visible with the `-t` option ).
--->
 
 #### Create new panes on existing window
 
@@ -810,17 +784,7 @@ It defines format of the pane's title.
 It is corresponding to the [pane-border-format](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
 See [FORMATS section in man of tmux](http://man7.org/linux/man-pages/man1/tmux.1.html#FORMATS) for further details.
 It overwrites tmux's `pane-border-format` in the `xpanes`'s session.
-
-Example:
-
-```sh
-# If the argument matches to 'root', show the attractive notification.
-export TMUX_XPANES_PANE_BORDER_FORMAT="#(echo #T | grep root && echo '#[bg=red,fg=white,underscore,bold,blink]ROOT#[default]')#[bg=cyan,fg=black][#T]#[default]"
-```
-
-```
-$ xpanes -t -c 'ssh {}@host' user1 root user2
-```
+Further example is [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
 
 ### `TMUX_XPANES_PANE_BORDER_STATUS`
 
