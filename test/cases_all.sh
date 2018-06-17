@@ -745,10 +745,10 @@ test_log_and_empty_arg() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="XP_LOG_DIR=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' AA '' BB"
+    _cmd="TMUX_XPANES_LOG_DIRECTORY=${_tmpdir}/logs ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" '' AA '' BB"
     printf "\\n $ %s\\n" "${_cmd}"
     # Execute command (slightly different)
-    XP_LOG_DIR="${_tmpdir}"/logs ${EXEC} --log -I@ -S "$_socket_file" -c"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@  && ${TMUX_EXEC} detach-client" '' AA '' BB
+    TMUX_XPANES_LOG_DIRECTORY="${_tmpdir}"/logs ${EXEC} --log -I@ -S "$_socket_file" -c"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@  && ${TMUX_EXEC} detach-client" '' AA '' BB
     wait_panes_separation "$_socket_file" "EMPTY" "4"
     # AA and BB. Empty file is not created.
     wait_existing_file_number "${_tmpdir}/fin" "2"
@@ -2116,7 +2116,7 @@ test_log_option() {
     local _tmpdir="${SHUNIT_TMPDIR}"
     mkdir -p "${_tmpdir}/fin"
 
-    _cmd="XP_LOG_DIR=\"${_tmpdir}/logs\" ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
+    _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_tmpdir}/logs\" ${EXEC} --log -I@ -S $_socket_file -c\"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB"
     printf "\\n$ %s\\n" "${_cmd}"
     # Execute command (slightly different)
     eval "$_cmd"
@@ -2308,7 +2308,7 @@ test_log_format_env_var() {
     _year="$(date +%Y)$(date +%Y)"
 
     # Remove single quotation for --log-format.
-    _cmd="TMUX_XPANES_LOG_FORMAT=\"[:ARG:]_%Y%Y_[:ARG:]\" XP_LOG_DIR=${_logdir} ${EXEC} --log -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    _cmd="TMUX_XPANES_LOG_FORMAT=\"[:ARG:]_%Y%Y_[:ARG:]\" TMUX_XPANES_LOG_DIRECTORY=${_logdir} ${EXEC} --log -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
     eval "$_cmd"
@@ -2347,7 +2347,7 @@ test_log_format_env_var() {
         _year="$(date +%Y)"
 
         ## Command line option is stronger than environment variable
-        _cmd="export TMUX_XPANES_LOG_FORMAT=\"hage\"; XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+        _cmd="export TMUX_XPANES_LOG_FORMAT=\"hage\"; TMUX_XPANES_LOG_DIRECTORY=${_logdir} ${EXEC} --log --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
         echo $'\n'" $ TMUX($_cmd)"$'\n'
         mkdir -p "${_tmpdir}/fin"
 
@@ -2416,7 +2416,7 @@ test_log_format_option2() {
     _year="$(date +%Y)"
 
     # Remove single quotation for --log-format.
-    _cmd="XP_LOG_DIR=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    _cmd="TMUX_XPANES_LOG_DIRECTORY=${_logdir} ${EXEC} --log --log-format=[:ARG:]_%Y_[:ARG:] -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
     eval "$_cmd"
@@ -2517,7 +2517,7 @@ test_log_format_and_desync_option() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
+    _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_logdir}\" ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA AAAA BBBB CCCC"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
     eval "$_cmd"
@@ -2628,7 +2628,7 @@ test_log_format_and_desync_option_pipe() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | XP_LOG_DIR=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
+    _cmd="echo AAAA AAAA BBBB CCCC | xargs -n 1 | TMUX_XPANES_LOG_DIRECTORY=${_logdir} ${EXEC} --log-format=[:ARG:]_%Y_[:ARG:] --log -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\""
 
     # pipe mode only works in the tmux session
     : "In TMUX session" && {
@@ -2737,7 +2737,7 @@ test_a_option_with_log() {
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+    _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_logdir}\" ${EXEC} --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
     eval "$_cmd"
@@ -2781,7 +2781,7 @@ test_a_option_with_log() {
     rmdir "${_tmpdir}"/fin
 
     : "In TMUX session" && {
-        _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+        _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_logdir}\" ${EXEC} --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
         echo $'\n'" $ TMUX($_cmd)"$'\n'
         mkdir -p "${_tmpdir}/fin"
 
@@ -2791,7 +2791,7 @@ test_a_option_with_log() {
         wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
         # Append two more panes with log setting
-        _cmd="XP_LOG_DIR=\"${_logdir}\" ${EXEC} -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+        _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_logdir}\" ${EXEC} -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
         exec_tmux_session "$_socket_file" "$_cmd"
 
         wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -3044,6 +3044,15 @@ if [ -n "$TMUX_XPANES_LOG_FORMAT" ]; then
  echo "" >&2
  export TMUX_XPANES_LOG_FORMAT=
 fi
+
+if [ -n "$TMUX_XPANES_LOG_DIRECTORY" ]; then
+ echo "[Warning] TMUX_XPANES_LOG_DIRECTORY is defined." >&2
+ echo "During the test, this variable is updated." >&2
+ echo "    Executed: export TMUX_XPANES_LOG_DIRECTORY=" >&2
+ echo "" >&2
+ export TMUX_XPANES_LOG_DIRECTORY=
+fi
+
 
 if is_allow_rename_value_on; then
   echo "[Error] tmux's 'allow-rename' or 'automatic-rename' window option is now 'on'." >&2
