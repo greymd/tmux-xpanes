@@ -54,7 +54,7 @@ $ docker ps -q | xpanes -c "docker exec -it {} sh"
 * Bash (version 3.2 and more)
 * tmux (version 1.8 and more)
 
-If you prefer older requirements,
+If you prefer older tmux versions,
 Use stable version [v2.2.3](https://github.com/greymd/tmux-xpanes/tree/v2.2.3).
 
 # Installation
