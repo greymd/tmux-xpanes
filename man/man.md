@@ -22,13 +22,14 @@ DESCRIPTION
 
 `xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
-* Split tmux window into multiple panes.
-  * Build command lines from given arguments & execute them on the panes.
-* Runnable from outside of tmux session.
-* Runnable from inside of tmux session.
-* Record operation log.
-* Layout arrangement for panes.
-* Generate command lines from standard input (Pipe mode).
+* Split tmux window into multiple panes
+  * Build command lines from given arguments & execute them on the panes
+* Runnable from outside of tmux session
+* Runnable from inside of tmux session
+* Record operation log
+* Layout arrangement for panes
+* Displaying pane title on each pane
+* Generate command lines from standard input (Pipe mode)
 
 OPTIONS
 -------
