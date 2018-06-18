@@ -70,7 +70,7 @@ OPTIONS
   Display each argument on the each pane's border.
 
 `-x`
-  Create extra panes in the current active window.
+  Create extra panes on the current active window.
 
 `--log`[`=`<*directory*>]
   Enable logging and store log files to ~/.cache/xpanes/logs or given <*directory*>.
