@@ -16,9 +16,11 @@ _xpanes () {
       "($opts_omit -l)-l[Specify a layout for a window.]:layout:__xpanes-layout" \
       "($opts_omit -n)-n[Set the maximum number of arguments taken for each pane of <utility>.]" \
       "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
+      "($opts_omit -t)-t[Display each argument on the each pane's border as their title.]" \
+      "($opts_omit -x --stay)-x[Create extra panes in the current active window.]" \
       "($opts_omit --log)--log=[Enable logging and store log files to given <directory>.]:dirs:_dir_list" \
       "($opts_omit --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
-      "($opts_omit --ssh -I -c -e)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]:hosts:__xpanes-ssh_hosts" \
+      "($opts_omit --ssh -I -c -e -t)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]:hosts:__xpanes-ssh_hosts" \
       "($opts_omit --stay)--stay[Do not switch to new window.]"
   fi
 }
