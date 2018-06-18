@@ -23,6 +23,7 @@ xpanes or tmux-xpanes (alias of xpanes) commands have following features:
   - Runnable from inside of tmux session.
   - Record operation log.
   - Layout arrangement for panes.
+  - Display pane title on each pane
   - Generate command lines from standard input (Pipe mode).
 
 

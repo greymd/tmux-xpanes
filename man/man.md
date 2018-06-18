@@ -28,7 +28,7 @@ DESCRIPTION
 * Runnable from inside of tmux session
 * Record operation log
 * Layout arrangement for panes
-* Displaying pane title on each pane
+* Display pane title on each pane
 * Generate command lines from standard input (Pipe mode)
 
 OPTIONS
