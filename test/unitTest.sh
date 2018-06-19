@@ -19,7 +19,7 @@ BIN_NAME="xpanes"
 EXEC="${BIN_DIR}${BIN_NAME}"
 
 # Load functions.
-source ${EXEC} --dry-run A
+source ${EXEC} --dry-run -- -
 
 setUp(){
     echo ">>>>>>>>>>" >&2

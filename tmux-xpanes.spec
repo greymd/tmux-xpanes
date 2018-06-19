@@ -1,7 +1,7 @@
 
 Name:       tmux-xpanes
 Summary:    Ultimate terminal divider powered by tmux
-Version:    2.2.3
+Version:    3.0.0-beta
 Group:      Applications
 License:    MIT
 Release:    %(date '+%'s)
@@ -23,6 +23,7 @@ xpanes or tmux-xpanes (alias of xpanes) commands have following features:
   - Runnable from inside of tmux session.
   - Record operation log.
   - Layout arrangement for panes.
+  - Display pane title on each pane
   - Generate command lines from standard input (Pipe mode).
 
 

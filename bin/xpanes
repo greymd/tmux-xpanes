@@ -4,7 +4,7 @@
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="2.2.3"
+readonly XP_VERSION="3.0.0-beta"
 
 ## --------------------------------
 # Error constants
@@ -28,14 +28,14 @@ readonly XP_ELOGDIR=20
 ## Could not directory to store logs is not writable.
 readonly XP_ELOGWRITE=21
 
+# User's intentional exit is 3x
+## User exit the process intentionally by following warning message.
+readonly XP_EINTENT=30
+
 # Necessary commands are not found
 readonly XP_ENOCMD=127
 
 # ===============
-
-# Used tmux command by default.
-# i.e, the command can be another one like 'export TMUX_XPANES_EXEC="tmux -2"'
-TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
@@ -57,14 +57,25 @@ readonly XP_SESSION_NAME="${XP_THIS_FILE_NAME}-$$"
 readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
 
-readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.6"
+readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
+
+## --------------------------------
+# User customizable shell variables
+## --------------------------------
+TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
+TMUX_XPANES_PANE_BORDER_FORMAT="${TMUX_XPANES_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
+TMUX_XPANES_PANE_BORDER_STATUS="${TMUX_XPANES_PANE_BORDER_STATUS:-bottom}"
+XP_DEFAULT_TMUX_XPANES_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
+TMUX_XPANES_LOG_FORMAT="${TMUX_XPANES_LOG_FORMAT:-${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}}"
+XP_DEFAULT_TMUX_XPANES_LOG_DIRECTORY="${XP_CACHE_HOME}/logs"
+TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES_LOG_DIRECTORY}}"
 
 ## --------------------------------
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVde]"
+readonly XP_FLAG_OPTIONS="[hVdetx]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -79,8 +90,6 @@ XP_OPT_IS_SYNC=1
 XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
-XP_LOG_DIR="${XP_LOG_DIR:-${XP_CACHE_HOME}/logs}"
-XP_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 XP_REPSTR=""
 XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_CACHE_HOME}/socket}"
 XP_NO_OPT=0
@@ -88,6 +97,9 @@ XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
 XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
+XP_OPT_SET_TITLE=0
+XP_OPT_CHANGE_BORDER=0
+XP_OPT_EXTRA=0
 
 ## --------------------------------
 # Logger
@@ -130,9 +142,11 @@ OPTIONS:
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -S <socket-path>             Specify a full alternative path to the server socket.
+  -t                           Display each argument on the each pane's border as their title.
+  -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.
+  --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -t\`.
   --stay                       Do not switch to new window.
 
 _EOS_
@@ -141,7 +155,7 @@ _EOS_
 xpns_usage_verbose() {
   cat << _EOS_
 FORMAT:
-    Default value is "${XP_LOG_FORMAT}"
+    Default value is "${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}"
     Interpreted sequences are:
     [:PID:]   Process id of the tmux session. (e.g, 41531)
     [:ARG:]   Argument name
@@ -178,9 +192,9 @@ xpns_get_tmux_version() {
   echo "${_tmux_version}" | perl -anle 'printf "%s", "$F[1]"'
 }
 
-# Check whether the given version is greater than current tmux version.
-# $1 ... Target version.
-# $2 ... Current tmux version.
+# Check whether the prefered tmux version is greater than host's tmux version.
+# $1 ... Prefered version.
+# $2 ... Host tmux version(optional).
 # In case of tmux version is 1.7, the result will be like this.
 # 0 is true, 1 is false.
 ##  arg  -> result
@@ -202,7 +216,21 @@ xpns_tmux_is_greater_equals() {
   fi
 }
 
-xpns_get_tmux_conf() {
+xpns_get_local_tmux_conf() {
+  local _conf_name="$1"
+  local _session="${2-}"
+  {
+    if [[ -z "${_session-}" ]];then
+      ${TMUX_XPANES_EXEC} show-window-options
+    else
+      ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
+    fi
+  } | grep "^${_conf_name}" \
+    | head -n 1 \
+    | perl -anle 'print $F[1]'
+}
+
+xpns_get_global_tmux_conf() {
   local _conf_name="$1"
   local _session="${2-}"
   {
@@ -275,8 +303,8 @@ xpns_log_filenames () {
     | while read -r _arg
     do
       cat <<<"${_full_fmt}" \
-        | sed "s/\[:ARG:\]/${_arg}/g" \
-        | sed "s/\[:PID:\]/$$/g"
+        | sed "s/\\[:ARG:\\]/${_arg}/g" \
+        | sed "s/\\[:PID:\\]/$$/g"
     done
 }
 
@@ -376,12 +404,12 @@ xpns_generate_window_name() {
 
 # Convert string to another string which can be handled as tmux window name.
 xpns_value2key() {
-  perl -nle 'printf unpack("H*", $_);'
+  perl -nle 'printf("%s", unpack("H*", $_));'
 }
 
 # Restore string encoded by xpns_value2key function.
 xpns_key2value() {
-  perl -nle 'printf pack("H*", $_);'
+  perl -nle 'printf("%s", pack("H*", $_));'
 }
 
 #
@@ -413,19 +441,51 @@ xpns_enable_logging() {
   local _args=("$@")
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
-  local _logfiles=($(
+  local _idx=0
+  while read -r _logfile ; do
+    # Start logging
+    ${TMUX_XPANES_EXEC} \
+      pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
+      "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
+    _idx=$(( _idx + 1 ))
+  done < <(
   for i in $(seq 0 "${_args_num}")
   do
     # Replace empty string.
-    printf "%s\n" "${_args[i]:-${_unprintable_str}}"
+    printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
   done | xpns_log_filenames "${_log_format}"
-  ))
-  for i in $(seq 0 "${_args_num}")
+  )
+}
+
+xpns_inject_title() {
+  local _target_pane="$1" ;shift
+  local _message="$1"     ;shift
+  local _pane_tty
+  _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
+  printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
+}
+
+# Send command to the all the panes in the target window.
+xpns_set_titles() {
+  local _window_name="$1"  ; shift
+  local _index_offset="$1" ; shift
+  local _title_flag="$1"   ; shift
+  local _extra_flag="$1"  ; shift
+  local _index=0
+  local _pane_index _pane_border_status
+  for arg in "$@"
   do
-    # Start logging
-    ${TMUX_XPANES_EXEC} \
-      pipe-pane -t "${_window_name}.$(( i + _index_offset ))" \
-      "cat >> '${_log_dir}/${_logfiles[i]}'" # Tilde expansion does not work here.
+    _pane_index=$(( _index + _index_offset ))
+    _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
+    if [[ $_title_flag -eq 1 ]]; then
+      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
+    elif [[ ${_extra_flag} -eq 1 ]] && \
+         [[ "${_pane_border_status}" != "off" ]] && \
+         [[ -n "${_pane_border_status}" ]] ;then
+      ## For -a option
+      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
+    fi
+    _index=$(( _index + 1 ))
   done
 }
 
@@ -436,9 +496,11 @@ xpns_send_commands() {
   local _repstr="$1"       ; shift
   local _cmd="$1"          ; shift
   local _index=0
+  local _pane_index
   for arg in "$@"
   do
-    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.$(( _index + _index_offset ))" "${_cmd//${_repstr}/${arg}}" C-m
+    _pane_index=$(( _index + _index_offset ))
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
     _index=$(( _index + 1 ))
   done
 }
@@ -464,9 +526,25 @@ xpns_arrange_pane_location() {
 }
 
 #
+# Create new panes to the  existing window.
+# Usage:
+#    func <window name> <offset of index> <number of pane>
+#
+xpns_extra_panes_to_window() {
+  local _window_name="$1"     ; shift
+  local _pane_base_index="$1" ; shift
+  local _pane_num="$1"
+  # specify a pane which has the biggest index number.
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
+
+  # split window into multiple panes
+  xpns_split_window "${_window_name}" "${_pane_num}"
+}
+
+#
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#    xpns_prepare_window <window name> <offset of index> <number of pane>
+#    xpns_prepare_window <window name> <offset of index> <number of pane> <attach or not>
 #
 xpns_prepare_window() {
   local _window_name="$1"     ; shift
@@ -515,10 +593,11 @@ xpns_check_env() {
     xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
-  XP_CURRENT_TMUX_VERSION="${XP_CURRENT_TMUX_VERSION:-$(xpns_get_tmux_version)}"
+  # Do not omit this part, this is used by testing.
+  XP_HOST_TMUX_VERSION="${XP_HOST_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
     "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
-    "${XP_CURRENT_TMUX_VERSION}" ) ;then
+    "${XP_HOST_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
     xpns_msg "Warning" \
@@ -549,14 +628,20 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
-# Execute from outside of tmux session
+# Execute from Normal mode1
 xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    xpns_msg "Error" "'-a' must be used within the running tmux session."
+    exit ${XP_EINVAL}
+  fi
+
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
   local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
   xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
 
   # Append -- flag.
@@ -565,7 +650,7 @@ xpns_pre_execution() {
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
 
-  # Is there is any options, escape them.
+  # If there is any options, escape them.
   if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
@@ -599,43 +684,77 @@ ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
 
 # Execute from inside of tmux session
 xpns_execution() {
+  local _pane_base_index=
+  local _window_name=
+  local _last_args_idx=
+  local _def_allow_rename=
+  local _pane_count=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
-  local _pane_base_index=
-  _pane_base_index=$(xpns_get_tmux_conf 'pane-base-index')
-  local _window_name=
-  _window_name=$(
-    xpns_generate_window_name \
-      "${XP_EMPTY_STR}" \
-      "${XP_ARGS[0]}" \
-      | xpns_value2key)
-  local _last_args_idx=
+  _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
   _last_args_idx=$((${#XP_ARGS[@]} - 1))
-  local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_tmux_conf 'allow-rename')"
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
 
-  xpns_prepare_window \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${_last_args_idx}" \
-    "${XP_OPT_ATTACH}"
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    # Reuse existing window name
+    # tmux 1.6 does not support -F option
+    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
+    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
+    _pane_base_index=$((_pane_base_index + _pane_count - 1))
+  else
+    _window_name=$(
+      xpns_generate_window_name \
+        "${XP_EMPTY_STR}" \
+        "${XP_ARGS[0]}" \
+        | xpns_value2key)
+  fi
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    xpns_extra_panes_to_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${_last_args_idx}"
+  else
+    xpns_prepare_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${_last_args_idx}" \
+      "${XP_OPT_ATTACH}"
+  fi
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    # Avoid sending command to the original window
+    _pane_base_index=$((_pane_base_index + 1))
+    # Avoid to make layout even-horizontal even if there are many panes.
+    _last_args_idx=$((_last_args_idx + _pane_count))
+  fi
 
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
       "${_window_name}" \
       "${_pane_base_index}" \
-      "${XP_LOG_DIR}" \
-      "${XP_LOG_FORMAT}" \
+      "${TMUX_XPANES_LOG_DIRECTORY}" \
+      "${TMUX_XPANES_LOG_FORMAT}" \
       "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
   fi
 
-  # Sending ssh operations for each pane.
+  # Set pane titles for each pane.
+  # The reason why 'if' statement is not here is
+  # author believes setting title will be default feature in the future.
+  xpns_set_titles \
+    "${_window_name}" \
+    "${_pane_base_index}" \
+    "${XP_OPT_SET_TITLE}" \
+    "${XP_OPT_EXTRA}" \
+    "${XP_ARGS[@]}"
+
+  # Sending operations for each pane.
   xpns_send_commands \
     "${_window_name}" \
     "${_pane_base_index}" \
@@ -643,23 +762,36 @@ xpns_execution() {
     "${XP_CMD_UTILITY}" \
     "${XP_ARGS[@]}"
 
-  # This is just the author's preference
-  # (It means you can remove next statement as you like.)
   xpns_arrange_pane_location \
     "${_window_name}" \
-    ${_last_args_idx}
+    "${_last_args_idx}"
 
   # Enable broadcasting
-  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]]; then
+  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
     ${TMUX_XPANES_EXEC} \
       set-window-option -t "${_window_name}" \
       synchronize-panes on
   fi
 
-  # Restore original window name.
-  ${TMUX_XPANES_EXEC} \
-    rename-window -t "${_window_name}" \
-    "$(echo "${_window_name}" | xpns_key2value)"
+  ## In case of -t option
+  if [[ ${XP_OPT_SET_TITLE} -eq 1 ]] && [[ ${XP_OPT_CHANGE_BORDER} -eq 1 ]]; then
+    # Set border format
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-format "${TMUX_XPANES_PANE_BORDER_FORMAT}"
+    # Show border status
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
+  fi
+
+  # In case of -a, keep the original window name
+  if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
+    # Restore original window name.
+    ${TMUX_XPANES_EXEC} \
+      rename-window -t "${_window_name}" \
+      -- "$(echo "${_window_name}" | xpns_key2value)"
+  fi
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
 }
@@ -679,12 +811,12 @@ xpns_switch_pipe_mode() {
   if [[ -z "${TMUX-}" ]]; then
     xpns_msg "Warning" "Attached session is required for 'Pipe mode'."
     # This condition is used when the following situations.
-    #   * Executed outside of tmux session
+    #   * Enter from outside of tmux session(Normal mode1)
     #   * Pipe mode.
     #   * -n option.
     #
     # For example:
-    #     (outside of tmux session)$ echo {a..g} | ./xpanes -n 2
+    #     (Normal mode1)$ echo {a..g} | ./xpanes -n 2
     # => This will once create the new window like this.
     #     (inside of tmux session)$ ./xpanes '-n' '2' 'a' 'b' 'c' 'd' 'e' 'f' 'g'
     #     => After the window is closed, following panes would be left.
@@ -756,6 +888,20 @@ xpns_is_valid_layout() {
   fi
 }
 
+xpns_warning_before_extra() {
+  local _ans _synchronized
+  _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
+  if [[ "on" == "${_synchronized}" ]];then
+    xpns_msg "Warning" "Panes are now synchronized.
+'-a' option may cause unexpected behavior on the synchronized panes."
+    printf "Are you really sure? [y/n]: "
+    read -r _ans
+    if grep -iqv '^y' <<<"${_ans}" ; then
+      return 1
+    fi
+  fi
+}
+
 xpns_load_flag_options() {
   if [[ "$1" =~ h ]]; then
     xpns_usage
@@ -766,12 +912,27 @@ xpns_load_flag_options() {
     xpns_version
     exit 0
   fi
+  if [[ "$1" =~ x ]]; then
+    XP_OPT_EXTRA=1
+    if ! xpns_warning_before_extra; then
+      exit ${XP_EINTENT}
+    fi
+  fi
   if [[ "$1" =~ d ]]; then
     XP_OPT_IS_SYNC=0
   fi
   if [[ "$1" =~ e ]]; then
     XP_REPSTR="{}"
     XP_CMD_UTILITY="{}"
+  fi
+  if [[ "$1" =~ t ]]; then
+    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
+      XP_OPT_SET_TITLE=1
+      XP_OPT_CHANGE_BORDER=1
+    else
+      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
+      sleep 1
+    fi
   fi
   return 1
 }
@@ -861,16 +1022,19 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--log-format=.*$ ]]; then
     XP_OPT_LOG_STORE=1
-    XP_LOG_FORMAT="${1#--log-format=}"
+    TMUX_XPANES_LOG_FORMAT="${1#--log-format=}"
     return 1
   elif [[ "$1" =~ ^--log ]]; then
     XP_OPT_LOG_STORE=1
     if [[ "$1" =~ ^--log=.*$  ]]; then
-      XP_LOG_DIR="${1#--log=}"
+      TMUX_XPANES_LOG_DIRECTORY="${1#--log=}"
     fi
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
     XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
+    # Enable -t and -t option as well
+    XP_OPT_SET_TITLE=1
+    XP_OPT_CHANGE_BORDER=1
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
@@ -1000,9 +1164,9 @@ xpns_main() {
   fi
   # Validate log directory.
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
-    XP_LOG_DIR=$(xpns_normalize_directory "${XP_LOG_DIR}")
-    xpns_is_valid_directory "${XP_LOG_DIR}" && \
-    XP_LOG_DIR=$(cd "${XP_LOG_DIR}" && pwd)
+    TMUX_XPANES_LOG_DIRECTORY=$(xpns_normalize_directory "${TMUX_XPANES_LOG_DIRECTORY}")
+    xpns_is_valid_directory "${TMUX_XPANES_LOG_DIRECTORY}" && \
+    TMUX_XPANES_LOG_DIRECTORY=$(cd "${TMUX_XPANES_LOG_DIRECTORY}" && pwd)
   fi
   ## --------------------------------
   # If current shell is outside of tmux session.
