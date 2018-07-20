@@ -189,7 +189,7 @@ xpns_get_tmux_version() {
   else
     _tmux_version="$( ${TMUX_XPANES_EXEC} -V )"
   fi
-  echo "${_tmux_version}" | perl -anle 'printf "%s", "$F[1]"'
+  ( read -r _ _ver; echo "${_ver}" ) <<<"${_tmux_version}"
 }
 
 # Check whether the prefered tmux version is greater than host's tmux version.
@@ -226,8 +226,7 @@ xpns_get_local_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
   } | grep "^${_conf_name}" \
-    | head -n 1 \
-    | perl -anle 'print $F[1]'
+    | ( read -r _ _v; echo "${_v}" )
 }
 
 xpns_get_global_tmux_conf() {
@@ -240,8 +239,7 @@ xpns_get_global_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" \
-    | head -n 1 \
-    | perl -anle 'print $F[1]'
+    | ( read -r _ _v; echo "${_v}" )
 }
 
 # Disable allow-rename because
