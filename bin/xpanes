@@ -397,7 +397,7 @@ xpns_generate_window_name() {
       # the name exceed the maximum length of tmux window name (2000 byte).
       grep -oE '^.{1,200}' \
     | \
-      perl -anle 'printf "%s", "$F[0]-'$$'"'
+      ( read -r _name _ && echo "${_name}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.

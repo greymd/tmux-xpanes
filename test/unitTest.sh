@@ -10,7 +10,7 @@ if [ -n "$BASH_VERSION" ]; then
 fi
 
 # Directory name of this file
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")"; pwd)"
+readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 
 BIN_DIR="${THIS_DIR}/../bin/"
 # Get repository name which equals to bin name.
@@ -18,8 +18,8 @@ BIN_DIR="${THIS_DIR}/../bin/"
 BIN_NAME="xpanes"
 EXEC="${BIN_DIR}${BIN_NAME}"
 
-# Load functions.
-source ${EXEC} --dry-run -- -
+# shellcheck source=/dev/null
+source "${EXEC}" --dry-run -- -
 
 setUp(){
     echo ">>>>>>>>>>" >&2
@@ -47,4 +47,15 @@ test_xpns_tmux_is_greater_equals() {
   assertEquals "1" "$?"
 }
 
-. ${THIS_DIR}/shunit2/source/2.1/src/shunit2
+test_xpns_generate_window_name() {
+  actual=$(xpns_generate_window_name 'EMPTY' 'aaa bbb ccc')
+  expected="aaa-$$"
+  assertEquals "$actual" "$expected"
+
+  actual=$(xpns_generate_window_name 'EMPTY' '')
+  expected="EMPTY-$$"
+  assertEquals "$actual" "$expected"
+}
+
+# shellcheck source=/dev/null
+. "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
