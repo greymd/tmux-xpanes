@@ -275,6 +275,28 @@ xpns_restore_allow_rename () {
   fi
 }
 
+# Make each line unique by adding index number
+# echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | xpns_unique_line
+#  aaa-1
+#  bbb-1
+#  ccc-1
+#  aaa-2
+#  ccc-2
+#  ccc-3
+#
+# Eval is used because associative array is not supported before bash 4.2
+xpns_unique_line () {
+  local _val_name
+  while read -r line; do
+    _val_name="__xpns_hash_$(printf "%s" "${line}" | xpns_value2key)"
+    # initialize variable
+    eval "${_val_name}=\${${_val_name}:-0}"
+    # increment variable
+    eval "${_val_name}=\$(( ++${_val_name} ))"
+    printf "%s\\n" "${line}-$(eval printf "%s" "\$${_val_name}")"
+  done
+}
+
 #
 # Generate log file names from given arguments.
 # Usage:
@@ -297,7 +319,7 @@ xpns_log_filenames () {
   cat \
     | \
     # 1st argument + '-' + unique number (avoid same argument has same name)
-    perl -nle 'print $_."-".(($h{$_}++)+1)' \
+    xpns_unique_line \
     | while read -r _arg
     do
       cat <<<"${_full_fmt}" \
@@ -402,12 +424,19 @@ xpns_generate_window_name() {
 
 # Convert string to another string which can be handled as tmux window name.
 xpns_value2key() {
-  perl -nle 'printf("%s", unpack("H*", $_));'
+  od -tx1 -An  | tr -dc 'a-zA-Z0-9' | tr -d '\n'
 }
 
 # Restore string encoded by xpns_value2key function.
+# xxd is not used due to POSIX compliant.
 xpns_key2value() {
-  perl -nle 'printf("%s", pack("H*", $_));'
+  read -r _key
+  local _pat='..'
+  while [[ $_key =~ $_pat ]]; do
+    # shellcheck disable=SC2059
+    printf "\\x${BASH_REMATCH[0]}"
+    _key="${_key#${BASH_REMATCH[0]}}"
+  done
 }
 
 #

@@ -57,5 +57,40 @@ test_xpns_generate_window_name() {
   assertEquals "$actual" "$expected"
 }
 
+test_xpns_unique_line () {
+  actual="$(echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | xpns_unique_line)"
+  expected="aaa-1
+bbb-1
+ccc-1
+aaa-2
+ccc-2
+ccc-3"
+  assertEquals "$actual" "$expected"
+}
+
+test_xpns_unique_line () {
+  actual=$(echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | xpns_log_filenames '[:ARG:]_[:PID:].log')
+  expected="aaa-1_$$.log
+bbb-1_$$.log
+ccc-1_$$.log
+aaa-2_$$.log
+ccc-2_$$.log
+ccc-3_$$.log"
+  assertEquals "$actual" "$expected"
+}
+
+
+test_xpns_value2key () {
+  actual=$(printf "%s" ほげほげ | xpns_value2key)
+  expected="e381bbe38192e381bbe38192"
+  assertEquals "$actual" "$expected"
+}
+
+test_xpns_key2value () {
+  actual=$(echo e381bbe38192e381bbe38192 | xpns_key2value)
+  expected="ほげほげ"
+  assertEquals "$actual" "$expected"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
