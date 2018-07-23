@@ -50,11 +50,11 @@ test_xpns_tmux_is_greater_equals() {
 test_xpns_generate_window_name() {
   actual=$(xpns_generate_window_name 'EMPTY' 'aaa bbb ccc')
   expected="aaa-$$"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 
   actual=$(xpns_generate_window_name 'EMPTY' '')
   expected="EMPTY-$$"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_unique_line () {
@@ -65,7 +65,7 @@ ccc-1
 aaa-2
 ccc-2
 ccc-3"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_unique_line () {
@@ -76,20 +76,20 @@ ccc-1_$$.log
 aaa-2_$$.log
 ccc-2_$$.log
 ccc-3_$$.log"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 
 test_xpns_value2key () {
   actual=$(printf "%s" ほげほげ | xpns_value2key)
   expected="e381bbe38192e381bbe38192"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_key2value () {
   actual=$(echo e381bbe38192e381bbe38192 | xpns_key2value)
   expected="ほげほげ"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_rm_empty_line() {
@@ -102,7 +102,7 @@ test_xpns_rm_empty_line() {
   expected="a b c
  d e f
  f g"
-  assertEquals "$actual" "$expected"
+  assertEquals "$expected" "$actual"
 }
 
 # shellcheck source=/dev/null

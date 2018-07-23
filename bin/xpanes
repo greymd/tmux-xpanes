@@ -439,6 +439,18 @@ xpns_key2value() {
   done
 }
 
+# Remove empty lines
+# This function behaves like `awk NF`
+xpns_rm_empty_line() {
+  { cat; printf "\\n";} | while IFS= read -r line;do
+    # shellcheck disable=SC2086
+    set -- ${line-}
+    if [[ $# != 0 ]]; then
+      printf "%s\\n" "${line}"
+    fi
+  done
+}
+
 #
 # Split a new window into multiple panes.
 # Usage:
@@ -862,11 +874,7 @@ xpns_switch_pipe_mode() {
   while read -r line;
   do
     XP_STDIN+=("${line}")
-  done < <(cat \
-             | \
-             # Remove empty lines
-             perl -anle '$#F >= 0 and print' \
-             | \
+  done < <(cat | xpns_rm_empty_line | \
              xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}"
            )
 
