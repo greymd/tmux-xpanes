@@ -105,5 +105,26 @@ test_xpns_rm_empty_line() {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_extract_matched() {
+  actual="$(xpns_extract_matched "aaa123bbb" "[0-9]{3}")"
+  expected="123"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_remove_matched() {
+  actual="$(xpns_remove_matched "aaa123bbb" "[0-9]{3}")"
+  expected="aaabbb"
+  assertEquals "$expected" "$actual"
+
+  _XP_FLAG_OPTIONS="[hVdetx]"
+  # XP_ARG_OPTIONS="[IScln]"
+
+  # "-detxlev" means -d -e -t -x -l ev options
+  # This case is test for extracting -l option's arugment "ev"
+  actual="$(xpns_remove_matched "-detxlev" "^-${_XP_FLAG_OPTIONS}*l")"
+  expected="ev"
+  assertEquals "$expected" "$actual"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"

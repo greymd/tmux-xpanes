@@ -451,6 +451,29 @@ xpns_rm_empty_line() {
   done
 }
 
+# Extract matched patterns from string
+# $ xpns_extract_matched "aaa123bbb" "[0-9]{3}"
+# => "123"
+xpns_extract_matched() {
+  local args="$1" ;shift
+  local regex="$1"
+  if [[ $args =~ ($regex) ]];then
+    printf "%s" "${BASH_REMATCH[0]}"
+  fi
+}
+
+# $ xpns_remove_matched "aaa123bbb" "[0-9]{3}"
+# => "aaabbb"
+xpns_remove_matched() {
+  local args="$1" ;shift
+  local regex="$1"
+  local matched
+  if [[ $args =~ ($regex) ]];then
+    matched="${BASH_REMATCH[0]}"
+    printf "%s" "${args/$matched/}"
+  fi
+}
+
 #
 # Split a new window into multiple panes.
 # Usage:
@@ -875,8 +898,7 @@ xpns_switch_pipe_mode() {
   do
     XP_STDIN+=("${line}")
   done < <(cat | xpns_rm_empty_line | \
-             xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}"
-           )
+    xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}")
 
 
   # Merge them into utility.
