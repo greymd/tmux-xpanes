@@ -92,5 +92,18 @@ test_xpns_key2value () {
   assertEquals "$actual" "$expected"
 }
 
+test_xpns_rm_empty_line() {
+  actual="$( echo 'a b c
+   
+ d e f
+	
+ f g
+' | xpns_rm_empty_line)"
+  expected="a b c
+ d e f
+ f g"
+  assertEquals "$actual" "$expected"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
