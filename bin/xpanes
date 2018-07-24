@@ -837,7 +837,7 @@ xpns_execution() {
       pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
   fi
 
-  # In case of -a, keep the original window name
+  # In case of -x, this statement is skipped to keep the original window name
   if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
