@@ -427,7 +427,7 @@ xpns_generate_window_name() {
 
 # Convert string to another string which can be handled as tmux window name.
 xpns_value2key() {
-  od -tx1 -An  | tr -dc 'a-zA-Z0-9' | tr -d '\n'
+  od -v -tx1 -An  | tr -dc 'a-zA-Z0-9' | tr -d '\n'
 }
 
 # Restore string encoded by xpns_value2key function.
