@@ -458,8 +458,8 @@ xpns_rm_empty_line() {
 # => "123"
 xpns_extract_matched() {
   local _args="$1" ;shift
-  local _regex="$1"
-  if [[ $_args =~ ($_regex) ]];then
+  local _regex="($1)"
+  if [[ $_args =~ $_regex ]];then
     printf "%s" "${BASH_REMATCH[0]}"
   fi
 }
@@ -986,6 +986,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
+  local _pattern
   xpns_load_flag_options "$(xpns_extract_matched "$1" "^-${XP_FLAG_OPTIONS}+")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
@@ -994,7 +995,8 @@ xpns_load_arg_options() {
     # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I(.+) ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*I(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
       XP_REPSTR="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -1005,7 +1007,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l(.+) ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
       XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
@@ -1018,7 +1021,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c(.+) ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*c(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
       XP_CMD_UTILITY="${BASH_REMATCH[1]}"
       XP_OPT_CMD_UTILITY=1
       return 0
@@ -1031,7 +1035,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n(.+) ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*n(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
       XP_MAX_PANE_ARGS="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
@@ -1042,7 +1047,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S(.+) ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*S(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
       XP_SOCKET_PATH="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
