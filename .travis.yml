@@ -167,4 +167,5 @@ before_script:
 
 script:
   - shellcheck ./bin/xpanes
+  - $SH ./test/unitTest.sh
   - TRAVIS_BUILD_DIR="${TRAVIS_BUILD_DIR}" $SH ./test/cases_pairwise.sh
