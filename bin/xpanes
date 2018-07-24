@@ -58,7 +58,10 @@ readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
+
+# Check dependencies just in case.
+# Even POSIX compliant commands are only used in this program.
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -428,7 +431,6 @@ xpns_value2key() {
 }
 
 # Restore string encoded by xpns_value2key function.
-# xxd is not used due to POSIX compliant.
 xpns_key2value() {
   read -r _key
   local _pat='..'
@@ -455,22 +457,10 @@ xpns_rm_empty_line() {
 # $ xpns_extract_matched "aaa123bbb" "[0-9]{3}"
 # => "123"
 xpns_extract_matched() {
-  local args="$1" ;shift
-  local regex="$1"
-  if [[ $args =~ ($regex) ]];then
+  local _args="$1" ;shift
+  local _regex="$1"
+  if [[ $_args =~ ($_regex) ]];then
     printf "%s" "${BASH_REMATCH[0]}"
-  fi
-}
-
-# $ xpns_remove_matched "aaa123bbb" "[0-9]{3}"
-# => "aaabbb"
-xpns_remove_matched() {
-  local args="$1" ;shift
-  local regex="$1"
-  local matched
-  if [[ $args =~ ($regex) ]];then
-    matched="${BASH_REMATCH[0]}"
-    printf "%s" "${args/$matched/}"
   fi
 }
 
@@ -996,7 +986,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(cat <<<"$1" | perl -nle "/^-${XP_FLAG_OPTIONS}+/ and print $&")" > /dev/null
+  xpns_load_flag_options "$(xpns_extract_matched "$1" "^-${XP_FLAG_OPTIONS}+")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
@@ -1004,8 +994,8 @@ xpns_load_arg_options() {
     # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
-      XP_REPSTR="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I(.+) ]]; then
+      XP_REPSTR="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_REPSTR="$2"
@@ -1015,8 +1005,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
-      XP_LAYOUT="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l(.+) ]]; then
+      XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -1028,8 +1018,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
-      XP_CMD_UTILITY="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c(.+) ]]; then
+      XP_CMD_UTILITY="${BASH_REMATCH[1]}"
       XP_OPT_CMD_UTILITY=1
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -1041,8 +1031,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
-      XP_MAX_PANE_ARGS="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n(.+) ]]; then
+      XP_MAX_PANE_ARGS="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
@@ -1052,8 +1042,8 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
-      XP_SOCKET_PATH="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
+    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S(.+) ]]; then
+      XP_SOCKET_PATH="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_SOCKET_PATH="$2"
