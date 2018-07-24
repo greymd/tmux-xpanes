@@ -534,7 +534,7 @@ xpns_set_titles() {
     elif [[ ${_extra_flag} -eq 1 ]] && \
          [[ "${_pane_border_status}" != "off" ]] && \
          [[ -n "${_pane_border_status}" ]] ;then
-      ## For -a option
+      ## For -x option
       xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     fi
     _index=$(( _index + 1 ))
@@ -686,7 +686,7 @@ xpns_pre_execution() {
   local _args4args=""
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_msg "Error" "'-a' must be used within the running tmux session."
+    xpns_msg "Error" "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
 
@@ -940,7 +940,7 @@ xpns_warning_before_extra() {
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
     xpns_msg "Warning" "Panes are now synchronized.
-'-a' option may cause unexpected behavior on the synchronized panes."
+'-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
     read -r _ans
     if grep -iqv '^y' <<<"${_ans}" ; then
