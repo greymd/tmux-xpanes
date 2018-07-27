@@ -58,7 +58,10 @@ readonly XP_TMP_WIN_NAME="tmp-$$"
 readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux perl}"
+
+# Check dependencies just in case.
+# Even POSIX compliant commands are only used in this program.
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf xargs cat}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -189,7 +192,7 @@ xpns_get_tmux_version() {
   else
     _tmux_version="$( ${TMUX_XPANES_EXEC} -V )"
   fi
-  echo "${_tmux_version}" | perl -anle 'printf "%s", "$F[1]"'
+  ( read -r _ _ver; echo "${_ver}" ) <<<"${_tmux_version}"
 }
 
 # Check whether the prefered tmux version is greater than host's tmux version.
@@ -226,8 +229,7 @@ xpns_get_local_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
   } | grep "^${_conf_name}" \
-    | head -n 1 \
-    | perl -anle 'print $F[1]'
+    | ( read -r _ _v; echo "${_v}" )
 }
 
 xpns_get_global_tmux_conf() {
@@ -240,8 +242,7 @@ xpns_get_global_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" \
-    | head -n 1 \
-    | perl -anle 'print $F[1]'
+    | ( read -r _ _v; echo "${_v}" )
 }
 
 # Disable allow-rename because
@@ -277,6 +278,28 @@ xpns_restore_allow_rename () {
   fi
 }
 
+# Make each line unique by adding index number
+# echo aaa bbb ccc aaa ccc ccc | xargs -n 1 | xpns_unique_line
+#  aaa-1
+#  bbb-1
+#  ccc-1
+#  aaa-2
+#  ccc-2
+#  ccc-3
+#
+# Eval is used because associative array is not supported before bash 4.2
+xpns_unique_line () {
+  local _val_name
+  while read -r line; do
+    _val_name="__xpns_hash_$(printf "%s" "${line}" | xpns_value2key)"
+    # initialize variable
+    eval "${_val_name}=\${${_val_name}:-0}"
+    # increment variable
+    eval "${_val_name}=\$(( ++${_val_name} ))"
+    printf "%s\\n" "${line}-$(eval printf "%s" "\$${_val_name}")"
+  done
+}
+
 #
 # Generate log file names from given arguments.
 # Usage:
@@ -299,7 +322,7 @@ xpns_log_filenames () {
   cat \
     | \
     # 1st argument + '-' + unique number (avoid same argument has same name)
-    perl -nle 'print $_."-".(($h{$_}++)+1)' \
+    xpns_unique_line \
     | while read -r _arg
     do
       cat <<<"${_full_fmt}" \
@@ -399,17 +422,46 @@ xpns_generate_window_name() {
       # the name exceed the maximum length of tmux window name (2000 byte).
       grep -oE '^.{1,200}' \
     | \
-      perl -anle 'printf "%s", "$F[0]-'$$'"'
+      ( read -r _name _ && echo "${_name}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.
 xpns_value2key() {
-  perl -nle 'printf("%s", unpack("H*", $_));'
+  od -v -tx1 -An  | tr -dc 'a-zA-Z0-9' | tr -d '\n'
 }
 
 # Restore string encoded by xpns_value2key function.
 xpns_key2value() {
-  perl -nle 'printf("%s", pack("H*", $_));'
+  read -r _key
+  local _pat='..'
+  while [[ $_key =~ $_pat ]]; do
+    # shellcheck disable=SC2059
+    printf "\\x${BASH_REMATCH[0]}"
+    _key="${_key#${BASH_REMATCH[0]}}"
+  done
+}
+
+# Remove empty lines
+# This function behaves like `awk NF`
+xpns_rm_empty_line() {
+  { cat; printf "\\n";} | while IFS= read -r line;do
+    # shellcheck disable=SC2086
+    set -- ${line-}
+    if [[ $# != 0 ]]; then
+      printf "%s\\n" "${line}"
+    fi
+  done
+}
+
+# Extract matched patterns from string
+# $ xpns_extract_matched "aaa123bbb" "[0-9]{3}"
+# => "123"
+xpns_extract_matched() {
+  local _args="$1" ;shift
+  local _regex="($1)"
+  if [[ $_args =~ $_regex ]];then
+    printf "%s" "${BASH_REMATCH[0]}"
+  fi
 }
 
 #
@@ -482,7 +534,7 @@ xpns_set_titles() {
     elif [[ ${_extra_flag} -eq 1 ]] && \
          [[ "${_pane_border_status}" != "off" ]] && \
          [[ -n "${_pane_border_status}" ]] ;then
-      ## For -a option
+      ## For -x option
       xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     fi
     _index=$(( _index + 1 ))
@@ -634,7 +686,7 @@ xpns_pre_execution() {
   local _args4args=""
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_msg "Error" "'-a' must be used within the running tmux session."
+    xpns_msg "Error" "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
 
@@ -785,7 +837,7 @@ xpns_execution() {
       pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
   fi
 
-  # In case of -a, keep the original window name
+  # In case of -x, this statement is skipped to keep the original window name
   if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
@@ -835,13 +887,8 @@ xpns_switch_pipe_mode() {
   while read -r line;
   do
     XP_STDIN+=("${line}")
-  done < <(cat \
-             | \
-             # Remove empty lines
-             perl -anle '$#F >= 0 and print' \
-             | \
-             xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}"
-           )
+  done < <(cat | xpns_rm_empty_line | \
+    xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}")
 
 
   # Merge them into utility.
@@ -893,7 +940,7 @@ xpns_warning_before_extra() {
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
     xpns_msg "Warning" "Panes are now synchronized.
-'-a' option may cause unexpected behavior on the synchronized panes."
+'-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
     read -r _ans
     if grep -iqv '^y' <<<"${_ans}" ; then
@@ -939,7 +986,8 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  xpns_load_flag_options "$(cat <<<"$1" | perl -nle "/^-${XP_FLAG_OPTIONS}+/ and print $&")" > /dev/null
+  local _pattern
+  xpns_load_flag_options "$(xpns_extract_matched "$1" "^-${XP_FLAG_OPTIONS}+")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
     # -IAAA       -- XP_REPSTR="AAA"
@@ -947,8 +995,9 @@ xpns_load_arg_options() {
     # -I"AAA BBB" -- XP_REPSTR="AAA BBB"
     # -IAAA BBB   -- XP_REPSTR="AAA", XP_ARGS=("BBB")
     # -I -d ...   -- XP_REPSTR=""
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I.+ ]]; then
-      XP_REPSTR="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?I//")"
+    _pattern="^-${XP_FLAG_OPTIONS}*I(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_REPSTR="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_REPSTR="$2"
@@ -958,8 +1007,9 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l.+ ]]; then
-      XP_LAYOUT="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?l//" | xpns_layout_short2long)"
+    _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -971,8 +1021,9 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c.+ ]]; then
-      XP_CMD_UTILITY="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?c//")"
+    _pattern="^-${XP_FLAG_OPTIONS}*c(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_CMD_UTILITY="${BASH_REMATCH[1]}"
       XP_OPT_CMD_UTILITY=1
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
@@ -984,8 +1035,9 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n.+ ]]; then
-      XP_MAX_PANE_ARGS="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?n//")"
+    _pattern="^-${XP_FLAG_OPTIONS}*n(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_MAX_PANE_ARGS="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
@@ -995,8 +1047,9 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
-    if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S.+ ]]; then
-      XP_SOCKET_PATH="$(cat <<<"$1" | perl -ple "s/^-${XP_FLAG_OPTIONS}*?S//")"
+    _pattern="^-${XP_FLAG_OPTIONS}*S(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_SOCKET_PATH="${BASH_REMATCH[1]}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_SOCKET_PATH="$2"
