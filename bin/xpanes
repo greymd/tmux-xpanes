@@ -1,4 +1,5 @@
 #!/bin/bash
+readonly XP_SHELL="/bin/bash"
 
 # @Author Yamada, Yasuhiro
 # @Filename xpanes
@@ -59,7 +60,8 @@ readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
-readonly XP_AWAIT_CMD=$'\necho "Pane is dead: Press any keys to exit..."\nread'
+# This command might not be executed in bash. Use /bin/bash explicitly.
+readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press [Enter] to exit..." >&2 \'\n'${XP_SHELL}$' -c read'
 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
@@ -601,7 +603,8 @@ xpns_split_window() {
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
   local _cmd_template="$1"    ; shift
-  local _exec_cmd _pane_id
+  local _exec_cmd
+  # local _pane_id
   local _sep_count=0
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
@@ -618,8 +621,9 @@ xpns_split_window() {
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
       # Open login shell and execute command on the interactive screen.
-      _pane_id="$( ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d -P )"
-      ${TMUX_XPANES_EXEC} send-keys -t "${_pane_id}" "${_exec_cmd}" C-m
+      # _pane_id="$( ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d -P )"
+      # ${TMUX_XPANES_EXEC} send-keys -t "${_pane_id}" "${_exec_cmd}" C-m
+      ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
     fi
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
@@ -872,14 +876,14 @@ xpns_execution() {
 
   # Sending operations for each pane.
   # With -s option, command is already sent.
-  # if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
-  #   xpns_send_commands \
-  #     "${_window_name}" \
-  #     "${_pane_base_index}" \
-  #     "${XP_REPSTR}" \
-  #     "${XP_CMD_UTILITY}" \
-  #     "${XP_ARGS[@]}"
-  # fi
+  if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
+    xpns_send_commands \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  fi
 
   xpns_arrange_pane_location \
     "${_window_name}" \
