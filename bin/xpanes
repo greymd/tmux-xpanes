@@ -61,7 +61,8 @@ readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf xargs cat}"
+# `xargs` is omitted because minimum functions can work without it.
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf cat sort pwd cd}"
 
 ## --------------------------------
 # User customizable shell variables
