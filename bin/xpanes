@@ -59,6 +59,8 @@ readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
+readonly XP_AWAIT_CMD=$'\necho "Pane is dead: Press any keys to exit..."\nread'
+
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs` is omitted because minimum functions can work without it.
@@ -79,7 +81,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVdetxs]"
+readonly XP_FLAG_OPTIONS="[hVdetxsa]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -105,6 +107,7 @@ XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
+XP_OPT_AWAIT=0
 
 ## --------------------------------
 # Logger
@@ -594,10 +597,11 @@ xpns_seq_dec () {
 xpns_split_window() {
   local _window_name="$1"     ; shift
   local _cmd_exec_flag="$1"   ; shift
+  local _await_flag="$1"      ; shift
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
-  local _cmd="$1"             ; shift
-  local _final_cmd _pane_id
+  local _cmd_template="$1"    ; shift
+  local _exec_cmd _pane_id
   local _sep_count=0
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
@@ -605,12 +609,17 @@ xpns_split_window() {
   for i in $(xpns_seq_dec $_last_idx)
   do
     _sep_count=$((_sep_count + 1))
-    _final_cmd="${_cmd//${_repstr}/${args[i]}}"
+    _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
+    if [[ $_await_flag -eq 1 ]]; then
+      _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+    fi
     if [[ $_cmd_exec_flag -eq 1 ]]; then
-      ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_final_cmd}"
+      # Execute command as a child process of default-shell.
+      ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
+      # Open login shell and execute command on the interactive screen.
       _pane_id="$( ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d -P )"
-      ${TMUX_XPANES_EXEC} send-keys -t "${_pane_id}" "${_final_cmd}" C-m
+      ${TMUX_XPANES_EXEC} send-keys -t "${_pane_id}" "${_exec_cmd}" C-m
     fi
     # Restraining that size of pane's width becomes
     # less than the minimum size which is defined by tmux.
@@ -629,11 +638,12 @@ xpns_extra_panes_to_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
   # specify a pane which has the biggest index number.
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_pane_base_index}" "$@"
+  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_await_flg}" "${_pane_base_index}" "$@"
 }
 
 #
@@ -646,6 +656,7 @@ xpns_prepare_window() {
   local _pane_base_index="$1" ; shift
   local _attach_flg="$1"      ; shift
   local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
@@ -658,7 +669,7 @@ xpns_prepare_window() {
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_pane_base_index}" "$@"
+  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_await_flg}" "${_pane_base_index}" "$@"
 
   ### If the first pane is still remaining,
   ### panes cannot be organized well.
@@ -817,6 +828,7 @@ xpns_execution() {
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_AWAIT}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -826,6 +838,7 @@ xpns_execution() {
       "${_pane_base_index}" \
       "${XP_OPT_ATTACH}" \
       "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_AWAIT}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -1037,6 +1050,9 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ s ]]; then
     XP_OPT_SPEEDY=1
+  fi
+  if [[ "$1" =~ a ]]; then
+    XP_OPT_AWAIT=1
   fi
   return 1
 }
