@@ -79,7 +79,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVdetx]"
+readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -104,6 +104,7 @@ XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
+XP_OPT_SPEEDY=0
 
 ## --------------------------------
 # Logger
@@ -767,6 +768,14 @@ xpns_execution() {
         | xpns_value2key)
   fi
 
+  if [[ ${XP_OPT_SPEEDY} -eq 1 ]];then
+    # TODO: Set flag to change the behavior of xpns_prepare_window
+    : "TODO"
+  fi
+
+  ## --------------------
+  # Prepare window and panes
+  ## --------------------
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     xpns_extra_panes_to_window \
       "${_window_name}" \
@@ -781,9 +790,10 @@ xpns_execution() {
   fi
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    # Avoid sending command to the original window
+    # Set offset to avoid sending command to the original pane.
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
+    # in xpns_arrange_pane_location
     _last_args_idx=$((_last_args_idx + _pane_count))
   fi
 
@@ -798,8 +808,6 @@ xpns_execution() {
   fi
 
   # Set pane titles for each pane.
-  # The reason why 'if' statement is not here is
-  # author believes setting title will be default feature in the future.
   xpns_set_titles \
     "${_window_name}" \
     "${_pane_base_index}" \
@@ -808,12 +816,15 @@ xpns_execution() {
     "${XP_ARGS[@]}"
 
   # Sending operations for each pane.
-  xpns_send_commands \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${XP_REPSTR}" \
-    "${XP_CMD_UTILITY}" \
-    "${XP_ARGS[@]}"
+  # With -s option, command is already sent.
+  if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
+    xpns_send_commands \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  fi
 
   xpns_arrange_pane_location \
     "${_window_name}" \
@@ -981,6 +992,9 @@ xpns_load_flag_options() {
       xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
       sleep 1
     fi
+  fi
+  if [[ "$1" =~ s ]]; then
+    XP_OPT_SPEEDY=1
   fi
   return 1
 }
