@@ -119,5 +119,23 @@ test_xpns_extract_matched() {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_seq() {
+  actual="$(xpns_seq 3)"
+  expected="0
+1
+2
+3"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_seq_dec() {
+  actual="$(xpns_seq_dec 3)"
+  expected="3
+2
+1
+0"
+  assertEquals "$expected" "$actual"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
