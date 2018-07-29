@@ -1043,8 +1043,9 @@ xpns_layout_short2long() {
 }
 
 xpns_is_valid_layout() {
-  local _layout="$1"
-  if ! echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'; then
+  local _layout="${1-}"
+  local _pat='^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
+  if ! [[ $_layout =~ $_pat ]]  ; then
     xpns_msg "Error" "Invalid layout '${_layout}'."
     exit ${XP_ELAYOUT}
   fi
@@ -1058,7 +1059,7 @@ xpns_warning_before_extra() {
 '-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
     read -r _ans
-    if grep -iqv '^y' <<<"${_ans}" ; then
+    if ! [[ "${_ans-}" =~ ^[yY]  ]]; then
       return 1
     fi
   fi

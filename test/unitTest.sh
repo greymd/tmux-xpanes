@@ -139,5 +139,37 @@ test_xpns_seq() {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_is_valid_layout() {
+  ( xpns_is_valid_layout "tiled" )
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "tile" 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "" 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "even-horizontal" )
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "horizontal" 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
