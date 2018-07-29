@@ -3019,6 +3019,13 @@ test_t_option_warning() {
     rmdir "${_tmpdir}"/fin
 }
 
+# TODO:
+# -s + --log
+# -s (XP_ENOPAIN)
+# -ss + --log
+# -s + -t + --log
+# -s + -t + -x + --log
+
 ###:-:-:END_TESTING:-:-:###
 
 ###:-:-:INSERT_TESTING:-:-:###
