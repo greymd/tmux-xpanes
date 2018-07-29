@@ -55,6 +55,10 @@ test_xpns_generate_window_name() {
   actual=$(xpns_generate_window_name 'EMPTY' '')
   expected="EMPTY-$$"
   assertEquals "$expected" "$actual"
+
+  actual=$(xpns_generate_window_name 'EMPTY' "$(yes A | head -n 500 | tr -d '\n')")
+  expected="$(yes A | head -n 200 | tr -d '\n')-$$"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_unique_line () {

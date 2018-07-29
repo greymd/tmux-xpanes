@@ -428,13 +428,10 @@ xpns_arr2args() {
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
-  cat <<<"${1:-${_unprintable_str}}" \
-    | \
-      # Leave first 200 characters to prevent
-      # the name exceed the maximum length of tmux window name (2000 byte).
-      grep -oE '^.{1,200}' \
-    | \
-      ( read -r _name _ && echo "${_name}-$$" )
+  # Leave first 200 characters to prevent
+  # the name exceed the maximum length of tmux window name (2000 byte).
+  printf "%s\\n" "${1:-${_unprintable_str}}" \
+    | ( read -r _name _ && echo "${_name:0:200}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.
@@ -847,7 +844,7 @@ xpns_execution() {
     # tmux 1.6 does not support -F option
     _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
-    _pane_base_index=$((_pane_base_index + _pane_count - 1))
+    _pane_base_index=$(( _pane_base_index + _pane_count - 1 ))
     _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
   else
     _window_name=$(
