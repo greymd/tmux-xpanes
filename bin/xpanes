@@ -604,13 +604,14 @@ xpns_wait_func_title() {
 #
 xpns_split_window() {
   local _window_name="$1"     ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
   local _cmd_exec_flag="$1"   ; shift
   local _await_flag="$1"      ; shift
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
   local _cmd_template="$1"    ; shift
   local _exec_cmd
-  # local _pane_id
   local _sep_count=0
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
@@ -624,16 +625,15 @@ xpns_split_window() {
     if [[ $_cmd_exec_flag -eq 1 ]]; then
 
       ## Speedy mode + logging
-      if [[ ${XP_OPT_LOG_STORE} -eq 1 ]];then
+      if [[ ${_log_flag} -eq 1 ]];then
         # Wait for start of logging
-        xpns_msg "Info" "Speedy mode with --log option: wait few seconds to start logging..."
-        # Without this part, logging thread starts after new process is finished.
+        # Without this part, logging thread may start after new process is finished.
         # Execute function to wait for logging start.
         _exec_cmd="$(xpns_wait_func_pipe)"$'\n'"${_exec_cmd}"
       fi
 
       ## Speedy mode + pane title
-      if [[ ${XP_OPT_SET_TITLE} -eq 1 ]];then
+      if [[ ${_title_flag} -eq 1 ]];then
         _exec_cmd="$(xpns_wait_func_title "${args[i]}" )"$'\n'${_exec_cmd}
       fi
 
@@ -646,8 +646,6 @@ xpns_split_window() {
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
       # Open login shell and execute command on the interactive screen.
-      # _pane_id="$( ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d -P )"
-      # ${TMUX_XPANES_EXEC} send-keys -t "${_pane_id}" "${_exec_cmd}" C-m
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
     fi
     # Restraining that size of pane's width becomes
@@ -666,6 +664,8 @@ xpns_split_window() {
 xpns_extra_panes_to_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
   local _speedy_flg="$1"      ; shift
   local _await_flg="$1"       ; shift
   # specify a pane which has the biggest index number.
@@ -674,7 +674,14 @@ xpns_extra_panes_to_window() {
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_await_flg}" "${_pane_base_index}" "$@"
+  xpns_split_window \
+    "${_window_name}" \
+    "${_log_flag}" \
+    "${_title_flag}" \
+    "${_speedy_flg}" \
+    "${_await_flg}" \
+    "${_pane_base_index}" \
+    "$@"
 }
 
 #
@@ -685,6 +692,8 @@ xpns_extra_panes_to_window() {
 xpns_prepare_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
   local _attach_flg="$1"      ; shift
   local _speedy_flg="$1"      ; shift
   local _await_flg="$1"       ; shift
@@ -700,7 +709,14 @@ xpns_prepare_window() {
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_speedy_flg}" "${_await_flg}" "${_pane_base_index}" "$@"
+  xpns_split_window \
+    "${_window_name}" \
+    "${_log_flag}" \
+    "${_title_flag}" \
+    "${_speedy_flg}" \
+    "${_await_flg}" \
+    "${_pane_base_index}" \
+    "$@"
 
   ### If the first pane is still remaining,
   ### panes cannot be organized well.
@@ -861,6 +877,8 @@ xpns_execution() {
     xpns_extra_panes_to_window \
       "${_window_name}" \
       "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
       "${XP_OPT_SPEEDY}" \
       "${XP_OPT_SPEEDY_AWAIT}" \
       "${XP_REPSTR}" \
@@ -870,6 +888,8 @@ xpns_execution() {
     xpns_prepare_window \
       "${_window_name}" \
       "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
       "${XP_OPT_ATTACH}" \
       "${XP_OPT_SPEEDY}" \
       "${XP_OPT_SPEEDY_AWAIT}" \
