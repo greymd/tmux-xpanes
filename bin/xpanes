@@ -495,6 +495,12 @@ xpns_enable_logging() {
   )
 }
 
+xpns_is_target_alive() {
+  local _target="$1"
+  ${TMUX_XPANES_EXEC} display-message -t "$_target" -p > /dev/null 2>&1
+  return $?
+}
+
 xpns_inject_title() {
   local _target_pane="$1" ;shift
   local _message="$1"     ;shift
@@ -591,6 +597,20 @@ xpns_seq_dec () {
   eval "printf \"%d\\n\" {$_num..0}"
 }
 
+xpns_wait_func_pipe() {
+  local _threshold=5
+  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
+  printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
+}
+
+xpns_wait_func_title() {
+  local _title="$1"
+  local _threshold=3
+  _title=$(printf "%s" "$1" | xpns_value2key)
+  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_title}\" | od -tx1 -An | tr -dc 0-9a-zA-Z | grep ${_title} && break"
+  printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
+}
+
 #
 # Split a new window into multiple panes.
 #
@@ -611,10 +631,29 @@ xpns_split_window() {
   do
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
-    if [[ $_await_flag -eq 1 ]]; then
-      _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-    fi
+
+    ## Speedy mode
     if [[ $_cmd_exec_flag -eq 1 ]]; then
+
+      ## Speedy mode + logging
+      if [[ ${XP_OPT_LOG_STORE} -eq 1 ]];then
+        # Wait for start of logging
+        xpns_msg "Info" "Speedy mode with --log option: wait few seconds to start logging..."
+        # Without this part, logging thread starts after new process is finished.
+        # Execute function to wait for logging start.
+        _exec_cmd="$(xpns_wait_func_pipe)"$'\n'"${_exec_cmd}"
+      fi
+
+      ## Speedy mode + pane title
+      if [[ ${XP_OPT_SET_TITLE} -eq 1 ]];then
+        _exec_cmd="$(xpns_wait_func_title "${args[i]}" )"$'\n'${_exec_cmd}
+      fi
+
+      ## -ss: Speedy mode + nowait
+      if [[ $_await_flag -eq 1 ]]; then
+        _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+      fi
+
       # Execute command as a child process of default-shell.
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
@@ -853,8 +892,6 @@ xpns_execution() {
     # in xpns_arrange_pane_location
     _last_args_idx=$((_last_args_idx + _pane_count))
   fi
-
-  ## TODO: error handling for -ss
 
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
