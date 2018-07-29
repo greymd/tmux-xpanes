@@ -61,7 +61,7 @@ readonly XP_EMPTY_STR="EMPTY"
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
 # This command might not be executed in bash. Use /bin/bash explicitly.
-readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press [Enter] to exit..." >&2 \'\n'${XP_SHELL}$' -c read'
+readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press [Enter] to exit..." >&2 && read\''
 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
@@ -83,7 +83,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVdetxsa]"
+readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -109,7 +109,7 @@ XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
-XP_OPT_AWAIT=0
+XP_OPT_SPEEDY_AWAIT=0
 
 ## --------------------------------
 # Logger
@@ -151,6 +151,8 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
+  -s                           Speedy mode: Run commands promptly. But panes are not interactive.
+  -ss                          Speedy mode + Close panes automatically when the process exits.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
@@ -440,12 +442,8 @@ xpns_value2key() {
 # Restore string encoded by xpns_value2key function.
 xpns_key2value() {
   read -r _key
-  local _pat='..'
-  while [[ $_key =~ $_pat ]]; do
-    # shellcheck disable=SC2059
-    printf "\\x${BASH_REMATCH[0]}"
-    _key="${_key#${BASH_REMATCH[0]}}"
-  done
+  # shellcheck disable=SC2059
+  printf "$(printf "%s" "$_key" | sed 's/../\\x&/g')"
 }
 
 # Remove empty lines
@@ -505,7 +503,7 @@ xpns_inject_title() {
   printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
 }
 
-# Send command to the all the panes in the target window.
+# Set pane titles for each pane for -t option
 xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
@@ -832,7 +830,7 @@ xpns_execution() {
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_AWAIT}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -842,7 +840,7 @@ xpns_execution() {
       "${_pane_base_index}" \
       "${XP_OPT_ATTACH}" \
       "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_AWAIT}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -856,6 +854,8 @@ xpns_execution() {
     _last_args_idx=$((_last_args_idx + _pane_count))
   fi
 
+  ## TODO: error handling for -ss
+
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     xpns_enable_logging \
       "${_window_name}" \
@@ -867,6 +867,7 @@ xpns_execution() {
   fi
 
   # Set pane titles for each pane.
+  # If XP_OPT_SET_TITLE is false, do nothing.
   xpns_set_titles \
     "${_window_name}" \
     "${_pane_base_index}" \
@@ -1054,9 +1055,10 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ s ]]; then
     XP_OPT_SPEEDY=1
+    XP_OPT_SPEEDY_AWAIT=1
   fi
-  if [[ "$1" =~ a ]]; then
-    XP_OPT_AWAIT=1
+  if [[ "$1" =~ ss ]]; then
+    XP_OPT_SPEEDY_AWAIT=0
   fi
   return 1
 }
