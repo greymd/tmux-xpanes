@@ -120,16 +120,14 @@ test_xpns_extract_matched() {
 }
 
 test_xpns_seq() {
-  actual="$(xpns_seq 3)"
+  actual="$(xpns_seq 0 3)"
   expected="0
 1
 2
 3"
   assertEquals "$expected" "$actual"
-}
 
-test_xpns_seq_dec() {
-  actual="$(xpns_seq_dec 3)"
+  actual="$(xpns_seq 3 0)"
   expected="3
 2
 1

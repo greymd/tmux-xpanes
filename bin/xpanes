@@ -672,6 +672,8 @@ xpns_extra_panes_to_window() {
   local _speedy_flg="$1"      ; shift
   local _await_flg="$1"       ; shift
   # specify a pane which has the biggest index number.
+  #   Because pane_id may not be immutable.
+  #   If the small number of index is specified here, correspondance between pane_title and command can be slip off.
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
@@ -846,6 +848,7 @@ xpns_execution() {
     _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
     _pane_base_index=$((_pane_base_index + _pane_count - 1))
+    _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
   else
     _window_name=$(
       xpns_generate_window_name \
@@ -895,6 +898,8 @@ xpns_execution() {
     # Avoid to make layout even-horizontal even if there are many panes.
     # in xpns_arrange_pane_location
     _last_args_idx=$((_last_args_idx + _pane_count))
+    # Re-select the windown that was active before.
+    ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
   fi
 
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
