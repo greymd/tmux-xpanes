@@ -33,6 +33,9 @@ readonly XP_ELOGWRITE=21
 ## User exit the process intentionally by following warning message.
 readonly XP_EINTENT=30
 
+## All the panes are closed before processing due to user's options/command.
+readonly XP_ENOPANE=31
+
 # Necessary commands are not found
 readonly XP_ENOCMD=127
 
@@ -126,7 +129,7 @@ xpns_msg() {
   local _loglevel="$1"
   local _msgbody="$2"
   local _msg="${XP_THIS_FILE_NAME}:${_loglevel}: ${_msgbody}"
-  echo "${_msg}" >&2
+  printf "%s\\n" "${_msg}" >&2
 }
 
 xpns_usage() {
@@ -487,7 +490,7 @@ xpns_enable_logging() {
       "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
     _idx=$(( _idx + 1 ))
   done < <(
-  for i in $(xpns_seq "${_args_num}")
+  for i in $(xpns_seq 0 "${_args_num}")
   do
     # Replace empty string.
     printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
@@ -570,31 +573,19 @@ xpns_arrange_pane_location() {
 }
 
 #
-# Generate sequential number ascending order.
-# $ xpns_seq 3
-# 0
-# 1
-# 2
-# 3
-#
-xpns_seq () {
-  local _num="$1"
-  eval "printf \"%d\\n\" {0..$_num}"
-}
-
-#
 # Generate sequential number descending order.
 # seq is not used because old version of
 # seq does not generate descending oorder.
-# $ xpns_seq_from0 3
+# $ xpns_seq 3 0
 # 3
 # 2
 # 1
 # 0
 #
-xpns_seq_dec () {
-  local _num="$1"
-  eval "printf \"%d\\n\" {$_num..0}"
+xpns_seq () {
+  local _num1="$1"
+  local _num2="$2"
+  eval "printf \"%d\\n\" {$_num1..$_num2}"
 }
 
 xpns_wait_func_pipe() {
@@ -607,7 +598,7 @@ xpns_wait_func_title() {
   local _title="$1"
   local _threshold=3
   _title=$(printf "%s" "$1" | xpns_value2key)
-  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_title}\" | od -tx1 -An | tr -dc 0-9a-zA-Z | grep ${_title} && break"
+  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_title}\" | od -v -tx1 -An | tr -dc 0-9a-zA-Z | grep -q ${_title} && break"
   printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
 }
 
@@ -627,7 +618,7 @@ xpns_split_window() {
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
 
-  for i in $(xpns_seq_dec $_last_idx)
+  for i in $(xpns_seq $_last_idx 0)
   do
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
@@ -717,8 +708,10 @@ xpns_prepare_window() {
   # Delete the first pane
   ${TMUX_XPANES_EXEC} kill-pane -t "${_window_name}.${_pane_base_index}"
 
-  # Select second pane
-  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
+  # Select second pane here.
+  #   If the command gets error, it would most likely be caused by user (XP_ENOPANE).
+  #   Suppress error message here and announce it in xpns_execution.
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}" > /dev/null 2>&1
 }
 
 # Check whether given command is in the PATH or not.
@@ -883,6 +876,17 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
+  fi
+
+  ## With -ss option, it is possible to close all the panes as of here.
+  ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
+  if ! xpns_is_target_alive "${_window_name}" ;then
+    xpns_msg "Info" "All the panes are closed before displaying the result."
+    if [[ "${XP_OPT_SPEEDY_AWAIT}" -eq 0 ]] ;then
+      xpns_msg "Info" "Use '-s' option instead of '-ss' option to avoid this behavior."
+    fi
+    xpns_restore_allow_rename "${_def_allow_rename-}"
+    exit ${XP_ENOPANE}
   fi
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
@@ -1206,6 +1210,7 @@ xpns_load_long_options() {
     XP_OPT_CHANGE_BORDER=1
     # Enable -s option
     XP_OPT_SPEEDY=1
+    XP_OPT_SPEEDY_AWAIT=1
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
