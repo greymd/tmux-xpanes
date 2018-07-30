@@ -624,12 +624,6 @@ xpns_wait_func_pipe() {
   local _arr=("$_fifo")
   local _fifo_arg=
   _fifo_arg=$(xpns_arr2args "${_arr[@]}")
-
-  # local _threshold=5
-  # [URL]: From 2.5 ... https://github.com/tmux/tmux/blob/master/CHANGES#L116
-  # local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
-  # printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
-
   xpns_msg_debug "Waiting ... $_fifo"
   mkfifo "${_fifo}"
   printf "%s\\n%s" "grep -q 1 ${_fifo_arg}" "rm -f ${_fifo_arg}"
