@@ -639,8 +639,7 @@ xpns_wait_func_pipe() {
   _fifo_arg=$(xpns_arr2args "${_arr[@]}")
   xpns_msg_debug "mkfifo $_fifo"
   mkfifo "${_fifo}"
-  printf "%s\\n%s" "grep -q 1 ${_fifo_arg}" "rm -f ${_fifo_arg}"
-  # TODO: set trap to delete fifos in case of panic.
+  printf "%s\\n" "grep -q 1 ${_fifo_arg}"
 }
 
 xpns_wait_func_title() {
