@@ -6,6 +6,7 @@ readonly XP_SHELL="/bin/bash"
 
 set -u
 readonly XP_VERSION="3.1.0-beta"
+trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
 
 ## --------------------------------
 # Error constants
@@ -666,6 +667,7 @@ xpns_split_window() {
 
   for i in $(xpns_seq $_last_idx 0)
   do
+    xpns_msg_debug "Index:${i} Argument:${args[i]}"
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
 
