@@ -495,6 +495,19 @@ xpns_enable_logging() {
   )
 }
 
+xpns_notify_logging() {
+  local _window_name="$1" ; shift
+  local _args=("$@")
+  local _args_num=$(($# - 1))
+  local _log_id _fifo
+  for i in $(xpns_seq 0 "${_args_num}"); do
+    _log_id="${_window_name}-${i}-$$"
+    _fifo="${XP_CACHE_HOME}/__xpns_log_${_log_id}"
+    xpns_msg "Debug" "Enqueue ... $_fifo"
+    printf "%s\\n" 1 > "$_fifo" &
+  done
+}
+
 xpns_is_target_alive() {
   local _target="$1"
   ${TMUX_XPANES_EXEC} display-message -t "$_target" -p > /dev/null 2>&1
@@ -586,11 +599,20 @@ xpns_seq () {
 }
 
 xpns_wait_func_pipe() {
-  local _threshold=5
-  # TODO: pane_pipe may not supported at tmux 1.8 ...
+  local _log_id="$1"
+  local _fifo="${XP_CACHE_HOME}/__xpns_log_${_log_id}"
+  local _arr=("$_fifo")
+  local _fifo_arg=
+  _fifo_arg=$(xpns_arr2args "${_arr[@]}")
+
+  # local _threshold=5
   # [URL]: From 2.5 ... https://github.com/tmux/tmux/blob/master/CHANGES#L116
-  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
-  printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
+  # local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
+  # printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
+
+  xpns_msg "Debug" "Waiting ... $_fifo"
+  mkfifo "${_fifo}"
+  printf "%s\\n%s" "grep -q 1 ${_fifo_arg}" "rm -f ${_fifo_arg}"
 }
 
 xpns_wait_func_title() {
@@ -631,7 +653,7 @@ xpns_split_window() {
         # Wait for start of logging
         # Without this part, logging thread may start after new process is finished.
         # Execute function to wait for logging start.
-        _exec_cmd="$(xpns_wait_func_pipe)"$'\n'"${_exec_cmd}"
+        _exec_cmd="$(xpns_wait_func_pipe "${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
       fi
 
       ## Speedy mode + pane title
@@ -929,6 +951,12 @@ xpns_execution() {
       "${TMUX_XPANES_LOG_FORMAT}" \
       "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
+
+    if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
+      xpns_notify_logging \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
   fi
 
   # Set pane titles for each pane.
