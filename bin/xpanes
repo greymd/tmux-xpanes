@@ -570,6 +570,9 @@ xpns_set_titles() {
          [[ "${_pane_border_status}" != "off" ]] && \
          [[ -n "${_pane_border_status}" ]] ;then
       ## For -x option
+      # Even the -t option is not specified, it is required to inject pane title here.
+      # Because user expects the title is displayed on the pane if the original window is
+      # generated from tmux-xpanes with -t option.
       xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     fi
     _index=$(( _index + 1 ))
@@ -864,7 +867,6 @@ xpns_pre_execution() {
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
     send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
     "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
-
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
     send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
 
@@ -983,7 +985,6 @@ xpns_execution() {
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
   # Set pane titles for each pane.
-  # If XP_OPT_SET_TITLE is false, do nothing.
   xpns_set_titles \
     "${_window_name}" \
     "${_pane_base_index}" \
