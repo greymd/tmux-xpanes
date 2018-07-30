@@ -132,6 +132,22 @@ xpns_msg() {
   printf "%s\\n" "${_msg}" >&2
 }
 
+xpns_msg_info() {
+  xpns_msg "Info" "$1"
+}
+
+xpns_msg_warning() {
+  xpns_msg "Warning" "$1"
+}
+
+xpns_msg_debug() {
+  xpns_msg "Debug" "$1"
+}
+
+xpns_msg_error() {
+  xpns_msg "Error" "$1"
+}
+
 xpns_usage() {
   cat << _EOS_
 Usage:
@@ -265,7 +281,7 @@ xpns_suppress_allow_rename () {
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     ## Temporary, disable "allow-rename"
-    # xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
+    xpns_msg_debug "'allow-rename' option is 'off' temporarily."
     if [[ -z "${_session-}" ]];then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename off
     else
@@ -281,7 +297,7 @@ xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
-    # xpns_msg "Info" "Restore original value of 'allow-rename' option."
+    xpns_msg_debug "Restore original value of 'allow-rename' option."
     if [[ -z "${_session-}" ]];then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename on
     else
@@ -375,9 +391,9 @@ xpns_is_valid_directory() {
   if [[ ! -d "${_dir}" ]]; then
     # Create directory
     if mkdir "${_dir}"; then
-      xpns_msg "Info" "${_dir} is created."
+      xpns_msg_info "${_dir} is created."
     else
-      xpns_msg "Error" "Failed to create ${_dir}"
+      xpns_msg_error "Failed to create ${_dir}"
       exit ${XP_ELOGDIR}
     fi
   fi
@@ -385,7 +401,7 @@ xpns_is_valid_directory() {
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
   if ! touch "${_dir}/${_checkfile}"; then
-    xpns_msg "Error" "${_dir} is not writable."
+    xpns_msg_error "${_dir} is not writable."
     rm -f "${_dir}/${_checkfile}"
     exit ${XP_ELOGWRITE}
   fi
@@ -503,7 +519,7 @@ xpns_notify_logging() {
   for i in $(xpns_seq 0 "${_args_num}"); do
     _log_id="${_window_name}-${i}-$$"
     _fifo="${XP_CACHE_HOME}/__xpns_log_${_log_id}"
-    xpns_msg "Debug" "Enqueue ... $_fifo"
+    xpns_msg_debug "Enqueue ... $_fifo"
     printf "%s\\n" 1 > "$_fifo" &
   done
 }
@@ -610,7 +626,7 @@ xpns_wait_func_pipe() {
   # local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
   # printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
 
-  xpns_msg "Debug" "Waiting ... $_fifo"
+  xpns_msg_debug "Waiting ... $_fifo"
   mkfifo "${_fifo}"
   printf "%s\\n%s" "grep -q 1 ${_fifo_arg}" "rm -f ${_fifo_arg}"
 }
@@ -759,17 +775,17 @@ xpns_check_env() {
   while read -r cmd ; do
     if ! type "${cmd}" > /dev/null 2>&1; then
       if [[ "${cmd}" == "tmux" ]] && [[ "${TMUX_XPANES_EXEC}" == "tmux" ]]; then
-        xpns_msg "Error" "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
+        xpns_msg_error "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
         exit ${XP_ENOCMD}
       elif [[ "${cmd}" != "tmux" ]]; then
-        xpns_msg "Error" "${cmd} is required."
+        xpns_msg_error "${cmd} is required."
         exit ${XP_ENOCMD}
       fi
     fi
   done < <(echo "${_cmds}" | tr ' ' '\n')
 
   if ! mkdir -p "${XP_CACHE_HOME}";then
-    xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
+    xpns_msg_warning "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
   # Do not omit this part, this is used by testing.
@@ -779,7 +795,7 @@ xpns_check_env() {
     "${XP_HOST_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
-    xpns_msg "Warning" \
+    xpns_msg_warning \
 "'${XP_THIS_FILE_NAME}' may not work correctly! Please check followings.
 * tmux is installed correctly.
 * Supported tmux version is installed.
@@ -813,7 +829,7 @@ xpns_pre_execution() {
   local _args4args=""
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_msg "Error" "'-x' must be used within the running tmux session."
+    xpns_msg_error "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
 
@@ -925,9 +941,9 @@ xpns_execution() {
   ## With -ss option, it is possible to close all the panes as of here.
   ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
   if ! xpns_is_target_alive "${_window_name}" ;then
-    xpns_msg "Info" "All the panes are closed before displaying the result."
+    xpns_msg_info "All the panes are closed before displaying the result."
     if [[ "${XP_OPT_SPEEDY_AWAIT}" -eq 0 ]] ;then
-      xpns_msg "Info" "Use '-s' option instead of '-ss' option to avoid this behavior."
+      xpns_msg_info "Use '-s' option instead of '-ss' option to avoid this behavior."
     fi
     xpns_restore_allow_rename "${_def_allow_rename-}"
     exit ${XP_ENOPANE}
@@ -1021,12 +1037,12 @@ xpns_execution() {
 xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
-    xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
+    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
     exit ${XP_EINVAL}
   fi
 
   if [[ -z "${TMUX-}" ]]; then
-    xpns_msg "Warning" "Attached session is required for 'Pipe mode'."
+    xpns_msg_warning "Attached session is required for 'Pipe mode'."
     # This condition is used when the following situations.
     #   * Enter from outside of tmux session(Normal mode1)
     #   * Pipe mode.
@@ -1096,7 +1112,7 @@ xpns_is_valid_layout() {
   local _layout="${1-}"
   local _pat='^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
   if ! [[ $_layout =~ $_pat ]]  ; then
-    xpns_msg "Error" "Invalid layout '${_layout}'."
+    xpns_msg_error "Invalid layout '${_layout}'."
     exit ${XP_ELAYOUT}
   fi
 }
@@ -1105,7 +1121,7 @@ xpns_warning_before_extra() {
   local _ans _synchronized
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
-    xpns_msg "Warning" "Panes are now synchronized.
+    xpns_msg_warning "Panes are now synchronized.
 '-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
     read -r _ans
@@ -1143,7 +1159,7 @@ xpns_load_flag_options() {
       XP_OPT_SET_TITLE=1
       XP_OPT_CHANGE_BORDER=1
     else
-      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
+      xpns_msg_warning "-t option cannot be used by tmux version less than 2.3. Disabled."
       sleep 1
     fi
   fi
@@ -1176,7 +1192,7 @@ xpns_load_arg_options() {
       XP_REPSTR="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -I option"
+      xpns_msg_error "invalid argument '$2' for -I option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
@@ -1190,7 +1206,7 @@ xpns_load_arg_options() {
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -l option"
+      xpns_msg_error "invalid argument '$2' for -l option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
@@ -1204,7 +1220,7 @@ xpns_load_arg_options() {
       XP_OPT_CMD_UTILITY=1
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -c option"
+      xpns_msg_error "invalid argument '$2' for -c option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
@@ -1216,7 +1232,7 @@ xpns_load_arg_options() {
       XP_MAX_PANE_ARGS="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -n option"
+      xpns_msg_error "invalid argument '$2' for -n option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
@@ -1228,7 +1244,7 @@ xpns_load_arg_options() {
       XP_SOCKET_PATH="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -S option"
+      xpns_msg_error "invalid argument '$2' for -S option"
       exit ${XP_EINVAL}
     fi
   fi
@@ -1277,7 +1293,7 @@ xpns_load_long_options() {
   # Other options
   ## ----------------
   else
-    xpns_msg "Error" "invalid option -- '${1#--}'"
+    xpns_msg_error "invalid option -- '${1#--}'"
     xpns_usage
     echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
     exit ${XP_EINVAL}
@@ -1335,7 +1351,7 @@ xpns_parse_options() {
         # Other options
         ## ----------------
         else
-          xpns_msg "Error" "Invalid option -- '${1#-}'"
+          xpns_msg_error "Invalid option -- '${1#-}'"
           xpns_usage
           echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
           exit ${XP_EINVAL}
@@ -1362,7 +1378,7 @@ xpns_parse_options() {
 
   # When no argument arr given, exit.
   if [[ -z "${XP_ARGS[*]-}" ]]; then
-    xpns_msg "Error" "No arguments are given."
+    xpns_msg_error "No arguments are given."
     xpns_usage
     echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
     exit ${XP_EINVAL}
