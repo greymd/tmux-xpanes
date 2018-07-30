@@ -113,6 +113,7 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
+XP_OPT_DEBUG=0
 
 ## --------------------------------
 # Logger
@@ -141,7 +142,9 @@ xpns_msg_warning() {
 }
 
 xpns_msg_debug() {
-  xpns_msg "Debug" "$1"
+  if [[ $XP_OPT_DEBUG -eq 1 ]];then
+    xpns_msg "Debug" "$1"
+  fi
 }
 
 xpns_msg_error() {
@@ -179,6 +182,7 @@ OPTIONS:
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -ts\`.
   --stay                       Do not switch to new window.
+  --debug                      Print debug message.
 
 _EOS_
 }
@@ -1288,6 +1292,9 @@ xpns_load_long_options() {
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
     return 1
+  elif [[ "$1" =~ ^--debug$ ]]; then
+    XP_OPT_DEBUG=1
+    return 1
 
   ## ----------------
   # Other options
@@ -1392,6 +1399,9 @@ xpns_parse_options() {
   if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
+
+  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 }
 
 ## --------------------------------
