@@ -587,6 +587,8 @@ xpns_seq () {
 
 xpns_wait_func_pipe() {
   local _threshold=5
+  # TODO: pane_pipe may not supported at tmux 1.8 ...
+  # [URL]: From 2.5 ... https://github.com/tmux/tmux/blob/master/CHANGES#L116
   local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_pipe}\" | grep -q 1 && break"
   printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
 }
