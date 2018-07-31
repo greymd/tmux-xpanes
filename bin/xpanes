@@ -1023,6 +1023,9 @@ xpns_execution() {
       "${XP_ARGS[@]}"
   fi
 
+  xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
   xpns_arrange_pane_location \
     "${_window_name}" \
     "${_last_args_idx}"
