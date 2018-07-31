@@ -70,7 +70,7 @@ readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs` is omitted because minimum functions can work without it.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd sleep}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -503,6 +503,7 @@ xpns_enable_logging() {
   local _idx=0
   while read -r _logfile ; do
     # Start logging
+    xpns_msg_debug "xpns_enable_logging:Start logging pipe-pane(cat >> '${_log_dir}/${_logfile}')"
     ${TMUX_XPANES_EXEC} \
       pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
       "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
@@ -529,6 +530,9 @@ xpns_notify_logging() {
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "log_${_window_name}-${i}-$$"
+    # Wait random time
+    # #shellcheck disable=SC2016
+    # ${XP_SHELL} -c 'seq $(( RANDOM % 50000 )) > /dev/null'
   done
 }
 
@@ -537,6 +541,9 @@ xpns_notify_title() {
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "title_${_window_name}-${i}-$$"
+    # Wait random time
+    # #shellcheck disable=SC2016
+    # ${XP_SHELL} -c 'seq $(( RANDOM % 50000 )) > /dev/null'
   done
 }
 
@@ -654,8 +661,9 @@ xpns_wait_func() {
   local _arr=("$_fifo")
   local _fifo_arg=
   _fifo_arg=$(xpns_arr2args "${_arr[@]}")
-  xpns_msg_debug "mkfifo $_fifo"
+  xpns_msg_debug "xpns_wait_func: mkfifo $_fifo"
   mkfifo "${_fifo}"
+  xpns_msg_debug "xpns_wait_func: grep -q 1 ${_fifo_arg}"
   printf "%s\\n" "grep -q 1 ${_fifo_arg}"
 }
 
