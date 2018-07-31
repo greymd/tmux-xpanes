@@ -530,9 +530,6 @@ xpns_notify_logging() {
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "log_${_window_name}-${i}-$$"
-    # Wait random time
-    # shellcheck disable=SC2016
-    ${XP_SHELL} -c 'seq $(( RANDOM % 50000 )) > /dev/null'
   done
 }
 
@@ -541,9 +538,6 @@ xpns_notify_title() {
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "title_${_window_name}-${i}-$$"
-    # Wait random time
-    # shellcheck disable=SC2016
-    ${XP_SHELL} -c 'seq $(( RANDOM % 50000 )) > /dev/null'
   done
 }
 
