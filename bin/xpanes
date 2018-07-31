@@ -70,7 +70,7 @@ readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs` is omitted because minimum functions can work without it.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf cat sort pwd cd}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -262,7 +262,7 @@ xpns_get_local_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
   } | grep "^${_conf_name}" \
-    | ( read -r _ _v; echo "${_v}" )
+    | ( read -r _ _v; printf "%s\\n" "${_v}" )
 }
 
 xpns_get_global_tmux_conf() {
@@ -275,7 +275,7 @@ xpns_get_global_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" \
-    | ( read -r _ _v; echo "${_v}" )
+    | ( read -r _ _v; printf "%s\\n" "${_v}" )
 }
 
 # Disable allow-rename because
@@ -379,7 +379,7 @@ xpns_normalize_directory() {
   _dir="${_dir%/}"
   # tilde expansion
   _dir="${_dir/#~/${HOME}}"
-  echo "${_dir}"
+  printf "%s\\n" "${_dir}"
 }
 
 ## --------------------------------
@@ -452,7 +452,7 @@ xpns_generate_window_name() {
   # Leave first 200 characters to prevent
   # the name exceed the maximum length of tmux window name (2000 byte).
   printf "%s\\n" "${1:-${_unprintable_str}}" \
-    | ( read -r _name _ && echo "${_name:0:200}-$$" )
+    | ( read -r _name _ && printf "%s\\n" "${_name:0:200}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.
@@ -1054,7 +1054,7 @@ xpns_execution() {
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
-      -- "$(echo "${_window_name}" | xpns_key2value)"
+      -- "$(printf "%s\\n" "${_window_name}" | xpns_key2value)"
   fi
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
