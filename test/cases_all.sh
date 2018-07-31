@@ -3140,7 +3140,7 @@ test_s_and_x_and_log() {
     }
 }
 
-# @case: 61
+# @case: 62
 # @skip: 2.3
 test_ss_and_x_and_log() {
 
@@ -3251,7 +3251,7 @@ test_ss_and_x_and_log() {
         rmdir "${_tmpdir}"/fin
     }
 }
-# @case: 62
+# @case: 63
 # @skip:
 test_ss_option_panes_not_found() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3275,7 +3275,7 @@ test_ss_option_panes_not_found() {
     }
 }
 
-# @case: 63
+# @case: 64
 # @skip:
 test_ss_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3307,7 +3307,7 @@ test_ss_option() {
     }
 }
 
-# @case: 64
+# @case: 65
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_s_and_t_option() {
     if (is_less_than "2.3");then
