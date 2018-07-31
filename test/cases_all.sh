@@ -938,6 +938,16 @@ test_no_args_option() {
   eval "${EXEC}" > /dev/null
   assertEquals "4" "$?"
 
+  _cmd="${EXEC} -nhoge"
+  printf "%s" "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
+  _cmd="${EXEC} -n hoge"
+  printf "%s" "$_cmd"
+  eval "${EXEC}" > /dev/null
+  assertEquals "4" "$?"
+
   _cmd="echo a b c d e | ${EXEC} -n"
   printf "%s" "$_cmd"
   eval "${EXEC}" > /dev/null

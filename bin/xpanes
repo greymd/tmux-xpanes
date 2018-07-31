@@ -1255,11 +1255,11 @@ xpns_load_arg_options() {
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
-    _pattern="^-${XP_FLAG_OPTIONS}*n(.+)"
+    _pattern="^-${XP_FLAG_OPTIONS}*n([0-9]+)"
     if [[ "$1" =~ $_pattern ]]; then
       XP_MAX_PANE_ARGS="${BASH_REMATCH[1]}"
       return 0
-    elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+    elif [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
       return 0
     else
