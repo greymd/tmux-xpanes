@@ -3140,6 +3140,117 @@ test_s_and_x_and_log() {
     }
 }
 
+# @case: 61
+# @skip: 2.3
+test_ss_and_x_and_log() {
+
+    if [[ "$(tmux_version_number)" == "2.3" ]];then
+        echo "Skip this test for $(tmux_version_number)." >&2
+        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        return 0
+    fi
+
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+    local _log_file=""
+    local _tmpdir="${SHUNIT_TMPDIR}"
+    local _logdir="${_tmpdir}/hoge"
+    local _year
+    _year="$(date +%Y)"
+    mkdir -p "${_tmpdir}/fin"
+
+    # Remove single quotation for --log-format.
+    _cmd="${EXEC} -ss --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -d -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/\" AAAA BBBB CCCC DDDD; echo \$? > ${_tmpdir}/exit_status"
+    echo $'\n'" $ $_cmd"$'\n'
+    # Execute command
+    eval "$_cmd"
+
+    wait_panes_separation "$_socket_file" "AAAA" "4"
+    divide_four_panes_impl "$_socket_file"
+
+    [ -e "${_tmpdir}/exit_status" ]
+    assertEquals 0 $?
+
+    actual=$( cat "${_tmpdir}/exit_status" )
+    expected=31
+    assertEquals "$expected" "$actual"
+
+    # Wait several seconds just in case.
+    sleep 2
+    printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+    printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1_${_year}_DDDD-1$"
+    assertEquals 0 $?
+    _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1_${_year}_DDDD-1$")
+    assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_logdir}"/*
+    rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+
+    : "In TMUX session" && {
+        echo $'\n'" $ TMUX($_cmd)"$'\n'
+        mkdir -p "${_tmpdir}/fin"
+
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "4"
+        wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
+        exec_tmux_session "$_socket_file" "$_cmd"
+        divide_four_panes_impl "$_socket_file"
+
+        # Wait several seconds just in case.
+        sleep 2
+
+        [ -e "${_tmpdir}/exit_status" ]
+        assertEquals 0 $?
+
+        actual=$( cat "${_tmpdir}/exit_status" )
+        expected=31
+        assertEquals "$expected" "$actual"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1_${_year}_CCCC-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+        printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1_${_year}_DDDD-1$"
+        assertEquals 0 $?
+        _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1_${_year}_DDDD-1$")
+        assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+        close_tmux_session "$_socket_file"
+        rm -f "${_logdir}"/*
+        rmdir "${_logdir}"
+        rm -f "${_tmpdir}"/fin/*
+        rmdir "${_tmpdir}"/fin
+    }
+}
 # @case: 62
 # @skip:
 test_ss_option_panes_not_found() {
