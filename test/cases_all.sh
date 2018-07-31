@@ -218,6 +218,40 @@ wait_existing_file_number(){
     return 0
 }
 
+all_non_empty_files(){
+    local _count=0
+    for f in "$@";do
+      # if the file is non empty
+      if [ -s "$f" ]; then
+        _count=$(( _count + 1 ))
+      else
+        echo "all_non_empty_files: $f is still empty" >&2
+      fi
+    done
+    if [[ $_count -eq $# ]]; then
+      # echo "all_non_empty_files:non empty: $*" >&2
+      return 0
+    fi
+    return 1
+}
+
+wait_all_non_empty_files(){
+    local _num_of_files=0
+    local _wait_seconds=5
+    # Wait until specific number of files are created.
+    for i in $(seq "${_wait_seconds}") ;do
+        if all_non_empty_files "$@"; then
+            break
+        fi
+        if [ "${i}" -eq "${_wait_seconds}" ]; then
+            echo "wait_all_non_empty_files: Test failed" >&2
+            return 1
+        fi
+        sleep 1
+    done
+    return 0
+}
+
 between_plus_minus() {
     local _range="$1"
     shift
@@ -3155,28 +3189,22 @@ test_ss_and_x_and_log() {
     local _log_file=""
     local _tmpdir="${SHUNIT_TMPDIR}"
     local _logdir="${_tmpdir}/hoge"
+    local _log_files=()
     local _year
     _year="$(date +%Y)"
     mkdir -p "${_tmpdir}/fin"
 
     # Remove single quotation for --log-format.
-    _cmd="${EXEC} -ss --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -d -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/\" AAAA BBBB CCCC DDDD; echo \$? > ${_tmpdir}/exit_status"
+    _cmd="${EXEC} --debug -ss --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -d -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/\" AAAA BBBB CCCC DDDD; echo \$? > ${_tmpdir}/exit_status"
     echo $'\n'" $ $_cmd"$'\n'
     # Execute command
     eval "$_cmd"
 
-    wait_panes_separation "$_socket_file" "AAAA" "4"
-    divide_four_panes_impl "$_socket_file"
+    wait_existing_file_number "${_logdir}" "4"
+    _log_files=()
+    while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+    wait_all_non_empty_files "${_log_files[@]}"
 
-    [ -e "${_tmpdir}/exit_status" ]
-    assertEquals 0 $?
-
-    actual=$( cat "${_tmpdir}/exit_status" )
-    expected=31
-    assertEquals "$expected" "$actual"
-
-    # Wait several seconds just in case.
-    sleep 2
     printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
     assertEquals 0 $?
     _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
@@ -3209,13 +3237,11 @@ test_ss_and_x_and_log() {
 
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "AAAA" "4"
-        wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-        exec_tmux_session "$_socket_file" "$_cmd"
-        divide_four_panes_impl "$_socket_file"
 
-        # Wait several seconds just in case.
-        sleep 2
+        wait_existing_file_number "${_logdir}"  "4"
+        _log_files=()
+        while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+        wait_all_non_empty_files "${_log_files[@]}"
 
         [ -e "${_tmpdir}/exit_status" ]
         assertEquals 0 $?
@@ -3251,6 +3277,7 @@ test_ss_and_x_and_log() {
         rmdir "${_tmpdir}"/fin
     }
 }
+
 # @case: 63
 # @skip:
 test_ss_option_panes_not_found() {
