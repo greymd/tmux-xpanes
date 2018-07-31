@@ -516,16 +516,27 @@ xpns_enable_logging() {
   )
 }
 
+xpns_notify() {
+  local _wait_id="$1" ; shift
+  local _fifo
+  _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
+  xpns_msg_debug "xpns_notify:Notify to $_fifo"
+  printf "%s\\n" 1 > "$_fifo" &
+}
+
 xpns_notify_logging() {
   local _window_name="$1" ; shift
-  local _args=("$@")
   local _args_num=$(($# - 1))
-  local _log_id _fifo
   for i in $(xpns_seq 0 "${_args_num}"); do
-    _log_id="${_window_name}-${i}-$$"
-    _fifo="${XP_CACHE_HOME}/__xpns_log_${_log_id}"
-    xpns_msg_debug "Enqueue to $_fifo"
-    printf "%s\\n" 1 > "$_fifo" &
+    xpns_notify "log_${_window_name}-${i}-$$"
+  done
+}
+
+xpns_notify_title() {
+  local _window_name="$1" ; shift
+  local _args_num=$(($# - 1))
+  for i in $(xpns_seq 0 "${_args_num}"); do
+    xpns_notify "title_${_window_name}-${i}-$$"
   done
 }
 
@@ -552,29 +563,35 @@ xpns_inject_title() {
   xpns_msg_debug "xpns_inject_title:target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
 }
 
+xpns_is_pane_title_required() {
+  local _title_flag="$1"   ; shift
+  local _extra_flag="$1"  ; shift
+  local _pane_border_status
+  _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
+  if [[ $_title_flag -eq 1 ]]; then
+    return 0
+  elif [[ ${_extra_flag} -eq 1 ]] && \
+       [[ "${_pane_border_status}" != "off" ]] && \
+       [[ -n "${_pane_border_status}" ]] ;then
+    ## For -x option
+    # Even the -t option is not specified, it is required to inject pane title here.
+    # Because user expects the title is displayed on the pane if the original window is
+    # generated from tmux-xpanes with -t option.
+    return 0
+  fi
+  return 1
+}
+
 # Set pane titles for each pane for -t option
 xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
-  local _title_flag="$1"   ; shift
-  local _extra_flag="$1"  ; shift
   local _index=0
-  local _pane_index _pane_border_status
+  local _pane_index
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
-    _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
-    if [[ $_title_flag -eq 1 ]]; then
-      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    elif [[ ${_extra_flag} -eq 1 ]] && \
-         [[ "${_pane_border_status}" != "off" ]] && \
-         [[ -n "${_pane_border_status}" ]] ;then
-      ## For -x option
-      # Even the -t option is not specified, it is required to inject pane title here.
-      # Because user expects the title is displayed on the pane if the original window is
-      # generated from tmux-xpanes with -t option.
-      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    fi
+    xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     _index=$(( _index + 1 ))
   done
 }
@@ -631,9 +648,9 @@ xpns_seq () {
   eval "printf \"%d\\n\" {$_num1..$_num2}"
 }
 
-xpns_wait_func_pipe() {
-  local _log_id="$1"
-  local _fifo="${XP_CACHE_HOME}/__xpns_log_${_log_id}"
+xpns_wait_func() {
+  local _wait_id="$1"
+  local _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
   local _arr=("$_fifo")
   local _fifo_arg=
   _fifo_arg=$(xpns_arr2args "${_arr[@]}")
@@ -642,15 +659,6 @@ xpns_wait_func_pipe() {
   printf "%s\\n" "grep -q 1 ${_fifo_arg}"
 }
 
-xpns_wait_func_title() {
-  local _title="$1"
-  local _threshold=3
-  _title=$(printf "%s" "$1" | xpns_value2key)
-  local wait_pipe="${TMUX_XPANES_EXEC} display-message -p \"#{pane_title}\" | od -v -tx1 -An | tr -dc 0-9a-zA-Z | grep -q ${_title} && break"
-  printf "%s" "${XP_SHELL} -c 'for i in {1..${_threshold}};do ${wait_pipe}; sleep 1; done'"
-}
-
-#
 # Split a new window into multiple panes.
 #
 xpns_split_window() {
@@ -681,12 +689,12 @@ xpns_split_window() {
         # Wait for start of logging
         # Without this part, logging thread may start after new process is finished.
         # Execute function to wait for logging start.
-        _exec_cmd="$(xpns_wait_func_pipe "${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
+        _exec_cmd="$(xpns_wait_func "log_${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
       fi
 
       ## Speedy mode + pane title
       if [[ ${_title_flag} -eq 1 ]];then
-        _exec_cmd="$(xpns_wait_func_title "${args[i]}" )"$'\n'${_exec_cmd}
+        _exec_cmd="$(xpns_wait_func "title_${_window_name}-${i}-$$")"$'\n'${_exec_cmd}
       fi
 
       ## -ss: Speedy mode + nowait
@@ -895,6 +903,7 @@ xpns_execution() {
   local _last_args_idx=
   local _def_allow_rename=
   local _pane_count=0
+  local _is_pane_title_required=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
@@ -983,13 +992,22 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:2: After logging"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
+    _is_pane_title_required=1
+  fi
+
   # Set pane titles for each pane.
-  xpns_set_titles \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${XP_OPT_SET_TITLE}" \
-    "${XP_OPT_EXTRA}" \
-    "${XP_ARGS[@]}"
+  if [[ $_is_pane_title_required -eq 1 ]];then
+    xpns_set_titles \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_ARGS[@]}"
+    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+      xpns_notify_title \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
+  fi
 
   xpns_msg_debug "xpns_is_window_alive:3: After setting title"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
