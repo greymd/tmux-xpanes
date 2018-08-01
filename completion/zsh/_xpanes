@@ -14,14 +14,17 @@ _xpanes () {
       "($opts_omit -e -c -I --ssh)-e[Execute given arguments as is.]" \
       "($opts_omit -I --ssh -e)-I[Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.]:repstr:(@ % _REPLACE_ @@@)" \
       "($opts_omit -l)-l[Specify a layout for a window.]:layout:__xpanes-layout" \
+      "($opts_omit -s -ss --ssh)-s[Speedy mode: Run command without creating a login shell.]" \
+      "($opts_omit -ss -s)-ss[Speedy mode AND close the pane automatically at the same time as the process ends.]" \
       "($opts_omit -n)-n[Set the maximum number of arguments taken for each pane of <utility>.]" \
       "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
       "($opts_omit -t)-t[Display each argument on the each pane's border as their title.]" \
       "($opts_omit -x --stay)-x[Create extra panes in the current active window.]" \
       "($opts_omit --log)--log=[Enable logging and store log files to given <directory>.]:dirs:_dir_list" \
       "($opts_omit --log-format)--log-format=[File name of log files follows given <FORMAT>.]" \
-      "($opts_omit --ssh -I -c -e -t)--ssh[Let <utility> 'ssh -o StrictHostKeyChecking=no {}'.]:hosts:__xpanes-ssh_hosts" \
-      "($opts_omit --stay)--stay[Do not switch to new window.]"
+      "($opts_omit --ssh -I -c -e -t -s)--ssh[Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.]:hosts:__xpanes-ssh_hosts" \
+      "($opts_omit --stay)--stay[Do not switch to new window.]" \
+      "($opts_omit --debug)--debug[Print debug message.]"
   fi
 }
 

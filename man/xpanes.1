@@ -60,6 +60,12 @@ Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by 
     \fB\fCmh\fR   main\-horizontal
     \fB\fCmv\fR   main\-vertical
 .TP
+\fB\fC\-s\fR
+Speedy mode: Run command without creating a login shell. A pane is not going to be interactive.
+.TP
+\fB\fC\-ss\fR
+Speedy mode AND close the pane automatically at the same time as the process ends.
+.TP
 \fB\fC\-n\fR <\fInumber\fP>
 Set the maximum number of arguments taken for each pane of <\fIutility\fP>.
 .TP
@@ -79,10 +85,13 @@ Enable logging and store log files to ~/.cache/xpanes/logs or given <\fIdirector
 File name of log files follows given <\fIFORMAT\fP>.
 .TP
 \fB\fC\-\-ssh\fR
-Let <\fIutility\fP> 'ssh \-o StrictHostKeyChecking=no {}'.
+Same as \fB\fC\-t \-s \-c 'ssh \-o StrictHostKeyChecking=no {}'\fR\&.
 .TP
 \fB\fC\-\-stay\fR
 Do not switch to new window.
+.TP
+\fB\fC\-\-debug\fR
+Print debug message.
 .SS \fIFORMAT\fP
 .PP
 Default value is "[:ARG:].log.%Y\-%m\-%d_%H\-%M\-%S".

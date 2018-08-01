@@ -60,6 +60,12 @@ OPTIONS
     `mh`   main-horizontal
     `mv`   main-vertical
 
+`-s`
+  Speedy mode: Run command without creating a login shell. A pane is not going to be interactive.
+
+`-ss`
+  Speedy mode AND close the pane automatically at the same time as the process ends.
+
 `-n` <*number*>
   Set the maximum number of arguments taken for each pane of <*utility*>.
 
@@ -79,10 +85,13 @@ OPTIONS
   File name of log files follows given <*FORMAT*>.
 
 `--ssh`
-  Let <*utility*> 'ssh -o StrictHostKeyChecking=no {}'.
+  Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
 
 `--stay`
   Do not switch to new window.
+
+`--debug`
+  Print debug message.
 
 ### *FORMAT*
 Default value is "[:ARG:].log.%Y-%m-%d_%H-%M-%S".
