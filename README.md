@@ -438,36 +438,28 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
 
 #### Run commands promtply
 
-Use `-s` option is useful if you have following issues.
+`-s` option is useful if you have following issues.
 
- * It may take long time to open the multiple new panes because `~/.bashrc` loads a bunch of configures.
+ * It takes long time to open the multiple new panes because login shell loads a bunch of configures (i.e `~/.zshrc` loads something ).
  * If you do not want to leave commands on your shell history.
 
+With `-s` option, `xpanes` does not create a new login shell.
+Instead, a command is going to be executed as a direct child process of `xpanes`.
+
+Here is the example.
 
 ```sh
-$ xpanes -s -c "ssh {}" server{1..4}
+$ xpanes -s -c "seq {}" 2 3 4 5
 ```
 
-`xpanes` does not create a new login shell with this option.
-Therefore, a command is going to be executed as a direct child process of `xpanes`.
+As you can see, each pane starts from command's result not `$ seq ...`.
 
 ```
     +------------------------------------------+------------------------------------------+
-    │Last login: Wed Aug  1 16:42:10 2018      │Last login: Wed Aug  1 16:42:10 2018      │
-    │[user@server1 ~]$                         │[user@server2 ~]$                         │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    │                                          │                                          │
-    +------------------------------------------+------------------------------------------+
-    │Last login: Wed Aug  1 16:42:10 2018      │Last login: Wed Aug  1 16:42:10 2018      │
-    │[user@server3 ~]$                         │[user@server4 ~]$                         │
-    │                                          │                                          │
-    │                                          │                                          │
+    │1                                         │1                                         │
+    │2                                         │2                                         │
+    │Pane is dead: Press [Enter] to exit...    │3                                         │
+    │                                          │Pane is dead: Press [Enter] to exit...    │
     │                                          │                                          │
     │                                          │                                          │
     │                                          │                                          │
@@ -475,13 +467,21 @@ Therefore, a command is going to be executed as a direct child process of `xpane
     │                                          │                                          │
     │                                          │                                          │
     +------------------------------------------+------------------------------------------+
-
+    │1                                         │1                                         │
+    │2                                         │2                                         │
+    │3                                         │3                                         │
+    │4                                         │4                                         │
+    │Pane is dead: Press [Enter] to exit...    │5                                         │
+    │                                          │Pane is dead: Press [Enter] to exit...    │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
 ```
 
-See above example. You can see each pane displays `Last login: ...` not `$ ssh ...`.
-
-Confirmation message is shown when command ends.
-Use `-ss` to suppress the message.
+Confirmation message like `Pane is dead...` is shown when process ends.
+To suppress the message, use `-ss` instead of `-s`.
 
 #### Display host always
 
@@ -493,7 +493,7 @@ The result is like this.
 
 ![png image](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/ping_pane_title.png)
 
-As you notices that, `-t` displays each argument on the each pane border.
+As you notice that, `-t` displays each argument on the each pane border.
 It is called "pane title". The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
 
