@@ -70,7 +70,7 @@ readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs` is omitted because minimum functions can work without it.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd sleep}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd sleep mkfifo}"
 
 ## --------------------------------
 # User customizable shell variables
