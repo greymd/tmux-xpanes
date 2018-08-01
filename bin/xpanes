@@ -174,8 +174,8 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run commands promptly. But panes are not interactive.
-  -ss                          Speedy mode + Close panes automatically when the process exits.
+  -s                           Speedy mode: Run command without creating a login shell, then the pane is not going to be interactive.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process finished.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
