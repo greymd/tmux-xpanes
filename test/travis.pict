@@ -8,7 +8,7 @@ tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7
 
 ## Create test cases
 # cat cases_all.sh | grep '@case:' | awk '{print $NF}' | xargs | tr ' ' ',' | awk '{print "case:"$0}'
-case:1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65
+case:1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
 
 ## Create exceptional conditions
 # cat cases_all.sh | grep -E '@skip: ?.' -B1 | awk '{print $2,$3}' | awk 'NF{print $2}' | xargs -n 2 | tr , ' ' | awk '{for (i=2;i<=NF;i++){print $1,$i}}' | awk '{print "IF[case] = "$1" THEN [tmux] <> \""$2"\";"}'
@@ -66,6 +66,12 @@ IF[case] = 65 THEN [tmux] <> "1.9a";
 IF[case] = 65 THEN [tmux] <> "2.0";
 IF[case] = 65 THEN [tmux] <> "2.1";
 IF[case] = 65 THEN [tmux] <> "2.2";
+IF[case] = 66 THEN [tmux] <> "1.8";
+IF[case] = 66 THEN [tmux] <> "1.9";
+IF[case] = 66 THEN [tmux] <> "1.9a";
+IF[case] = 66 THEN [tmux] <> "2.0";
+IF[case] = 66 THEN [tmux] <> "2.1";
+IF[case] = 66 THEN [tmux] <> "2.2";
 
 ## Assign sequential number to the case
 # perl -i -ple 'BEGIN{my $num=0}; s/\@case: .*$/\@case: @{[++$num]}/;' cases_all.sh

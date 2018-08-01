@@ -3365,7 +3365,7 @@ test_s_and_t_option() {
     assertEquals "$expected" "$actual"
     close_tmux_session "$_socket_file"
 
-    : "In TMUX session" && {
+    : "Normal mode2" && {
       echo $'\n'" $ TMUX($_cmd)"$'\n'
       create_tmux_session "$_socket_file"
       exec_tmux_session "$_socket_file" "$_cmd"
@@ -3380,6 +3380,66 @@ test_s_and_t_option() {
 
       # Check pane_title
       expected="AAA@BBB@CCC@"
+      actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
+      assertEquals "$expected" "$actual"
+      close_tmux_session "$_socket_file"
+    }
+
+    : "Pipe mode" && {
+      _cmd=" echo AAA BBB CCC | xargs -n 1 | ${EXEC} -S ${_socket_file} -st -c 'echo {} > ${_tmpdir}/{} && ${TMUX_EXEC} detach-client'"
+      echo $'\n'" $ TMUX($_cmd)"$'\n'
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+
+      # Check created files
+      wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+      for f in AAA BBB CCC ;do
+        grep -q "${f}" < "${_tmpdir}/${f}"
+        assertEquals 0 $?
+        rm -f "${_tmpdir}/${f}"
+      done
+
+      # Check pane_title
+      expected="AAA@BBB@CCC@"
+      actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
+      assertEquals "$expected" "$actual"
+      close_tmux_session "$_socket_file"
+    }
+}
+
+# @case: 66
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
+test_ss_and_t_option() {
+    if (is_less_than "2.3");then
+        echo "This test is NOT better to be executed for $(tmux_version_number)." >&2
+        echo 'Because -t option and "#{pane_title}" is not supported for this version.' >&2
+        startSkipping
+    fi
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _tmpdir="${SHUNIT_TMPDIR}/test_s_and_t_option"
+    mkdir -p "${_tmpdir}"
+
+    _cmd="${EXEC} -S ${_socket_file} --stay -sstc 'echo {};sleep 15' AAA BBB';exit' CCC DDD';exit' EEE"
+    echo $'\n'" $ $_cmd"$'\n'
+    eval "$_cmd"
+
+    sleep 2
+    # Check pane_title
+    expected="AAA@CCC@EEE@"
+    actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
+    assertEquals "$expected" "$actual"
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+      # Use pipe
+      _cmd="printf \"%s\\\\n\" AAA BBB';exit' CCC DDD';exit' EEE | ${EXEC} -S ${_socket_file} --debug -sstc 'echo {};sleep 15'"
+      echo $'\n'" $ TMUX($_cmd)"$'\n'
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+
+      sleep 2
+      # Check pane_title
+      expected="AAA@CCC@EEE@"
       actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
       assertEquals "$expected" "$actual"
       close_tmux_session "$_socket_file"
