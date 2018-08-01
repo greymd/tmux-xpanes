@@ -19,7 +19,7 @@
 $ xpanes -c "ping {}" 192.168.0.{1..9}
 ```
 
-#### Connect to multiple hosts over SSH and record each operation log
+#### Connect to multiple hosts over SSH and start logging for each operation
 
 ```sh
 $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
@@ -28,14 +28,14 @@ $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
 #### Monitor CPU, Memory, Load, Processes and Disk info every seconds
 
 ```sh
-$ xpanes -e "top" "vmstat 1" "watch -n 1 df"
+$ xpanes -x -e "top" "vmstat 1" "watch -n 1 df"
 ```
 
 
 #### Operate running Docker containers on the interactive screen
 
 ```sh
-$ docker ps -q | xpanes -c "docker exec -it {} sh"
+$ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 ```
 
 
