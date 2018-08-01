@@ -3175,12 +3175,13 @@ test_s_and_x_and_log() {
 }
 
 # @case: 62
-# @skip: 2.3
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_ss_and_x_and_log() {
 
-    if [[ "$(tmux_version_number)" == "2.3" ]];then
+    if ! (is_less_than "2.6");then
         echo "Skip this test for $(tmux_version_number)." >&2
-        echo "Because of the bug (https://github.com/tmux/tmux/issues/594)." >&2
+        echo 'Even the test is tried, the result will be failed.' >&2
+        echo 'This is due to the known bug (https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs).' >&2
         return 0
     fi
 
