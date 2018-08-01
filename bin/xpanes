@@ -174,14 +174,14 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a login shell, then the pane is not going to be interactive.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process finished.
+  -s                           Speedy mode: Run command without creating a login shell.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process ends.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -ts\`.
+  --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
   --debug                      Print debug message.
 
