@@ -731,7 +731,7 @@ However, giving both `-c` and any arguments causes error. Because the command ca
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
-# Error: Both arguments and '-c' option are given.
+xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <utility> are given.
 ```
 
 ### Connecting to multiple hosts given by `~/.ssh/config`
