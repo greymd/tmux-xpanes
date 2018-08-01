@@ -361,8 +361,10 @@ $ xpanes --ssh myuser1@host1 myuser2@host2
 This is same as below.
 
 ```
-$ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
+$ xpanes -t -s -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
 ```
+
+`-t` and `-s` options are introduced later.
 
 #### Connecting multiple hosts over SSH **AND logging operations**
 
@@ -433,6 +435,53 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
     │                                                                          │
     +------------------------------------+-------------------------------------+
 ```
+
+#### Run commands promtply
+
+Use `-s` option is useful if you have following issues.
+
+ * It may take long time to open the multiple new panes because `~/.bashrc` loads a bunch of configures.
+ * If you do not want to leave commands on your shell history.
+
+
+```sh
+$ xpanes -s -c "ssh {}" server{1..4}
+```
+
+`xpanes` does not create a new login shell with this option.
+Therefore, a command is going to be executed as a direct child process of `xpanes`.
+
+```
+    +------------------------------------------+------------------------------------------+
+    │Last login: Wed Aug  1 16:42:10 2018      │Last login: Wed Aug  1 16:42:10 2018      │
+    │[user@server1 ~]$                         │[user@server2 ~]$                         │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
+    │Last login: Wed Aug  1 16:42:10 2018      │Last login: Wed Aug  1 16:42:10 2018      │
+    │[user@server3 ~]$                         │[user@server4 ~]$                         │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
+
+```
+
+See above example. You can see each pane displays `Last login: ...` not `$ ssh ...`.
+
+Confirmation message is shown when command ends.
+Use `-ss` to suppress the message.
 
 #### Display host always
 
