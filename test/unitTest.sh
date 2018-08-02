@@ -55,6 +55,10 @@ test_xpns_generate_window_name() {
   actual=$(xpns_generate_window_name 'EMPTY' '')
   expected="EMPTY-$$"
   assertEquals "$expected" "$actual"
+
+  actual=$(xpns_generate_window_name 'EMPTY' "$(yes A | head -n 500 | tr -d '\n')")
+  expected="$(yes A | head -n 200 | tr -d '\n')-$$"
+  assertEquals "$expected" "$actual"
 }
 
 test_xpns_unique_line () {
@@ -116,6 +120,54 @@ test_xpns_rm_empty_line() {
 test_xpns_extract_matched() {
   actual="$(xpns_extract_matched "aaa123bbb" "[0-9]{3}")"
   expected="123"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_seq() {
+  actual="$(xpns_seq 0 3)"
+  expected="0
+1
+2
+3"
+  assertEquals "$expected" "$actual"
+
+  actual="$(xpns_seq 3 0)"
+  expected="3
+2
+1
+0"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_is_valid_layout() {
+  ( xpns_is_valid_layout "tiled" )
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "tile" 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "" 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout 2> /dev/null )
+  actual=$?
+  expected=6
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "even-horizontal" )
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  ( xpns_is_valid_layout "horizontal" 2> /dev/null )
+  actual=$?
+  expected=6
   assertEquals "$expected" "$actual"
 }
 

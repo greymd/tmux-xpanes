@@ -1,10 +1,12 @@
 #!/bin/bash
+readonly XP_SHELL="/bin/bash"
 
 # @Author Yamada, Yasuhiro
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="3.0.1"
+readonly XP_VERSION="3.1.0-beta"
+trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
 
 ## --------------------------------
 # Error constants
@@ -31,6 +33,9 @@ readonly XP_ELOGWRITE=21
 # User's intentional exit is 3x
 ## User exit the process intentionally by following warning message.
 readonly XP_EINTENT=30
+
+## All the panes are closed before processing due to user's options/command.
+readonly XP_ENOPANE=31
 
 # Necessary commands are not found
 readonly XP_ENOCMD=127
@@ -59,9 +64,13 @@ readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
+# This command might not be executed in bash. Use /bin/bash explicitly.
+readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press [Enter] to exit..." >&2 && read\''
+
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo printf xargs cat}"
+# `xargs`, `sleep`, `mkfifo` are omitted because minimum functions can work without them.
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -78,7 +87,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # Initialize Options
 ## --------------------------------
 # options which work individually.
-readonly XP_FLAG_OPTIONS="[hVdetx]"
+readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
 readonly XP_ARG_OPTIONS="[IScln]"
 readonly XP_DEFAULT_LAYOUT="tiled"
@@ -103,6 +112,9 @@ XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
+XP_OPT_SPEEDY=0
+XP_OPT_SPEEDY_AWAIT=0
+XP_OPT_DEBUG=0
 
 ## --------------------------------
 # Logger
@@ -119,7 +131,25 @@ xpns_msg() {
   local _loglevel="$1"
   local _msgbody="$2"
   local _msg="${XP_THIS_FILE_NAME}:${_loglevel}: ${_msgbody}"
-  echo "${_msg}" >&2
+  printf "%s\\n" "${_msg}" >&2
+}
+
+xpns_msg_info() {
+  xpns_msg "Info" "$1"
+}
+
+xpns_msg_warning() {
+  xpns_msg "Warning" "$1"
+}
+
+xpns_msg_debug() {
+  if [[ $XP_OPT_DEBUG -eq 1 ]];then
+    xpns_msg "Debug" "$(date "+[%F_%T]") $1"
+  fi
+}
+
+xpns_msg_error() {
+  xpns_msg "Error" "$1"
 }
 
 xpns_usage() {
@@ -144,13 +174,16 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
+  -s                           Speedy mode: Run command without creating a login shell.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process ends.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Same as \`-c 'ssh -o StrictHostKeyChecking=no {}' -t\`.
+  --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
+  --debug                      Print debug message.
 
 _EOS_
 }
@@ -229,7 +262,7 @@ xpns_get_local_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
   } | grep "^${_conf_name}" \
-    | ( read -r _ _v; echo "${_v}" )
+    | ( read -r _ _v; printf "%s\\n" "${_v}" )
 }
 
 xpns_get_global_tmux_conf() {
@@ -242,7 +275,7 @@ xpns_get_global_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" \
-    | ( read -r _ _v; echo "${_v}" )
+    | ( read -r _ _v; printf "%s\\n" "${_v}" )
 }
 
 # Disable allow-rename because
@@ -253,7 +286,7 @@ xpns_suppress_allow_rename () {
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     ## Temporary, disable "allow-rename"
-    # xpns_msg "Info" "'allow-rename' option is 'off' temporarily."
+    xpns_msg_debug "'allow-rename' option is 'off' temporarily."
     if [[ -z "${_session-}" ]];then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename off
     else
@@ -269,7 +302,7 @@ xpns_restore_allow_rename () {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
-    # xpns_msg "Info" "Restore original value of 'allow-rename' option."
+    xpns_msg_debug "Restore original value of 'allow-rename' option."
     if [[ -z "${_session-}" ]];then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename on
     else
@@ -346,7 +379,7 @@ xpns_normalize_directory() {
   _dir="${_dir%/}"
   # tilde expansion
   _dir="${_dir/#~/${HOME}}"
-  echo "${_dir}"
+  printf "%s\\n" "${_dir}"
 }
 
 ## --------------------------------
@@ -363,9 +396,9 @@ xpns_is_valid_directory() {
   if [[ ! -d "${_dir}" ]]; then
     # Create directory
     if mkdir "${_dir}"; then
-      xpns_msg "Info" "${_dir} is created."
+      xpns_msg_info "${_dir} is created."
     else
-      xpns_msg "Error" "Failed to create ${_dir}"
+      xpns_msg_error "Failed to create ${_dir}"
       exit ${XP_ELOGDIR}
     fi
   fi
@@ -373,7 +406,7 @@ xpns_is_valid_directory() {
   #   Not only checking directory permission,
   #   but also i-node and other misc situations.
   if ! touch "${_dir}/${_checkfile}"; then
-    xpns_msg "Error" "${_dir} is not writable."
+    xpns_msg_error "${_dir} is not writable."
     rm -f "${_dir}/${_checkfile}"
     exit ${XP_ELOGWRITE}
   fi
@@ -416,13 +449,10 @@ xpns_arr2args() {
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
   local _unprintable_str="${1-}"; shift
-  cat <<<"${1:-${_unprintable_str}}" \
-    | \
-      # Leave first 200 characters to prevent
-      # the name exceed the maximum length of tmux window name (2000 byte).
-      grep -oE '^.{1,200}' \
-    | \
-      ( read -r _name _ && echo "${_name}-$$" )
+  # Leave first 200 characters to prevent
+  # the name exceed the maximum length of tmux window name (2000 byte).
+  printf "%s\\n" "${1:-${_unprintable_str}}" \
+    | ( read -r _name _ && printf "%s\\n" "${_name:0:200}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.
@@ -433,12 +463,8 @@ xpns_value2key() {
 # Restore string encoded by xpns_value2key function.
 xpns_key2value() {
   read -r _key
-  local _pat='..'
-  while [[ $_key =~ $_pat ]]; do
-    # shellcheck disable=SC2059
-    printf "\\x${BASH_REMATCH[0]}"
-    _key="${_key#${BASH_REMATCH[0]}}"
-  done
+  # shellcheck disable=SC2059
+  printf "$(printf "%s" "$_key" | sed 's/../\\x&/g')"
 }
 
 # Remove empty lines
@@ -464,25 +490,6 @@ xpns_extract_matched() {
   fi
 }
 
-#
-# Split a new window into multiple panes.
-# Usage:
-#        xpns_split_window <window name> <num of pane>
-#
-xpns_split_window() {
-  local _window_name="$1" ; shift
-  local _args_num="$1"
-  for i in $(seq 0 "${_args_num}")
-  do
-    ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
-    # Restraining that size of pane's width becomes
-    # less than the minimum size which is defined by tmux.
-    if [[ "${i}" -ge 2 ]]; then
-      ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" tiled
-    fi
-  done
-}
-
 # Enable logging feature to the all the panes in the target window.
 xpns_enable_logging() {
   local _window_name="$1"     ; shift
@@ -496,17 +503,56 @@ xpns_enable_logging() {
   local _idx=0
   while read -r _logfile ; do
     # Start logging
+    xpns_msg_debug "xpns_enable_logging:Start logging pipe-pane(cat >> '${_log_dir}/${_logfile}')"
     ${TMUX_XPANES_EXEC} \
       pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
       "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
     _idx=$(( _idx + 1 ))
   done < <(
-  for i in $(seq 0 "${_args_num}")
+  for i in $(xpns_seq 0 "${_args_num}")
   do
     # Replace empty string.
     printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
   done | xpns_log_filenames "${_log_format}"
   )
+}
+
+xpns_notify() {
+  local _wait_id="$1" ; shift
+  local _fifo
+  _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
+  xpns_msg_debug "xpns_notify:Notify to $_fifo"
+  printf "%s\\n" 1 > "$_fifo" &
+}
+
+xpns_notify_logging() {
+  local _window_name="$1" ; shift
+  local _args_num=$(($# - 1))
+  for i in $(xpns_seq 0 "${_args_num}"); do
+    xpns_notify "log_${_window_name}-${i}-$$"
+  done
+}
+
+xpns_notify_title() {
+  local _window_name="$1" ; shift
+  local _args_num=$(($# - 1))
+  for i in $(xpns_seq 0 "${_args_num}"); do
+    xpns_notify "title_${_window_name}-${i}-$$"
+  done
+}
+
+xpns_is_window_alive() {
+  local _window_name="$1" ;shift
+  local _speedy_await_flag="$1" ;shift
+  local _def_allow_rename="$1" ;shift
+  if ! ${TMUX_XPANES_EXEC} display-message -t "$_window_name" -p > /dev/null 2>&1 ;then
+    xpns_msg_info "All the panes are closed before displaying the result."
+    if [[ "${_speedy_await_flag}" -eq 0 ]] ;then
+      xpns_msg_info "Use '-s' option instead of '-ss' option to avoid this behavior."
+    fi
+    xpns_restore_allow_rename "${_def_allow_rename-}"
+    exit ${XP_ENOPANE}
+  fi
 }
 
 xpns_inject_title() {
@@ -515,28 +561,38 @@ xpns_inject_title() {
   local _pane_tty
   _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
   printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
+  xpns_msg_debug "xpns_inject_title:target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
 }
 
-# Send command to the all the panes in the target window.
+xpns_is_pane_title_required() {
+  local _title_flag="$1"   ; shift
+  local _extra_flag="$1"  ; shift
+  local _pane_border_status
+  _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
+  if [[ $_title_flag -eq 1 ]]; then
+    return 0
+  elif [[ ${_extra_flag} -eq 1 ]] && \
+       [[ "${_pane_border_status}" != "off" ]] && \
+       [[ -n "${_pane_border_status}" ]] ;then
+    ## For -x option
+    # Even the -t option is not specified, it is required to inject pane title here.
+    # Because user expects the title is displayed on the pane if the original window is
+    # generated from tmux-xpanes with -t option.
+    return 0
+  fi
+  return 1
+}
+
+# Set pane titles for each pane for -t option
 xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
-  local _title_flag="$1"   ; shift
-  local _extra_flag="$1"  ; shift
   local _index=0
-  local _pane_index _pane_border_status
+  local _pane_index
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
-    _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
-    if [[ $_title_flag -eq 1 ]]; then
-      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    elif [[ ${_extra_flag} -eq 1 ]] && \
-         [[ "${_pane_border_status}" != "off" ]] && \
-         [[ -n "${_pane_border_status}" ]] ;then
-      ## For -x option
-      xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    fi
+    xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
     _index=$(( _index + 1 ))
   done
 }
@@ -578,6 +634,91 @@ xpns_arrange_pane_location() {
 }
 
 #
+# Generate sequential number descending order.
+# seq is not used because old version of
+# seq does not generate descending oorder.
+# $ xpns_seq 3 0
+# 3
+# 2
+# 1
+# 0
+#
+xpns_seq () {
+  local _num1="$1"
+  local _num2="$2"
+  eval "printf \"%d\\n\" {$_num1..$_num2}"
+}
+
+xpns_wait_func() {
+  local _wait_id="$1"
+  local _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
+  local _arr=("$_fifo")
+  local _fifo_arg=
+  _fifo_arg=$(xpns_arr2args "${_arr[@]}")
+  xpns_msg_debug "xpns_wait_func: mkfifo $_fifo"
+  mkfifo "${_fifo}"
+  xpns_msg_debug "xpns_wait_func: grep -q 1 ${_fifo_arg}"
+  printf "%s\\n" "grep -q 1 ${_fifo_arg}"
+}
+
+# Split a new window into multiple panes.
+#
+xpns_split_window() {
+  local _window_name="$1"     ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
+  local _cmd_exec_flag="$1"   ; shift
+  local _await_flag="$1"      ; shift
+  local _pane_base_index="$1" ; shift
+  local _repstr="$1"          ; shift
+  local _cmd_template="$1"    ; shift
+  local _exec_cmd
+  local _sep_count=0
+  local args=("$@")
+  _last_idx=$(( ${#args[@]} - 1 ))
+
+  for i in $(xpns_seq $_last_idx 0)
+  do
+    xpns_msg_debug "Index:${i} Argument:${args[i]}"
+    _sep_count=$((_sep_count + 1))
+    _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
+
+    ## Speedy mode
+    if [[ $_cmd_exec_flag -eq 1 ]]; then
+
+      ## Speedy mode + logging
+      if [[ ${_log_flag} -eq 1 ]];then
+        # Wait for start of logging
+        # Without this part, logging thread may start after new process is finished.
+        # Execute function to wait for logging start.
+        _exec_cmd="$(xpns_wait_func "log_${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
+      fi
+
+      ## Speedy mode + pane title
+      if [[ ${_title_flag} -eq 1 ]];then
+        _exec_cmd="$(xpns_wait_func "title_${_window_name}-${i}-$$")"$'\n'${_exec_cmd}
+      fi
+
+      ## -ss: Speedy mode + nowait
+      if [[ $_await_flag -eq 1 ]]; then
+        _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+      fi
+
+      # Execute command as a child process of default-shell.
+      ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
+    else
+      # Open login shell and execute command on the interactive screen.
+      ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d
+    fi
+    # Restraining that size of pane's width becomes
+    # less than the minimum size which is defined by tmux.
+    if [[ ${_sep_count} -gt 2 ]]; then
+      ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" tiled
+    fi
+  done
+}
+
+#
 # Create new panes to the  existing window.
 # Usage:
 #    func <window name> <offset of index> <number of pane>
@@ -585,12 +726,24 @@ xpns_arrange_pane_location() {
 xpns_extra_panes_to_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
-  local _pane_num="$1"
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
+  local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
   # specify a pane which has the biggest index number.
+  #   Because pane_id may not be immutable.
+  #   If the small number of index is specified here, correspondance between pane_title and command can be slip off.
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_pane_num}"
+  xpns_split_window \
+    "${_window_name}" \
+    "${_log_flag}" \
+    "${_title_flag}" \
+    "${_speedy_flg}" \
+    "${_await_flg}" \
+    "${_pane_base_index}" \
+    "$@"
 }
 
 #
@@ -601,8 +754,11 @@ xpns_extra_panes_to_window() {
 xpns_prepare_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
-  local _pane_num="$1"        ; shift
-  local _attach_flg="$1"
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
+  local _attach_flg="$1"      ; shift
+  local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
@@ -615,15 +771,24 @@ xpns_prepare_window() {
   ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
 
   # split window into multiple panes
-  xpns_split_window "${_window_name}" "${_pane_num}"
+  xpns_split_window \
+    "${_window_name}" \
+    "${_log_flag}" \
+    "${_title_flag}" \
+    "${_speedy_flg}" \
+    "${_await_flg}" \
+    "${_pane_base_index}" \
+    "$@"
 
   ### If the first pane is still remaining,
   ### panes cannot be organized well.
   # Delete the first pane
   ${TMUX_XPANES_EXEC} kill-pane -t "${_window_name}.${_pane_base_index}"
 
-  # Select second pane
-  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}"
+  # Select second pane here.
+  #   If the command gets error, it would most likely be caused by user (XP_ENOPANE).
+  #   Suppress error message here and announce it in xpns_execution.
+  ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_base_index}" > /dev/null 2>&1
 }
 
 # Check whether given command is in the PATH or not.
@@ -632,17 +797,17 @@ xpns_check_env() {
   while read -r cmd ; do
     if ! type "${cmd}" > /dev/null 2>&1; then
       if [[ "${cmd}" == "tmux" ]] && [[ "${TMUX_XPANES_EXEC}" == "tmux" ]]; then
-        xpns_msg "Error" "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
+        xpns_msg_error "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
         exit ${XP_ENOCMD}
       elif [[ "${cmd}" != "tmux" ]]; then
-        xpns_msg "Error" "${cmd} is required."
+        xpns_msg_error "${cmd} is required."
         exit ${XP_ENOCMD}
       fi
     fi
   done < <(echo "${_cmds}" | tr ' ' '\n')
 
   if ! mkdir -p "${XP_CACHE_HOME}";then
-    xpns_msg "Warning" "failed to create cache directory '${XP_CACHE_HOME}'."
+    xpns_msg_warning "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
   # Do not omit this part, this is used by testing.
@@ -652,7 +817,7 @@ xpns_check_env() {
     "${XP_HOST_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
-    xpns_msg "Warning" \
+    xpns_msg_warning \
 "'${XP_THIS_FILE_NAME}' may not work correctly! Please check followings.
 * tmux is installed correctly.
 * Supported tmux version is installed.
@@ -686,7 +851,7 @@ xpns_pre_execution() {
   local _args4args=""
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_msg "Error" "'-x' must be used within the running tmux session."
+    xpns_msg_error "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
 
@@ -711,7 +876,6 @@ xpns_pre_execution() {
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
     send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
     "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
-
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
     send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
 
@@ -741,6 +905,7 @@ xpns_execution() {
   local _last_args_idx=
   local _def_allow_rename=
   local _pane_count=0
+  local _is_pane_title_required=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
@@ -757,7 +922,8 @@ xpns_execution() {
     # tmux 1.6 does not support -F option
     _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
-    _pane_base_index=$((_pane_base_index + _pane_count - 1))
+    _pane_base_index=$(( _pane_base_index + _pane_count - 1 ))
+    _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
   else
     _window_name=$(
       xpns_generate_window_name \
@@ -766,24 +932,47 @@ xpns_execution() {
         | xpns_value2key)
   fi
 
+  ## --------------------
+  # Prepare window and panes
+  ## --------------------
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     xpns_extra_panes_to_window \
       "${_window_name}" \
       "${_pane_base_index}" \
-      "${_last_args_idx}"
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
   else
     xpns_prepare_window \
       "${_window_name}" \
       "${_pane_base_index}" \
-      "${_last_args_idx}" \
-      "${XP_OPT_ATTACH}"
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_ATTACH}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
   fi
 
+  ## With -ss option, it is possible to close all the panes as of here.
+  ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
+  xpns_msg_debug "xpns_is_window_alive:1: After window separation"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    # Avoid sending command to the original window
+    # Set offset to avoid sending command to the original pane.
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
+    # in xpns_arrange_pane_location
     _last_args_idx=$((_last_args_idx + _pane_count))
+    # Re-select the windown that was active before.
+    ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
   fi
 
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
@@ -794,25 +983,50 @@ xpns_execution() {
       "${TMUX_XPANES_LOG_FORMAT}" \
       "${XP_EMPTY_STR}" \
       "${XP_ARGS[@]}"
+
+    if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
+      xpns_notify_logging \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:2: After logging"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
+    _is_pane_title_required=1
   fi
 
   # Set pane titles for each pane.
-  # The reason why 'if' statement is not here is
-  # author believes setting title will be default feature in the future.
-  xpns_set_titles \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${XP_OPT_SET_TITLE}" \
-    "${XP_OPT_EXTRA}" \
-    "${XP_ARGS[@]}"
+  if [[ $_is_pane_title_required -eq 1 ]];then
+    xpns_set_titles \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_ARGS[@]}"
+    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+      xpns_notify_title \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:3: After setting title"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
   # Sending operations for each pane.
-  xpns_send_commands \
-    "${_window_name}" \
-    "${_pane_base_index}" \
-    "${XP_REPSTR}" \
-    "${XP_CMD_UTILITY}" \
-    "${XP_ARGS[@]}"
+  # With -s option, command is already sent.
+  if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
+    xpns_send_commands \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
   xpns_arrange_pane_location \
     "${_window_name}" \
@@ -842,7 +1056,7 @@ xpns_execution() {
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
-      -- "$(echo "${_window_name}" | xpns_key2value)"
+      -- "$(printf "%s\\n" "${_window_name}" | xpns_key2value)"
   fi
 
   xpns_restore_allow_rename "${_def_allow_rename-}"
@@ -856,12 +1070,12 @@ xpns_execution() {
 xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
-    xpns_msg "Error" "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
+    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
     exit ${XP_EINVAL}
   fi
 
   if [[ -z "${TMUX-}" ]]; then
-    xpns_msg "Warning" "Attached session is required for 'Pipe mode'."
+    xpns_msg_warning "Attached session is required for 'Pipe mode'."
     # This condition is used when the following situations.
     #   * Enter from outside of tmux session(Normal mode1)
     #   * Pipe mode.
@@ -928,9 +1142,10 @@ xpns_layout_short2long() {
 }
 
 xpns_is_valid_layout() {
-  local _layout="$1"
-  if ! echo "$1" | grep -qE '^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'; then
-    xpns_msg "Error" "Invalid layout '${_layout}'."
+  local _layout="${1-}"
+  local _pat='^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
+  if ! [[ $_layout =~ $_pat ]]  ; then
+    xpns_msg_error "Invalid layout '${_layout}'."
     exit ${XP_ELAYOUT}
   fi
 }
@@ -939,11 +1154,11 @@ xpns_warning_before_extra() {
   local _ans _synchronized
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
-    xpns_msg "Warning" "Panes are now synchronized.
+    xpns_msg_warning "Panes are now synchronized.
 '-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
     read -r _ans
-    if grep -iqv '^y' <<<"${_ans}" ; then
+    if ! [[ "${_ans-}" =~ ^[yY]  ]]; then
       return 1
     fi
   fi
@@ -977,9 +1192,16 @@ xpns_load_flag_options() {
       XP_OPT_SET_TITLE=1
       XP_OPT_CHANGE_BORDER=1
     else
-      xpns_msg "Warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
+      xpns_msg_warning "-t option cannot be used by tmux version less than 2.3. Disabled."
       sleep 1
     fi
+  fi
+  if [[ "$1" =~ s ]]; then
+    XP_OPT_SPEEDY=1
+    XP_OPT_SPEEDY_AWAIT=1
+  fi
+  if [[ "$1" =~ ss ]]; then
+    XP_OPT_SPEEDY_AWAIT=0
   fi
   return 1
 }
@@ -1003,7 +1225,7 @@ xpns_load_arg_options() {
       XP_REPSTR="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -I option"
+      xpns_msg_error "invalid argument '$2' for -I option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
@@ -1017,7 +1239,7 @@ xpns_load_arg_options() {
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -l option"
+      xpns_msg_error "invalid argument '$2' for -l option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*c ]]; then
@@ -1031,19 +1253,19 @@ xpns_load_arg_options() {
       XP_OPT_CMD_UTILITY=1
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -c option"
+      xpns_msg_error "invalid argument '$2' for -c option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*n ]]; then
-    _pattern="^-${XP_FLAG_OPTIONS}*n(.+)"
+    _pattern="^-${XP_FLAG_OPTIONS}*n([0-9]+)"
     if [[ "$1" =~ $_pattern ]]; then
       XP_MAX_PANE_ARGS="${BASH_REMATCH[1]}"
       return 0
-    elif ! [[ "$2" =~ ^-.* ]] && [[ "$2" =~ ^[0-9]+$ ]]; then
+    elif [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_MAX_PANE_ARGS="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -n option"
+      xpns_msg_error "invalid argument '$2' for -n option"
       exit ${XP_EINVAL}
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*S ]]; then
@@ -1055,7 +1277,7 @@ xpns_load_arg_options() {
       XP_SOCKET_PATH="$2"
       return 0
     else
-      xpns_msg "Error" "invalid argument '$2' for -S option"
+      xpns_msg_error "invalid argument '$2' for -S option"
       exit ${XP_EINVAL}
     fi
   fi
@@ -1085,9 +1307,12 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--ssh$ ]]; then
     XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
-    # Enable -t and -t option as well
+    # Enable -t option as well
     XP_OPT_SET_TITLE=1
     XP_OPT_CHANGE_BORDER=1
+    # Enable -s option
+    XP_OPT_SPEEDY=1
+    XP_OPT_SPEEDY_AWAIT=1
     return 1
     # For unit testing
   elif [[ "$1" =~ ^--dry-run$ ]]; then
@@ -1096,12 +1321,15 @@ xpns_load_long_options() {
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
     return 1
+  elif [[ "$1" =~ ^--debug$ ]]; then
+    XP_OPT_DEBUG=1
+    return 1
 
   ## ----------------
   # Other options
   ## ----------------
   else
-    xpns_msg "Error" "invalid option -- '${1#--}'"
+    xpns_msg_error "invalid option -- '${1#--}'"
     xpns_usage
     echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
     exit ${XP_EINVAL}
@@ -1159,7 +1387,7 @@ xpns_parse_options() {
         # Other options
         ## ----------------
         else
-          xpns_msg "Error" "Invalid option -- '${1#-}'"
+          xpns_msg_error "Invalid option -- '${1#-}'"
           xpns_usage
           echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
           exit ${XP_EINVAL}
@@ -1186,7 +1414,7 @@ xpns_parse_options() {
 
   # When no argument arr given, exit.
   if [[ -z "${XP_ARGS[*]-}" ]]; then
-    xpns_msg "Error" "No arguments are given."
+    xpns_msg_error "No arguments are given."
     xpns_usage
     echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
     exit ${XP_EINVAL}
@@ -1200,6 +1428,9 @@ xpns_parse_options() {
   if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
+
+  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 }
 
 ## --------------------------------

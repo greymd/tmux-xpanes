@@ -19,7 +19,7 @@
 $ xpanes -c "ping {}" 192.168.0.{1..9}
 ```
 
-#### Connect to multiple hosts over SSH and record each operation log
+#### Connect to multiple hosts over SSH and start logging for each operation
 
 ```sh
 $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
@@ -28,14 +28,14 @@ $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
 #### Monitor CPU, Memory, Load, Processes and Disk info every seconds
 
 ```sh
-$ xpanes -e "top" "vmstat 1" "watch -n 1 df"
+$ xpanes -x -e "top" "vmstat 1" "watch -n 1 df"
 ```
 
 
 #### Operate running Docker containers on the interactive screen
 
 ```sh
-$ docker ps -q | xpanes -c "docker exec -it {} sh"
+$ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 ```
 
 
@@ -127,13 +127,16 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
+  -s                           Speedy mode: Run command without creating a login shell.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process ends.
   -S <socket-path>             Specify a full alternative path to the server socket.
-  -t                           Display each argument on the each pane's border.
+  -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
-  --ssh                        Same as `-c 'ssh -o StrictHostKeyChecking=no {}' -t`.
+  --ssh                        Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
   --stay                       Do not switch to new window.
+  --debug                      Print debug message.
 ```
 
 ## Getting Started
@@ -358,8 +361,10 @@ $ xpanes --ssh myuser1@host1 myuser2@host2
 This is same as below.
 
 ```
-$ xpanes -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
+$ xpanes -t -s -c "ssh -o StrictHostKeyChecking=no {}" myuser1@host1 myuser2@host2
 ```
+
+`-t` and `-s` options are introduced later.
 
 #### Connecting multiple hosts over SSH **AND logging operations**
 
@@ -431,6 +436,53 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
     +------------------------------------+-------------------------------------+
 ```
 
+#### Run commands promtply
+
+`-s` option is useful if you have following issues.
+
+ * It takes long time to open the multiple new panes because login shell loads a bunch of configures (i.e `~/.zshrc` loads something ).
+ * If you do not want to leave commands on your shell history.
+
+With `-s` option, `xpanes` does not create a new login shell.
+Instead, a command is going to be executed as a direct child process of `xpanes`.
+
+Here is the example.
+
+```sh
+$ xpanes -s -c "seq {}" 2 3 4 5
+```
+
+As you can see, each pane starts from command's result not `$ seq ...`.
+
+```
+    +------------------------------------------+------------------------------------------+
+    │1                                         │1                                         │
+    │2                                         │2                                         │
+    │Pane is dead: Press [Enter] to exit...    │3                                         │
+    │                                          │Pane is dead: Press [Enter] to exit...    │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
+    │1                                         │1                                         │
+    │2                                         │2                                         │
+    │3                                         │3                                         │
+    │4                                         │4                                         │
+    │Pane is dead: Press [Enter] to exit...    │5                                         │
+    │                                          │Pane is dead: Press [Enter] to exit...    │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    │                                          │                                          │
+    +------------------------------------------+------------------------------------------+
+```
+
+Confirmation message like `Pane is dead...` is shown when process ends.
+To suppress the message, use `-ss` instead of `-s`.
+
 #### Display host always
 
 ```sh
@@ -441,7 +493,7 @@ The result is like this.
 
 ![png image](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/ping_pane_title.png)
 
-As you notices that, `-t` displays each argument on the each pane border.
+As you notice that, `-t` displays each argument on the each pane border.
 It is called "pane title". The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
 
@@ -679,7 +731,7 @@ However, giving both `-c` and any arguments causes error. Because the command ca
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
-# Error: Both arguments and '-c' option are given.
+xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <utility> are given.
 ```
 
 ### Connecting to multiple hosts given by `~/.ssh/config`

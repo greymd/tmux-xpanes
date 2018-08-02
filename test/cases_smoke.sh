@@ -220,6 +220,40 @@ wait_existing_file_number(){
     return 0
 }
 
+all_non_empty_files(){
+    local _count=0
+    for f in "$@";do
+      # if the file is non empty
+      if [ -s "$f" ]; then
+        _count=$(( _count + 1 ))
+      else
+        echo "all_non_empty_files: $f is still empty" >&2
+      fi
+    done
+    if [[ $_count -eq $# ]]; then
+      # echo "all_non_empty_files:non empty: $*" >&2
+      return 0
+    fi
+    return 1
+}
+
+wait_all_non_empty_files(){
+    local _num_of_files=0
+    local _wait_seconds=5
+    # Wait until specific number of files are created.
+    for i in $(seq "${_wait_seconds}") ;do
+        if all_non_empty_files "$@"; then
+            break
+        fi
+        if [ "${i}" -eq "${_wait_seconds}" ]; then
+            echo "wait_all_non_empty_files: Test failed" >&2
+            return 1
+        fi
+        sleep 1
+    done
+    return 0
+}
+
 between_plus_minus() {
     local _range="$1"
     shift
