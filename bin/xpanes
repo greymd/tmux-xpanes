@@ -5,7 +5,7 @@ readonly XP_SHELL="/bin/bash"
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="3.1.0-beta"
+readonly XP_VERSION="3.1.0"
 trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
 
 ## --------------------------------
