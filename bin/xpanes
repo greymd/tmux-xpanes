@@ -845,223 +845,6 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
-# Execute from Normal mode1
-xpns_pre_execution() {
-  local _opts4args=""
-  local _args4args=""
-
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_msg_error "'-x' must be used within the running tmux session."
-    exit ${XP_EINVAL}
-  fi
-
-  # Create new session.
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
-  local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
-  xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
-
-  # Append -- flag.
-  # Because any arguments may have `-`
-  if [[ ${XP_NO_OPT} -eq 1 ]]; then
-    XP_ARGS=("--" "${XP_ARGS[@]}")
-  fi
-
-  # If there is any options, escape them.
-  if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
-    _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
-  fi
-  _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
-
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
-    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
-    "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
-    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
-
-  # Avoid attaching (for unit testing).
-  if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
-    if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
-      && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
-      xpns_msg "Recovery" \
-"Execute below command line to re-attach the new session.
-
-${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
-
-"
-      # It might be failed. Before applying changes, first window might be closed.
-      xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
-      exit ${XP_ETTY}
-    fi
-  fi
-  # It might be failed. Before applying changes, first window might be closed.
-  xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
-}
-
-# Execute from inside of tmux session
-xpns_execution() {
-  local _pane_base_index=
-  local _window_name=
-  local _last_args_idx=
-  local _def_allow_rename=
-  local _pane_count=0
-  local _is_pane_title_required=0
-
-  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
-    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
-  fi
-
-  _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
-  _last_args_idx=$((${#XP_ARGS[@]} - 1))
-  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
-
-  xpns_suppress_allow_rename "${_def_allow_rename-}"
-
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    # Reuse existing window name
-    # tmux 1.6 does not support -F option
-    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
-    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
-    _pane_base_index=$(( _pane_base_index + _pane_count - 1 ))
-    _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
-  else
-    _window_name=$(
-      xpns_generate_window_name \
-        "${XP_EMPTY_STR}" \
-        "${XP_ARGS[0]}" \
-        | xpns_value2key)
-  fi
-
-  ## --------------------
-  # Prepare window and panes
-  ## --------------------
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_extra_panes_to_window \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
-  else
-    xpns_prepare_window \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_ATTACH}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
-  fi
-
-  ## With -ss option, it is possible to close all the panes as of here.
-  ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
-  xpns_msg_debug "xpns_is_window_alive:1: After window separation"
-  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
-
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    # Set offset to avoid sending command to the original pane.
-    _pane_base_index=$((_pane_base_index + 1))
-    # Avoid to make layout even-horizontal even if there are many panes.
-    # in xpns_arrange_pane_location
-    _last_args_idx=$((_last_args_idx + _pane_count))
-    # Re-select the windown that was active before.
-    ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
-  fi
-
-  if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
-    xpns_enable_logging \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${TMUX_XPANES_LOG_DIRECTORY}" \
-      "${TMUX_XPANES_LOG_FORMAT}" \
-      "${XP_EMPTY_STR}" \
-      "${XP_ARGS[@]}"
-
-    if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
-      xpns_notify_logging \
-        "${_window_name}" \
-        "${XP_ARGS[@]}"
-    fi
-  fi
-
-  xpns_msg_debug "xpns_is_window_alive:2: After logging"
-  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
-
-  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
-    _is_pane_title_required=1
-  fi
-
-  # Set pane titles for each pane.
-  if [[ $_is_pane_title_required -eq 1 ]];then
-    xpns_set_titles \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_ARGS[@]}"
-    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
-      xpns_notify_title \
-        "${_window_name}" \
-        "${XP_ARGS[@]}"
-    fi
-  fi
-
-  xpns_msg_debug "xpns_is_window_alive:3: After setting title"
-  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
-
-  # Sending operations for each pane.
-  # With -s option, command is already sent.
-  if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
-    xpns_send_commands \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
-  fi
-
-  xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
-  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
-
-  xpns_arrange_pane_location \
-    "${_window_name}" \
-    "${_last_args_idx}"
-
-  # Enable broadcasting
-  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
-    ${TMUX_XPANES_EXEC} \
-      set-window-option -t "${_window_name}" \
-      synchronize-panes on
-  fi
-
-  ## In case of -t option
-  if [[ ${XP_OPT_SET_TITLE} -eq 1 ]] && [[ ${XP_OPT_CHANGE_BORDER} -eq 1 ]]; then
-    # Set border format
-    ${TMUX_XPANES_EXEC} \
-      set-window-option -t "${_window_name}" \
-      pane-border-format "${TMUX_XPANES_PANE_BORDER_FORMAT}"
-    # Show border status
-    ${TMUX_XPANES_EXEC} \
-      set-window-option -t "${_window_name}" \
-      pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
-  fi
-
-  # In case of -x, this statement is skipped to keep the original window name
-  if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
-    # Restore original window name.
-    ${TMUX_XPANES_EXEC} \
-      rename-window -t "${_window_name}" \
-      -- "$(printf "%s\\n" "${_window_name}" | xpns_key2value)"
-  fi
-
-  xpns_restore_allow_rename "${_def_allow_rename-}"
-}
-
 ## ----------------
 # Arrange options for pipe mode
 #  * argument -> command utility
@@ -1431,6 +1214,223 @@ xpns_parse_options() {
 
   xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
   xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+}
+
+# Execute from Normal mode1
+xpns_pre_execution() {
+  local _opts4args=""
+  local _args4args=""
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    xpns_msg_error "'-x' must be used within the running tmux session."
+    exit ${XP_EINVAL}
+  fi
+
+  # Create new session.
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
+  local _def_allow_rename=
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
+  xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
+
+  # Append -- flag.
+  # Because any arguments may have `-`
+  if [[ ${XP_NO_OPT} -eq 1 ]]; then
+    XP_ARGS=("--" "${XP_ARGS[@]}")
+  fi
+
+  # If there is any options, escape them.
+  if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
+    _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
+  fi
+  _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
+
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
+    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
+    "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
+    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
+
+  # Avoid attaching (for unit testing).
+  if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
+    if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
+      && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
+      xpns_msg "Recovery" \
+"Execute below command line to re-attach the new session.
+
+${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
+
+"
+      # It might be failed. Before applying changes, first window might be closed.
+      xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
+      exit ${XP_ETTY}
+    fi
+  fi
+  # It might be failed. Before applying changes, first window might be closed.
+  xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
+}
+
+# Execute from inside of tmux session
+xpns_execution() {
+  local _pane_base_index=
+  local _window_name=
+  local _last_args_idx=
+  local _def_allow_rename=
+  local _pane_count=0
+  local _is_pane_title_required=0
+
+  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
+    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
+  fi
+
+  _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
+  _last_args_idx=$((${#XP_ARGS[@]} - 1))
+  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
+
+  xpns_suppress_allow_rename "${_def_allow_rename-}"
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    # Reuse existing window name
+    # tmux 1.6 does not support -F option
+    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
+    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
+    _pane_base_index=$(( _pane_base_index + _pane_count - 1 ))
+    _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
+  else
+    _window_name=$(
+      xpns_generate_window_name \
+        "${XP_EMPTY_STR}" \
+        "${XP_ARGS[0]}" \
+        | xpns_value2key)
+  fi
+
+  ## --------------------
+  # Prepare window and panes
+  ## --------------------
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    xpns_extra_panes_to_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  else
+    xpns_prepare_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_ATTACH}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  fi
+
+  ## With -ss option, it is possible to close all the panes as of here.
+  ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
+  xpns_msg_debug "xpns_is_window_alive:1: After window separation"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+    # Set offset to avoid sending command to the original pane.
+    _pane_base_index=$((_pane_base_index + 1))
+    # Avoid to make layout even-horizontal even if there are many panes.
+    # in xpns_arrange_pane_location
+    _last_args_idx=$((_last_args_idx + _pane_count))
+    # Re-select the windown that was active before.
+    ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
+  fi
+
+  if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
+    xpns_enable_logging \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${TMUX_XPANES_LOG_DIRECTORY}" \
+      "${TMUX_XPANES_LOG_FORMAT}" \
+      "${XP_EMPTY_STR}" \
+      "${XP_ARGS[@]}"
+
+    if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
+      xpns_notify_logging \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:2: After logging"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
+    _is_pane_title_required=1
+  fi
+
+  # Set pane titles for each pane.
+  if [[ $_is_pane_title_required -eq 1 ]];then
+    xpns_set_titles \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_ARGS[@]}"
+    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+      xpns_notify_title \
+        "${_window_name}" \
+        "${XP_ARGS[@]}"
+    fi
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:3: After setting title"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  # Sending operations for each pane.
+  # With -s option, command is already sent.
+  if [[ $XP_OPT_SPEEDY -eq 0 ]]; then
+    xpns_send_commands \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  fi
+
+  xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
+  xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  xpns_arrange_pane_location \
+    "${_window_name}" \
+    "${_last_args_idx}"
+
+  # Enable broadcasting
+  if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      synchronize-panes on
+  fi
+
+  ## In case of -t option
+  if [[ ${XP_OPT_SET_TITLE} -eq 1 ]] && [[ ${XP_OPT_CHANGE_BORDER} -eq 1 ]]; then
+    # Set border format
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-format "${TMUX_XPANES_PANE_BORDER_FORMAT}"
+    # Show border status
+    ${TMUX_XPANES_EXEC} \
+      set-window-option -t "${_window_name}" \
+      pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
+  fi
+
+  # In case of -x, this statement is skipped to keep the original window name
+  if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
+    # Restore original window name.
+    ${TMUX_XPANES_EXEC} \
+      rename-window -t "${_window_name}" \
+      -- "$(printf "%s\\n" "${_window_name}" | xpns_key2value)"
+  fi
+
+  xpns_restore_allow_rename "${_def_allow_rename-}"
 }
 
 ## --------------------------------
