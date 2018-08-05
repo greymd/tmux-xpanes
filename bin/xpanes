@@ -5,7 +5,7 @@ readonly XP_SHELL="/bin/bash"
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="3.1.0"
+readonly XP_VERSION="3.2.0-beta"
 trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
 
 ## --------------------------------
@@ -118,7 +118,7 @@ XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
 XP_OPT_DEBUG="${XP_OPT_DEBUG:-0}"
-XP_DLS_FOCUS_PANE="${XP_DLS_FOCUS_PANE:-}"
+XP_FOCUS_PANE_DSL="${XP_FOCUS_PANE_DSL:-}"
 
 ## --------------------------------
 # Logger
@@ -170,6 +170,7 @@ OPTIONS:
   -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
+  -f <EXPRESSION>              Specify selected pane by default.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
   -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
                                t    tiled (default)
@@ -184,7 +185,7 @@ OPTIONS:
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
-  --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
+  --log-format=<FORMAT>        File name of log files follow given <FORMAT>.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
   --debug                      Print debug message.
@@ -194,6 +195,22 @@ _EOS_
 
 xpns_usage_verbose() {
   cat << _EOS_
+EXPRESSION:
+    * Integer numbers.
+    * \`-\` and \`+\` operators
+    * Special variables
+      FP (First pane), LP (Last pane), BP (Biggest pane), SP (Smallest pane)
+
+    Example:
+      Biggest pane is selected.
+      $ xpanes -f BP A B C
+
+      Third pane is selected (if index pane-base-index is 0).
+      $ xpanes -f 2 A B C
+
+      Select the third pane from the last pane.
+      $ xpanes -f 'LP-2' A B C
+
 FORMAT:
     Default value is "${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}"
     Interpreted sequences are:
@@ -937,10 +954,6 @@ xpns_is_valid_layout() {
   fi
 }
 
-xpns_DSL_number_of_panes () {
-  printf "%s\\n" "$( ${TMUX_XPANES_EXEC} display-message -p '#{window_panes}')"
-}
-
 xpns_DSL_biggest_pane () {
   local idx
   local max=0
@@ -950,7 +963,7 @@ xpns_DSL_biggest_pane () {
       idx="$_idx"
       max="$_size"
     fi
-  done < <( ${TMUX_XPANES_EXEC} list-panes -F '#{pane_index} #{pane_height} #{pane_width}' )
+  done
   printf "%s\\n" "$idx"
 }
 
@@ -959,20 +972,20 @@ xpns_DSL_smallest_pane () {
   local min=0
   while read -r _idx _height _width; do
     _size=$(( _height * _width ))
-    (( min==0 )) && min="$_size"
-    if (( _size < min )) ;then
+    # Initialize min
+    if (( min == 0 )) || (( _size < min )) ;then
       idx="$_idx"
-      max="$_size"
+      min="$_size"
     fi
-  done < <( ${TMUX_XPANES_EXEC} list-panes -F '#{pane_index} #{pane_height} #{pane_width}' )
+  done
   printf "%s\\n" "$idx"
 }
 
 xpns_DSL_syntax_check () {
-  local _dls="$1"
-  local _pat='^([\+-]| |NP|BP|SP|[0-9])+$'
-  if ! [[ $_dls =~ $_pat ]]; then
-    xpns_msg_debug "xpns_DSL_syntax_check: invalid syntax '$_dls'"
+  local _dsl="$1"
+  local _pat='^([\+-]| |LP|FP|BP|SP|[0-9])+$'
+  if ! [[ $_dsl =~ $_pat ]]; then
+    xpns_msg_error "-f option syntax error '$_dsl'"
     return 1
   fi
   xpns_msg_debug "xpns_DSL_syntax_check: syntax check succeeded"
@@ -989,26 +1002,33 @@ xpns_DSL_result_check () {
 }
 
 xpns_DSL_execute () {
-  local _dls="$1"
+  local _dsl="$1"
   local _res
-  # TODO: LP, FP -- last pane, first pane
-  local NP BP SP
-  if ! xpns_DSL_syntax_check "$_dls" ;then
-    xpns_msg_error "syntax error '$_dls'"
-    return 1
-  fi
-  # TODO: Do not execute tmux command in xpns_DLS_*_pane function, instead, give the output of list-panes to them.
+  local _panes
+  local LP FP BP SP
+
+  # syntax check is already implementd in the xpns_load_arg_options
+  # Skip xpns_DSL_syntax_check
+
+  _panes="$(${TMUX_XPANES_EXEC} list-panes -F '#{pane_index} #{pane_height} #{pane_width}')"
+  xpns_msg_debug "xpns_DSL_execute: list-panes: $( echo "${_panes}" | tr '\n' '/' )"
   # shellcheck disable=SC2034
-  NP="$(xpns_DSL_number_of_panes)"
+  FP="$(echo "$_panes" | { read -r _idx _ _; echo "${_idx}"; } )"
+  xpns_msg_debug "xpns_DSL_execute: FP = $FP"
   # shellcheck disable=SC2034
-  BP="$(xpns_DSL_biggest_pane)"
+  LP="$(echo "$_panes" | tail -n 1 | { read -r _idx _ _; echo "${_idx}"; } )"
+  xpns_msg_debug "xpns_DSL_execute: LP = $LP"
   # shellcheck disable=SC2034
-  SP="$(xpns_DSL_smallest_pane)"
+  BP="$(echo "$_panes" | xpns_DSL_biggest_pane)"
+  xpns_msg_debug "xpns_DSL_execute: BP = $BP"
+  # shellcheck disable=SC2034
+  SP="$(echo "$_panes" | xpns_DSL_smallest_pane)"
+  xpns_msg_debug "xpns_DSL_execute: SP = $SP"
   # execute formula
-  _res=$(( _dls ))
-  xpns_msg_debug "xpns_DSL_execute: execute [$_dls]: result [$_res]"
+  _res=$(( _dsl ))
+  xpns_msg_debug "xpns_DSL_execute: execute [$_dsl]: result [$_res]"
   if ! xpns_DSL_result_check "$_res" ;then
-    xpns_msg_error "formula returns invalid result '$_res'"
+    xpns_msg_warning "Given DSL [$_dsl] returns invalid result [$_res]"
     return 2
   fi
   printf "%s\\n" "$_res"
@@ -1148,14 +1168,14 @@ xpns_load_arg_options() {
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*f ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*f(.+)"
     if [[ "$1" =~ $_pattern ]]; then
-      XP_DLS_FOCUS_PANE="${BASH_REMATCH[1]}"
-      if ! xpns_DSL_syntax_check "$XP_DLS_FOCUS_PANE";then
+      XP_FOCUS_PANE_DSL="${BASH_REMATCH[1]}"
+      if ! xpns_DSL_syntax_check "$XP_FOCUS_PANE_DSL";then
         exit ${XP_ESYNTAX}
       fi
       return 0
     elif ! [[ "$2" =~ ^-.* ]];then
-      XP_DLS_FOCUS_PANE="$2"
-      if ! xpns_DSL_syntax_check "$XP_DLS_FOCUS_PANE";then
+      XP_FOCUS_PANE_DSL="$2"
+      if ! xpns_DSL_syntax_check "$XP_FOCUS_PANE_DSL";then
         exit ${XP_ESYNTAX}
       fi
       return 0
@@ -1484,6 +1504,16 @@ xpns_execution() {
 
   xpns_msg_debug "xpns_is_window_alive:3: After setting title"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
+
+  ## Select pane by -f option
+  if [[ -n "${XP_FOCUS_PANE_DSL}" ]]; then
+    local _dsl_result
+    if _dsl_result=$(xpns_DSL_execute "${XP_FOCUS_PANE_DSL}") ;then
+      ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.$_dsl_result"
+    else
+      xpns_msg_warning "-f option is ignored."
+    fi
+  fi
 
   # Sending operations for each pane.
   # With -s option, command is already sent.

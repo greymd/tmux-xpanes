@@ -172,7 +172,7 @@ test_xpns_is_valid_layout() {
 }
 
 test_xpns_DSL_syntax_check () {
-  xpns_DSL_syntax_check "1 - 1 + 1 + 3435 - NP"
+  xpns_DSL_syntax_check "1 - 1 + 1 + 3435 - LP"
   actual=$?
   expected=0
   assertEquals "$expected" "$actual"
@@ -184,17 +184,65 @@ test_xpns_DSL_syntax_check () {
 }
 
 test_xpns_DSL_execute () {
-  # export XP_OPT_DEBUG=1
-  ( xpns_DSL_execute "1 - 1 + 1 + 3435 - NG" )
-  actual=$?
-  expected=1
-  assertEquals "$expected" "$actual"
-
   xpns_DSL_execute "1-2"
   actual=$?
   expected=2
   assertEquals "$expected" "$actual"
 }
+
+test_xpns_DSL_result_check () {
+  xpns_DSL_result_check "-2"
+  actual=$?
+  expected=1
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_DSL_biggest_pane () {
+  local panes="0 12 102
+1 11 51
+2 11 50
+3 24 101
+4 23 102
+5 23 101"
+  actual=$(echo "$panes" | xpns_DSL_biggest_pane)
+  expected=3
+  assertEquals "$expected" "$actual"
+
+  # If there are multiple biggest size panes, smaller index is selected.
+  panes="0 12 102
+1 11 51
+2 11 50
+3 24 101
+4 24 101
+5 23 101"
+  actual=$(echo "$panes" | xpns_DSL_biggest_pane)
+  expected=3
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_DSL_smallest_pane () {
+  local panes="1 12 102
+2 11 51
+3 11 50
+4 24 101
+5 23 102
+6 23 101"
+  actual=$(echo "$panes" | xpns_DSL_smallest_pane)
+  expected=3
+  assertEquals "$expected" "$actual"
+
+  # If there are multiple smallest size panes, smaller index is selected.
+  panes="1 10 50
+2 10 50
+3 11 50
+4 24 101
+5 23 102
+6 23 101"
+  actual=$(echo "$panes" | xpns_DSL_smallest_pane)
+  expected=1
+  assertEquals "$expected" "$actual"
+}
+
 
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
