@@ -23,6 +23,9 @@ readonly XP_ETTY=5
 # Invalid layout.
 readonly XP_ELAYOUT=6
 
+# Syntax error of DLS
+readonly XP_ESYNTAX=7
+
 # Log related exit status is 2x.
 ## Could not create a directory.
 readonly XP_ELOGDIR=20
@@ -89,7 +92,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # options which work individually.
 readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
-readonly XP_ARG_OPTIONS="[IScln]"
+readonly XP_ARG_OPTIONS="[ISclnf]"
 readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -115,6 +118,7 @@ XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
 XP_OPT_DEBUG="${XP_OPT_DEBUG:-0}"
+XP_DLS_FOCUS_PANE="${XP_DLS_FOCUS_PANE:-}"
 
 ## --------------------------------
 # Logger
@@ -968,7 +972,7 @@ xpns_DSL_syntax_check () {
   local _dls="$1"
   local _pat='^([\+-]| |NP|BP|SP|[0-9])+$'
   if ! [[ $_dls =~ $_pat ]]; then
-    xpns_msg_debug "xpns_DSL_syntax_check: check syntax '$_dls'"
+    xpns_msg_debug "xpns_DSL_syntax_check: invalid syntax '$_dls'"
     return 1
   fi
   xpns_msg_debug "xpns_DSL_syntax_check: syntax check succeeded"
@@ -987,11 +991,13 @@ xpns_DSL_result_check () {
 xpns_DSL_execute () {
   local _dls="$1"
   local _res
+  # TODO: LP, FP -- last pane, first pane
   local NP BP SP
   if ! xpns_DSL_syntax_check "$_dls" ;then
     xpns_msg_error "syntax error '$_dls'"
     return 1
   fi
+  # TODO: Do not execute tmux command in xpns_DLS_*_pane function, instead, give the output of list-panes to them.
   # shellcheck disable=SC2034
   NP="$(xpns_DSL_number_of_panes)"
   # shellcheck disable=SC2034
@@ -1137,6 +1143,24 @@ xpns_load_arg_options() {
       return 0
     else
       xpns_msg_error "invalid argument '$2' for -S option"
+      exit ${XP_EINVAL}
+    fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*f ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*f(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_DLS_FOCUS_PANE="${BASH_REMATCH[1]}"
+      if ! xpns_DSL_syntax_check "$XP_DLS_FOCUS_PANE";then
+        exit ${XP_ESYNTAX}
+      fi
+      return 0
+    elif ! [[ "$2" =~ ^-.* ]];then
+      XP_DLS_FOCUS_PANE="$2"
+      if ! xpns_DSL_syntax_check "$XP_DLS_FOCUS_PANE";then
+        exit ${XP_ESYNTAX}
+      fi
+      return 0
+    else
+      xpns_msg_error "invalid argument '$2' for -f option"
       exit ${XP_EINVAL}
     fi
   fi
