@@ -114,7 +114,7 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
-XP_OPT_DEBUG=0
+XP_OPT_DEBUG="${XP_OPT_DEBUG:-0}"
 
 ## --------------------------------
 # Logger
@@ -931,6 +931,82 @@ xpns_is_valid_layout() {
     xpns_msg_error "Invalid layout '${_layout}'."
     exit ${XP_ELAYOUT}
   fi
+}
+
+xpns_DSL_number_of_panes () {
+  printf "%s\\n" "$( ${TMUX_XPANES_EXEC} display-message -p '#{window_panes}')"
+}
+
+xpns_DSL_biggest_pane () {
+  local idx
+  local max=0
+  while read -r _idx _height _width; do
+    _size=$(( _height * _width ))
+    if (( _size > max )) ;then
+      idx="$_idx"
+      max="$_size"
+    fi
+  done < <( ${TMUX_XPANES_EXEC} list-panes -F '#{pane_index} #{pane_height} #{pane_width}' )
+  printf "%s\\n" "$idx"
+}
+
+xpns_DSL_smallest_pane () {
+  local idx
+  local min=0
+  while read -r _idx _height _width; do
+    _size=$(( _height * _width ))
+    (( min==0 )) && min="$_size"
+    if (( _size < min )) ;then
+      idx="$_idx"
+      max="$_size"
+    fi
+  done < <( ${TMUX_XPANES_EXEC} list-panes -F '#{pane_index} #{pane_height} #{pane_width}' )
+  printf "%s\\n" "$idx"
+}
+
+xpns_DSL_syntax_check () {
+  local _dls="$1"
+  local _pat='^([\+-]| |NP|BP|SP|[0-9])+$'
+  if ! [[ $_dls =~ $_pat ]]; then
+    xpns_msg_debug "xpns_DSL_syntax_check: check syntax '$_dls'"
+    return 1
+  fi
+  xpns_msg_debug "xpns_DSL_syntax_check: syntax check succeeded"
+  return 0
+}
+
+xpns_DSL_result_check () {
+  local _result="$1"
+  local _pat='^[0-9]+$'
+  if ! [[ $_result =~ $_pat ]]; then
+    return 1
+  fi
+  return 0
+}
+
+xpns_DSL_execute () {
+  local _dls="$1"
+  local _res
+  local NP BP SP
+  if ! xpns_DSL_syntax_check "$_dls" ;then
+    xpns_msg_error "syntax error '$_dls'"
+    return 1
+  fi
+  # shellcheck disable=SC2034
+  NP="$(xpns_DSL_number_of_panes)"
+  # shellcheck disable=SC2034
+  BP="$(xpns_DSL_biggest_pane)"
+  # shellcheck disable=SC2034
+  SP="$(xpns_DSL_smallest_pane)"
+  # execute formula
+  _res=$(( _dls ))
+  xpns_msg_debug "xpns_DSL_execute: execute [$_dls]: result [$_res]"
+  if ! xpns_DSL_result_check "$_res" ;then
+    xpns_msg_error "formula returns invalid result '$_res'"
+    return 2
+  fi
+  printf "%s\\n" "$_res"
+  return 0
 }
 
 xpns_warning_before_extra() {

@@ -171,5 +171,30 @@ test_xpns_is_valid_layout() {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_DSL_syntax_check () {
+  xpns_DSL_syntax_check "1 - 1 + 1 + 3435 - NP"
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  xpns_DSL_syntax_check "1 - 1 + 1 + 3435 - NG"
+  actual=$?
+  expected=1
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_DSL_execute () {
+  # export XP_OPT_DEBUG=1
+  ( xpns_DSL_execute "1 - 1 + 1 + 3435 - NG" )
+  actual=$?
+  expected=1
+  assertEquals "$expected" "$actual"
+
+  xpns_DSL_execute "1-2"
+  actual=$?
+  expected=2
+  assertEquals "$expected" "$actual"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
