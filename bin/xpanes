@@ -855,12 +855,6 @@ xpns_pre_execution() {
     exit ${XP_EINVAL}
   fi
 
-  # Create new session.
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session -s "${XP_SESSION_NAME}" -n "${XP_TMP_WIN_NAME}" -d
-  local _def_allow_rename=
-  _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename' "${XP_SOCKET_PATH}")"
-  xpns_suppress_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
-
   # Append -- flag.
   # Because any arguments may have `-`
   if [[ ${XP_NO_OPT} -eq 1 ]]; then
@@ -873,11 +867,11 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
-    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" \
-    "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}" C-m
-  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" \
-    send-keys -t "${XP_SESSION_NAME}:${XP_TMP_WIN_NAME}" "exit" C-m
+  # Create new session.
+  ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
+    -s "${XP_SESSION_NAME}" \
+    -n "${XP_TMP_WIN_NAME}" \
+    -d "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}"
 
   # Avoid attaching (for unit testing).
   if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
@@ -889,13 +883,9 @@ xpns_pre_execution() {
 ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
 
 "
-      # It might be failed. Before applying changes, first window might be closed.
-      xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
       exit ${XP_ETTY}
     fi
   fi
-  # It might be failed. Before applying changes, first window might be closed.
-  xpns_restore_allow_rename "${_def_allow_rename-}" "${XP_SOCKET_PATH}"
 }
 
 # Execute from inside of tmux session
