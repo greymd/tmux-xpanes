@@ -6,7 +6,7 @@ readonly XP_SHELL="/bin/bash"
 
 set -u
 readonly XP_VERSION="3.1.0"
-trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
+trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
 
 ## --------------------------------
 # Error constants
@@ -103,7 +103,8 @@ XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
 XP_REPSTR=""
-XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_CACHE_HOME}/socket}"
+XP_DEFAULT_SOCKET_PATH="${XP_CACHE_HOME}/socket"
+XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_DEFAULT_SOCKET_PATH}}"
 XP_NO_OPT=0
 XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
@@ -866,6 +867,9 @@ xpns_pre_execution() {
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
+
+  # Delete old socket file in advance (avoid to load old .tmux.conf)
+  rm -f "${XP_DEFAULT_SOCKET_PATH}"
 
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
