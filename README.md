@@ -31,6 +31,11 @@ $ xpanes --log=~/log --ssh user1@host1 user2@host2 user2@host3
 $ xpanes -x -e "top" "vmstat 1" "watch -n 1 df"
 ```
 
+#### Log in to multiple EC2 instances with Session Manager
+
+```sh
+$ aws ec2 describe-instances --query 'Reservations[*].Instances[*].{_:InstanceId}' --output text | xpanes -stc 'aws ssm start-session --target {}'
+```
 
 #### Operate running Docker containers on the interactive screen
 
