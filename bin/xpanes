@@ -868,8 +868,8 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  # Delete old socket file in advance (avoid to load old .tmux.conf)
-  rm -f "${XP_DEFAULT_SOCKET_PATH}"
+  # Delete old socket file in advance (avoid to load old .tmux.conf bound to the socket file)
+  [[ -e "${XP_DEFAULT_SOCKET_PATH}" ]] && rm -f "${XP_DEFAULT_SOCKET_PATH}"
 
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
