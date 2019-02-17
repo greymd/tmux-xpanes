@@ -6,7 +6,7 @@ readonly XP_SHELL="/bin/bash"
 
 set -u
 readonly XP_VERSION="3.1.0"
-trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$' EXIT
+trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
 
 ## --------------------------------
 # Error constants
@@ -103,7 +103,9 @@ XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
 XP_REPSTR=""
-XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_CACHE_HOME}/socket}"
+XP_DEFAULT_SOCKET_PATH_BASE="${XP_CACHE_HOME}/socket"
+XP_DEFAULT_SOCKET_PATH="${XP_DEFAULT_SOCKET_PATH_BASE}.$$"
+XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_DEFAULT_SOCKET_PATH}}"
 XP_NO_OPT=0
 XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
@@ -746,6 +748,38 @@ xpns_extra_panes_to_window() {
     "$@"
 }
 
+# Remove unnecessary session files as much as possible
+# to let xpanes avoids to load old .tmux.conf.
+xpns_clean_session() {
+  local _xpns_pid
+  local _pattern
+  if ! type ls > /dev/null 2>&1 ;then
+    return
+  fi
+  if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
+    return
+  fi
+  # Delete old socket file (xpanes v3.1.0 or before).
+  if [[ -e "${XP_DEFAULT_SOCKET_PATH_BASE}" ]]; then
+    xpns_msg_debug "xpns_clean_session: Remove ${XP_DEFAULT_SOCKET_PATH_BASE}"
+    rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+  fi
+  for _socket in "${XP_CACHE_HOME}"/* ;do
+    xpns_msg_debug "xpns_clean_session: file = ${_socket}"
+    _pattern="socket.([0-9]+)$"
+    if [[ "${_socket}" =~  $_pattern ]]; then
+      _xpns_pid="${BASH_REMATCH[1]}"
+      # Check whether the process is running or not
+      if ! builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
+        xpns_msg_debug "xpns_clean_session: pid(${_xpns_pid}) is not running. Remove ${_socket}"
+        rm -f "${_socket}"
+      else
+        xpns_msg_debug "xpns_clean_session: pid(${_xpns_pid}) is running. Keep ${_socket}"
+      fi
+    fi
+  done
+}
+
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -866,6 +900,9 @@ xpns_pre_execution() {
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
+
+  # Run as best effort
+  xpns_clean_session || true
 
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
