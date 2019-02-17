@@ -752,6 +752,7 @@ xpns_extra_panes_to_window() {
 # to let xpanes avoids to load old .tmux.conf.
 xpns_clean_session() {
   local _xpns_pid
+  local _pattern
   if ! type ls > /dev/null 2>&1 ;then
     return
   fi
@@ -765,7 +766,8 @@ xpns_clean_session() {
   fi
   for _socket in "${XP_CACHE_HOME}"/* ;do
     xpns_msg_debug "xpns_clean_session: file = ${_socket}"
-    if [[ "${_socket}" =~ socket.([0-9]+)$ ]]; then
+    _pattern="socket.([0-9]+)$"
+    if [[ "${_socket}" =~  $_pattern ]]; then
       _xpns_pid="${BASH_REMATCH[1]}"
       # Check whether the process is running or not
       if ! builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
