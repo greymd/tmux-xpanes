@@ -12,14 +12,17 @@ fi
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 
-BIN_DIR="${THIS_DIR}/../bin/"
-# Get repository name which equals to bin name.
-# BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
-BIN_NAME="xpanes"
-EXEC="${BIN_DIR}${BIN_NAME}"
-
-# shellcheck source=/dev/null
-source "${EXEC}" --dry-run -- -
+oneTimeSetUp(){
+  BIN_DIR="${THIS_DIR}/../bin/"
+  # Get repository name which equals to bin name.
+  # BIN_NAME="$(basename $(git rev-parse --show-toplevel))"
+  BIN_NAME="xpanes"
+  EXEC="${BIN_DIR}${BIN_NAME}"
+  export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/spa ce/.cache"
+  export XP_CACHE_HOME="${XDG_CACHE_HOME}/xpanes"
+  # shellcheck source=/dev/null
+  source "${EXEC}" --dry-run -- -
+}
 
 setUp(){
     echo ">>>>>>>>>>" >&2
@@ -170,6 +173,33 @@ test_xpns_is_valid_layout() {
   expected=6
   assertEquals "$expected" "$actual"
 }
+
+test_xpns_clean_session() {
+  touch "${XP_CACHE_HOME}/socket"
+  xpns_clean_session
+  # echo "Remove socket"
+  [[ -e "${XP_CACHE_HOME}/socket" ]]
+  actual=$?
+  expected=1
+  assertEquals "$expected" "$actual"
+
+  touch "${XP_CACHE_HOME}/socket.$$"
+  touch "${XP_CACHE_HOME}/socket.01234"
+  xpns_clean_session
+
+  # echo "Keep ${XP_CACHE_HOME}/socket.$$"
+  [[ -e "${XP_CACHE_HOME}/socket.$$" ]]
+  actual=$?
+  expected=0
+  assertEquals "$expected" "$actual"
+
+  # echo "Remove ${XP_CACHE_HOME}/socket.01234"
+  [[ -e "${XP_CACHE_HOME}/socket.01234" ]]
+  actual=$?
+  expected=1
+  assertEquals "$expected" "$actual"
+}
+
 
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
