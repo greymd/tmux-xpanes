@@ -763,9 +763,8 @@ xpns_clean_socket() {
   fi
   while read -r _socket;do
     xpns_msg_debug "xpns_clean_socket: file = ${_socket}"
-    if [[ "${_socket}" =~ socket.[0-9][0-9]*$ ]]; then
+    if [[ "${_socket}" =~ socket.([0-9][0-9]*)$ ]]; then
       _xpns_pid="${BASH_REMATCH[1]}"
-      _xpns_pid="${_xpns_pid#socket.}"
       if builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
         xpns_msg_debug "xpns_clean_socket: rm -f ${_socket}"
         rm -f "${_socket}"
