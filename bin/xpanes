@@ -103,7 +103,8 @@ XP_OPT_DRY_RUN=0
 XP_OPT_ATTACH=1
 XP_OPT_LOG_STORE=0
 XP_REPSTR=""
-XP_DEFAULT_SOCKET_PATH="${XP_CACHE_HOME}/socket"
+XP_DEFAULT_SOCKET_PATH_BASE="${XP_CACHE_HOME}/socket"
+XP_DEFAULT_SOCKET_PATH="${XP_DEFAULT_SOCKET_PATH_BASE}.$$"
 XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_DEFAULT_SOCKET_PATH}}"
 XP_NO_OPT=0
 XP_OPT_CMD_UTILITY=0
@@ -747,6 +748,33 @@ xpns_extra_panes_to_window() {
     "$@"
 }
 
+xpns_clean_socket() {
+  local _xpns_pid
+  if ! type ls > /dev/null 2>&1 ;then
+    return
+  fi
+  if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
+    return
+  fi
+  # Delete old socket file in advance
+  if [[ -e "${XP_DEFAULT_SOCKET_PATH_BASE}" ]]; then
+    xpns_msg_debug "xpns_clean_socket: rm -f ${XP_DEFAULT_SOCKET_PATH_BASE}"
+    rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+  fi
+  while read -r _socket;do
+    xpns_msg_debug "xpns_clean_socket: file = ${_socket}"
+    if [[ "${_socket}" =~ socket.[0-9][0-9]*$ ]]; then
+      _xpns_pid="${BASH_REMATCH[1]#socket.}"
+      if builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
+        xpns_msg_debug "xpns_clean_socket: rm -f ${_socket}"
+        rm -f "${_socket}"
+      else
+        xpns_msg_debug "xpns_clean_socket: ${_socket} is running"
+      fi
+    fi
+  done < <( ls "${XP_CACHE_HOME}" )
+}
+
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
@@ -868,8 +896,7 @@ xpns_pre_execution() {
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
 
-  # Delete old socket file in advance (avoid to load old .tmux.conf bound to the socket file)
-  [[ -e "${XP_DEFAULT_SOCKET_PATH}" ]] && rm -f "${XP_DEFAULT_SOCKET_PATH}"
+  xpns_clean_socket
 
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
