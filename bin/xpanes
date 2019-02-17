@@ -763,7 +763,7 @@ xpns_clean_session() {
     xpns_msg_debug "xpns_clean_session: Remove ${XP_DEFAULT_SOCKET_PATH_BASE}"
     rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
   fi
-  while read -r _socket;do
+  for _socket in "${XP_CACHE_HOME}"/* ;do
     xpns_msg_debug "xpns_clean_session: file = ${_socket}"
     if [[ "${_socket}" =~ socket.([0-9]+)$ ]]; then
       _xpns_pid="${BASH_REMATCH[1]}"
@@ -775,7 +775,7 @@ xpns_clean_session() {
         xpns_msg_debug "xpns_clean_session: pid(${_xpns_pid}) is running. Keep ${_socket}"
       fi
     fi
-  done < <( ls "${XP_CACHE_HOME}" )
+  done
 }
 
 #
