@@ -81,7 +81,7 @@ $ sudo apt install tmux-xpanes
 ## With `yum` (For CentOS, RHEL users)
 
 ```sh
-$ yum install https://github.com/greymd/tmux-xpanes/releases/download/v3.1.0/tmux-xpanes_v3.1.0.rpm
+$ yum install https://github.com/greymd/tmux-xpanes/releases/download/v3.1.1/tmux-xpanes_v3.1.1.rpm
 ```
 
 ## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
