@@ -753,9 +753,6 @@ xpns_extra_panes_to_window() {
 xpns_clean_session() {
   local _xpns_pid
   local _pattern
-  if ! type ls > /dev/null 2>&1 ;then
-    return
-  fi
   if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
     return
   fi
