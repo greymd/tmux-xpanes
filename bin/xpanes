@@ -116,7 +116,7 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
-XP_OPT_SIZING=0
+XP_OPT_SIZING=1
 XP_CELL_NUM=
 XP_OPT_SIZING_COLS=
 XP_OPT_SIZING_ROWS=
@@ -1315,9 +1315,11 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  xpns_arrange_pane_location \
-    "${_window_name}" \
-    "${_last_args_idx}"
+  if [[ $XP_OPT_SIZING -eq 0 ]]; then
+    xpns_arrange_pane_location \
+      "${_window_name}" \
+      "${_last_args_idx}"
+  fi
 
   # Enable broadcasting
   if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
@@ -1518,10 +1520,12 @@ xpns_load_arg_options() {
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
     if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_SIZING=0
       XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
+      XP_OPT_SIZING=0
       XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
