@@ -70,7 +70,7 @@ readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs`, `sleep`, `mkfifo` are omitted because minimum functions can work without them.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd mkfifo}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -824,6 +824,180 @@ xpns_extra_panes_to_window() {
     "$@"
 }
 
+xpns_new_window () {
+  local _window_name="$1" ; shift
+  local _log_flag="$1"    ; shift
+  local _title_flag="$1"  ; shift
+  local _attach_flg="$1"  ; shift
+  local _speedy_flg="$1"  ; shift
+  local _await_flg="$1"   ; shift
+  local _idx="$1"         ; shift
+  local _exec_cmd="$1"    ; shift
+  local window_id
+
+  if [[ "${_await_flg}" -eq 1 ]]; then
+    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+  fi
+  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
+  fi
+  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
+  fi
+
+  # Create new window.
+  if [[ "${_attach_flg}" -eq 1 ]]; then
+    if [[ "${_speedy_flg}" -eq 1 ]]; then
+      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
+    else
+      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P )
+    fi
+  else
+    # Keep background
+    if [[ "${_speedy_flg}" -eq 1 ]]; then
+      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
+    else
+      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P -d)
+    fi
+  fi
+  echo "${window_id}"
+}
+
+xpns_new_pane () {
+  local _window_id="$1"   ; shift
+  local _log_flag="$1"    ; shift
+  local _title_flag="$1"  ; shift
+  local _attach_flg="$1"  ; shift
+  local _speedy_flg="$1"  ; shift
+  local _await_flg="$1"   ; shift
+  local _idx="$1"         ; shift
+  local _exec_cmd="$1"    ; shift
+  local pane_id
+
+  if [[ "${_await_flg}" -eq 1 ]]; then
+    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+  fi
+  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
+  fi
+  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
+  fi
+
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    pane_id="$(tmux split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
+  else
+    pane_id="$(tmux split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P)"
+  fi
+  printf "%s\\n" "${pane_id}"
+}
+
+xpns_prepare_sized_window () {
+  local _window_name="$1"     ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
+  local _attach_flg="$1"      ; shift
+  local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
+  local _repstr="$1"          ; shift
+  local _cmd_template="$1"    ; shift
+  local args=("$@")
+  local window_height="$XP_WINDOW_HEIGHT"
+  local window_width="$XP_WINDOW_WIDTH"
+  local col="$XP_OPT_SIZING_COLS"
+  local row="$XP_OPT_SIZING_ROWS"
+  local cols=("${XP_COLS[@]}")
+  local cols_offset=("${XP_COLS_OFFSETS[@]}")
+  local pane_id first_pane_id window_id
+  local cell_height cell_width top_pane_height
+  local i j rest_row offset
+
+  cell_height=$(( ( window_height - row + 1 ) / row ))
+  xpns_msg_debug "Insert first element"
+  window_id=$(xpns_new_window \
+    "${_window_name}" \
+    "${_log_flag}" \
+    "${_title_flag}" \
+    "${_attach_flg}" \
+    "${_speedy_flg}" \
+    "${_await_flg}" \
+    0 \
+    "${_cmd_template//${_repstr}/${args[0]}}")
+  first_pane_id=$(tmux display-message -t "$window_id" -p -F '#{pane_id}' | head -n 1)
+
+  ## Start from last row
+  for (( i = row - 1 ; i > 0 ; i-- ));do
+    col="${cols[i]}"
+    cell_width=$(( ( window_width - col + 1 ) / col ))
+    xpns_msg_debug "col=$col"
+    (( offset = cols_offset[i]  ))
+    for (( j = 0 ; j < col ; j++ ));do
+
+      if (( j == 0 )) ;then
+        (( idx = offset - col ))
+        # Create new row
+        xpns_msg_debug "create row"
+        # Insert first element of the row first
+        pane_id=$(xpns_new_pane \
+          "${_window_name}" \
+          "${_log_flag}" \
+          "${_title_flag}" \
+          "${_attach_flg}" \
+          "${_speedy_flg}" \
+          "${_await_flg}" \
+          "${idx}" \
+          "${_cmd_template//${_repstr}/${args[idx]}}")
+      fi
+
+      # Separate row into columns
+      if (( j != 0 )) ;then
+        (( idx = offset - j ))
+        _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
+        if [[ $_await_flg -eq 1 ]]; then
+          _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+        fi
+        xpns_msg_debug "Separate row into columns"
+        current_pane_width=$(tmux display-message -t "$pane_id" -p '#{pane_width}' | head -n 1)
+        rest_col=$(( col - j + 1 ))
+        cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
+        if [[ "${_speedy_flg}" -eq 1 ]]; then
+          tmux split-window -t "$pane_id" -h -d -l "$cell_width" "${_exec_cmd}"
+        else
+          tmux split-window -t "$pane_id" -h -d -l "$cell_width"
+        fi
+        xpns_msg_debug "tmux split-window -t $pane_id -h -d -l $cell_width ${_exec_cmd}"
+      fi
+    done
+
+    # Adjust height
+    top_pane_height=$(tmux display-message -t "$window_id" -p '#{pane_height}' | head -n 1)
+    rest_row=$(( i ))
+    xpns_msg_debug "top_pane_height=$top_pane_height rest_row=$rest_row"
+    cell_height=$(( ( top_pane_height - rest_row + 1 ) / rest_row ))
+  done
+
+  # Split first row into columns
+  col="${cols[0]}"
+  cell_width=$(( ( window_width - col + 1 ) / col ))
+  for (( j = 1 ; j < col ; j++ ));do
+    idx=$(( cols_offset[0] - j ))
+    # Adjust width
+    current_pane_width=$(tmux display-message -t "$first_pane_id" -p '#{pane_width}' | head -n 1)
+    rest_col=$(( col - j + 1 ))
+    cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
+    xpns_msg_debug "Split top row into columns"
+    _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
+    if [[ $_await_flg -eq 1 ]]; then
+      _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+    fi
+    if [[ "${_speedy_flg}" -eq 1 ]]; then
+      tmux split-window -t "$first_pane_id" -h -d -l "$cell_width" "${_exec_cmd}"
+    else
+      tmux split-window -t "$first_pane_id" -h -d -l "$cell_width"
+    fi
+  done
+}
+
 # Remove unnecessary session files as much as possible
 # to let xpanes avoids to load old .tmux.conf.
 xpns_clean_session() {
@@ -1047,17 +1221,30 @@ xpns_execution() {
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
   else
-    xpns_prepare_window \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_ATTACH}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
+    if [[ ${XP_OPT_SIZING} -eq 1 ]];then
+      xpns_prepare_sized_window \
+        "${_window_name}" \
+        "${XP_OPT_LOG_STORE}" \
+        "${XP_OPT_SET_TITLE}" \
+        "${XP_OPT_ATTACH}" \
+        "${XP_OPT_SPEEDY}" \
+        "${XP_OPT_SPEEDY_AWAIT}" \
+        "${XP_REPSTR}" \
+        "${XP_CMD_UTILITY}" \
+        "${XP_ARGS[@]}"
+    else
+      xpns_prepare_window \
+        "${_window_name}" \
+        "${_pane_base_index}" \
+        "${XP_OPT_LOG_STORE}" \
+        "${XP_OPT_SET_TITLE}" \
+        "${XP_OPT_ATTACH}" \
+        "${XP_OPT_SPEEDY}" \
+        "${XP_OPT_SPEEDY_AWAIT}" \
+        "${XP_REPSTR}" \
+        "${XP_CMD_UTILITY}" \
+        "${XP_ARGS[@]}"
+    fi
   fi
 
   ## With -ss option, it is possible to close all the panes as of here.
@@ -1565,13 +1752,20 @@ xpns_parse_options() {
 
   read -r XP_WINDOW_WIDTH XP_WINDOW_HEIGHT < <(${TMUX_XPANES_EXEC} display-message -p '#{window_width} #{window_height}')
   XP_CELL_NUM="${#XP_ARGS[@]}"
-  ## if XP_OPT_SIZING_ROWS is undefined
-  if [[ -z "${XP_OPT_SIZING_ROWS-}" ]] ;then
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS:-0}" "" "${XP_CELL_NUM}")
+
+  if [[ -n "${XP_OPT_SIZING_COLS-}" ]] ;then
+    ## if col is defined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS-}" "" "${XP_CELL_NUM}")
+  elif [[ -n "${XP_OPT_SIZING_ROWS-}" ]] ;then
+    ## if row is defined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "${XP_OPT_SIZING_ROWS-}" "${XP_CELL_NUM}")
+  else
+    ## if both are undefined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "" "${XP_CELL_NUM}")
   fi
   IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS:-0}")"
   IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}" | xpns_nums_accumulate_sum)"
-  unset XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS
+  ## unset XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS
 
   ## Showing basic information
   xpns_msg_debug "Window: [ Height: $XP_WINDOW_HEIGHT Width: $XP_WINDOW_WIDTH]"
@@ -1585,6 +1779,8 @@ xpns_parse_options() {
   xpns_msg_debug "    -----+------------------------..."
   xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
   xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+
+  # TODO: calculate col and row here, and exit with error in case of too small cell is found.
 }
 
 ## --------------------------------
