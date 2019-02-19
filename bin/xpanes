@@ -89,7 +89,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # options which work individually.
 readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
-readonly XP_ARG_OPTIONS="[IScln]"
+readonly XP_ARG_OPTIONS="[ISclnCR]"
 readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -116,6 +116,14 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
+XP_OPT_SIZING=0
+XP_CELL_NUM=
+XP_OPT_SIZING_COLS=
+XP_OPT_SIZING_ROWS=
+XP_WINDOW_WIDTH=
+XP_WINDOW_HEIGHT=
+XP_COLS=
+XP_COLS_OFFSETS=
 XP_OPT_DEBUG=0
 
 ## --------------------------------
@@ -181,6 +189,8 @@ OPTIONS:
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
+  -C NUM,--col=NUM             Number of cols.
+  -R NUM,--row=NUM             Number of rows.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
@@ -311,6 +321,72 @@ xpns_restore_allow_rename () {
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
     fi
   fi
+}
+
+# func "11" "2"
+#  => 6
+# 11 / 2 = 5.5 => ceiling => 6
+xpns_ceiling () {
+  local divide="$1";shift
+  local by="$1"
+  printf "%s\\n" $(( ( divide + by - 1 ) / by ))
+}
+
+# func "10" "3"
+#  => 4 3 3
+# Divide 10 into 3 parts as equally as possible.
+xpns_divide_equally () {
+  local number="$1";shift
+  local count="$1"
+  local upper lower upper_count lower_count
+  upper="$(xpns_ceiling "$number" "$count")"
+  lower=$(( upper - 1 ))
+  lower_count=$(( upper * count - number ))
+  upper_count=$(( count - lower_count ))
+  eval "printf '${upper} %.0s' {1..$upper_count}"
+  (( lower_count > 0 )) && eval "printf '${lower} %.0s' {1..$lower_count}"
+}
+
+# echo 3 3 3 3 | func
+# => 3 6 9 12
+xpns_nums_accumulate_sum () {
+  local s=0
+  while read -r n; do
+    ((s = s + n ))
+    printf "%s " "$s"
+  done < <( cat | tr ' ' '\n')
+}
+
+# Adjust size of columns and rows in accordance with given N
+# func <col> <row> <N>
+# i.e:
+#     func "" "" 20
+#       => returns 4 5
+#     func "6" 0 20
+#       => returns 6 4
+xpns_adjust_col_row() {
+  local col="${1:-0}" ;shift
+  local row="${1:-0}" ;shift
+  local N="$1"   ;shift
+  local fix_col
+  local fix_row
+  (( col != 0 )) && fix_col=1
+  (( row != 0 )) && fix_row=1
+
+  # If both valures are specified, col is used
+  if (( fix_col == 1 )) && (( fix_row == 1 ));then
+    row=0
+    fix_row=0
+  fi
+  ## xpns_msg_debug "xpns_adjust_col_row(given): col=$col row=$row fix_col=$fix_col fix_row=$fix_row"
+  while (( col * row < N )) ;do
+    (( fix_row != 1 )) && (( row = row + 1 ))
+    if (( col * row < N ));then
+      (( fix_col != 1 )) &&  (( col = col + 1 ))
+    fi
+  done
+  ## xpns_msg_debug "xpns_adjust_col_row(result): col=$col row=$row fix_col=$fix_col fix_row=$fix_row"
+  printf "%d %d\\n" "${col}" "${row}"
 }
 
 # Make each line unique by adding index number
@@ -1304,6 +1380,32 @@ xpns_load_arg_options() {
       xpns_msg_error "invalid argument '$2' for -S option"
       exit ${XP_EINVAL}
     fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*C ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*C([0-9]+)"
+    XP_OPT_SIZING=1
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_SIZING_COLS="${BASH_REMATCH[1]}"
+      return 0
+    elif ! [[ "$2" =~ ^-.* ]];then
+      XP_OPT_SIZING_COLS="$2"
+      return 0
+    else
+      xpns_msg_error "invalid argument '$2' for -C option"
+      exit ${XP_EINVAL}
+    fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*R ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*R([0-9]+)"
+    XP_OPT_SIZING=1
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_SIZING_ROWS="${BASH_REMATCH[1]}"
+      return 0
+    elif ! [[ "$2" =~ ^-.* ]];then
+      XP_OPT_SIZING_ROWS="$2"
+      return 0
+    else
+      xpns_msg_error "invalid argument '$2' for -R option"
+      exit ${XP_EINVAL}
+    fi
   fi
   return 0
 }
@@ -1344,6 +1446,14 @@ xpns_load_long_options() {
     return 1
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
+    return 1
+  elif [[ "$1" =~ ^--col=[0-9]+$ ]]; then
+    XP_OPT_SIZING=1
+    XP_OPT_SIZING_COLS="${1#--col=}"
+    return 1
+  elif [[ "$1" =~ ^--row=[0-9]+$ ]]; then
+    XP_OPT_SIZING=1
+    XP_OPT_SIZING_ROWS="${1#--row=}"
     return 1
   elif [[ "$1" =~ ^--debug$ ]]; then
     XP_OPT_DEBUG=1
@@ -1453,6 +1563,26 @@ xpns_parse_options() {
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
 
+  read -r XP_WINDOW_WIDTH XP_WINDOW_HEIGHT < <(${TMUX_XPANES_EXEC} display-message -p '#{window_width} #{window_height}')
+  XP_CELL_NUM="${#XP_ARGS[@]}"
+  ## if XP_OPT_SIZING_ROWS is undefined
+  if [[ -z "${XP_OPT_SIZING_ROWS-}" ]] ;then
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS:-0}" "" "${XP_CELL_NUM}")
+  fi
+  IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS:-0}")"
+  IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}" | xpns_nums_accumulate_sum)"
+  unset XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS
+
+  ## Showing basic information
+  xpns_msg_debug "Window: [ Height: $XP_WINDOW_HEIGHT Width: $XP_WINDOW_WIDTH]"
+  xpns_msg_debug "tmux default layout: ${XP_OPT_SIZING}"
+  xpns_msg_debug "# Of Panes: ${XP_CELL_NUM}"
+  xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug "    Col[]| ${XP_COLS[*]}"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug " offset[]| ${XP_COLS_OFFSETS[*]}"
+  xpns_msg_debug "    -----+------------------------..."
   xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
   xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 }
