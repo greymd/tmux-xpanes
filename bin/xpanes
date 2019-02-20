@@ -874,14 +874,14 @@ xpns_new_pane () {
   local _exec_cmd="$1"    ; shift
   local pane_id
 
-  if [[ "${_await_flg}" -eq 1 ]]; then
-    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-  fi
   if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
     _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
   fi
   if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
     _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
+  fi
+  if [[ "${_await_flg}" -eq 1 ]]; then
+    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
   fi
 
   if [[ "${_speedy_flg}" -eq 1 ]]; then
