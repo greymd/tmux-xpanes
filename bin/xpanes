@@ -368,24 +368,30 @@ xpns_adjust_col_row() {
   local col="${1:-0}" ;shift
   local row="${1:-0}" ;shift
   local N="$1"   ;shift
-  local fix_col
-  local fix_row
-  (( col != 0 )) && fix_col=1
-  (( row != 0 )) && fix_row=1
+  local fix_col_flg
+  local fix_row_flg
+  (( col != 0 )) && fix_col_flg=1 || fix_col_flg=0
+  (( row != 0 )) && fix_row_flg=1 || fix_row_flg=0
+
+  # This is just a author (@greymd)'s preference.
+  if (( fix_col_flg == 0 )) && (( fix_row_flg == 0 )) && (( N == 2)) ;then
+    printf "%d %d\\n" "2" "1"
+    return
+  fi
 
   # If both valures are specified, col is used
-  if (( fix_col == 1 )) && (( fix_row == 1 ));then
+  if (( fix_col_flg == 1 )) && (( fix_row_flg == 1 ));then
     row=0
-    fix_row=0
+    fix_row_flg=0
   fi
-  ## xpns_msg_debug "xpns_adjust_col_row(given): col=$col row=$row fix_col=$fix_col fix_row=$fix_row"
+  # xpns_msg_debug "xpns_adjust_col_row(given): col=$col row=$row fix_col_flg=$fix_col_flg fix_row_flg=$fix_row_flg"
   while (( col * row < N )) ;do
-    (( fix_row != 1 )) && (( row = row + 1 ))
+    (( fix_row_flg != 1 )) && (( row = row + 1 ))
     if (( col * row < N ));then
-      (( fix_col != 1 )) &&  (( col = col + 1 ))
+      (( fix_col_flg != 1 )) &&  (( col = col + 1 ))
     fi
   done
-  ## xpns_msg_debug "xpns_adjust_col_row(result): col=$col row=$row fix_col=$fix_col fix_row=$fix_row"
+  ## xpns_msg_debug "xpns_adjust_col_row(result): col=$col row=$row fix_col_flg=$fix_col_flg fix_row_flg=$fix_row_flg"
   printf "%d %d\\n" "${col}" "${row}"
 }
 
@@ -1126,6 +1132,38 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
+xpns_check_cell_size() {
+  XP_CELL_NUM="${#XP_ARGS[@]}"
+
+  if [[ -n "${XP_OPT_SIZING_COLS-}" ]] ;then
+    ## if col is defined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS-}" "" "${XP_CELL_NUM}")
+  elif [[ -n "${XP_OPT_SIZING_ROWS-}" ]] ;then
+    ## if row is defined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "${XP_OPT_SIZING_ROWS-}" "${XP_CELL_NUM}")
+  else
+    ## if both are undefined
+    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "" "${XP_CELL_NUM}")
+  fi
+  IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
+  IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}" | xpns_nums_accumulate_sum)"
+
+  ## Showing basic information
+  xpns_msg_debug "Window: [ Height: $XP_WINDOW_HEIGHT Width: $XP_WINDOW_WIDTH]"
+  xpns_msg_debug "tmux default layout: ${XP_OPT_SIZING}"
+  xpns_msg_debug "# Of Panes: ${XP_CELL_NUM}"
+  xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug "    Col[]| ${XP_COLS[*]}"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug " offset[]| ${XP_COLS_OFFSETS[*]}"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+
+  # TODO: calculate col and row here, and exit with error in case of too small cell is found.
+}
+
 # Execute from Normal mode1
 xpns_pre_execution() {
   local _opts4args=""
@@ -1134,6 +1172,15 @@ xpns_pre_execution() {
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     xpns_msg_error "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
+  fi
+
+  # Run as best effort.
+  # Because after the tmux session is created, cols and rows would be provided by tmux.
+  if type stty > /dev/null 2>&1; then
+    read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(stty size)
+    xpns_check_cell_size
+  else
+    xpns_msg_debug "'stty' does not exist"
   fi
 
   # Append -- flag.
@@ -1180,6 +1227,11 @@ xpns_execution() {
   local _def_allow_rename=
   local _pane_count=0
   local _is_pane_title_required=0
+
+  {
+    read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}')
+    xpns_check_cell_size
+  }
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
@@ -1754,37 +1806,6 @@ xpns_parse_options() {
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
 
-  read -r XP_WINDOW_WIDTH XP_WINDOW_HEIGHT < <(${TMUX_XPANES_EXEC} display-message -p '#{window_width} #{window_height}')
-  XP_CELL_NUM="${#XP_ARGS[@]}"
-
-  if [[ -n "${XP_OPT_SIZING_COLS-}" ]] ;then
-    ## if col is defined
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS-}" "" "${XP_CELL_NUM}")
-  elif [[ -n "${XP_OPT_SIZING_ROWS-}" ]] ;then
-    ## if row is defined
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "${XP_OPT_SIZING_ROWS-}" "${XP_CELL_NUM}")
-  else
-    ## if both are undefined
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "" "" "${XP_CELL_NUM}")
-  fi
-  IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS:-0}")"
-  IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}" | xpns_nums_accumulate_sum)"
-  ## unset XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS
-
-  ## Showing basic information
-  xpns_msg_debug "Window: [ Height: $XP_WINDOW_HEIGHT Width: $XP_WINDOW_WIDTH]"
-  xpns_msg_debug "tmux default layout: ${XP_OPT_SIZING}"
-  xpns_msg_debug "# Of Panes: ${XP_CELL_NUM}"
-  xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
-  xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug "    Col[]| ${XP_COLS[*]}"
-  xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug " offset[]| ${XP_COLS_OFFSETS[*]}"
-  xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
-  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
-
-  # TODO: calculate col and row here, and exit with error in case of too small cell is found.
 }
 
 ## --------------------------------

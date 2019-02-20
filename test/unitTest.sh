@@ -206,6 +206,14 @@ test_xpns_adjust_col_row () {
   expected="4 5"
   assertEquals "$expected" "$actual"
 
+  actual=$(xpns_adjust_col_row "" "" 1)
+  expected="1 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row "" "" 2)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
   actual=$(xpns_adjust_col_row 6 0 20)
   expected="6 4"
   assertEquals "$expected" "$actual"
