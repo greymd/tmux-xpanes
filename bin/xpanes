@@ -1171,7 +1171,7 @@ xpns_set_args_per_pane() {
 }
 
 xpns_get_window_height_width() {
-  local _hight _width _result _dev
+  local _height _width _result _dev
   local _pattern='^([0-9]+)[ \t]+([0-9]+)$'
 
   if ! type stty > /dev/null 2>&1; then
@@ -1187,10 +1187,10 @@ xpns_get_window_height_width() {
   fi
   if [[ $XP_IS_PIPE_MODE -eq 0 ]]; then
     if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
-      _hight="${BASH_REMATCH[1]}"
+      _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
-      printf "%s\\n" "$_hight $_width"
+      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
       return 0
     fi
   else
@@ -1202,18 +1202,18 @@ xpns_get_window_height_width() {
 
     ## If it's Linux, -F option is used
     if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
-      _hight="${BASH_REMATCH[1]}"
+      _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
-      printf "%s\\n" "$_hight $_width"
+      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
       return 0
     fi
     ## If it's BSD, macOS, -F option is used
     if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
-      _hight="${BASH_REMATCH[1]}"
+      _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
-      printf "%s\\n" "$_hight $_width"
+      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
       return 0
     fi
     return 1
