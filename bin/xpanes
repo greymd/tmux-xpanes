@@ -1221,25 +1221,27 @@ xpns_get_window_height_width() {
 }
 
 xpns_check_cell_size() {
-  local _rows
   XP_CELL_NUM="${#XP_ARGS[@]}"
 
   if [[ -n "${XP_OPT_SIZING_COLS-}" ]] && [[ -n "${XP_OPT_SIZING_ROWS-}" ]];then
     xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
   fi
+  ## if col is only defined
   if [[ -n "${XP_OPT_SIZING_COLS-}" ]] ;then
-    ## if col is only defined
     read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS-}" 0 "${XP_CELL_NUM}")
+    local _rows
     IFS=" " read -r -a _rows <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_COLS}")"
     IFS=" " read -r -a XP_COLS <<< "$(xpns_nums_transpose "${_rows[@]}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+
+  ## if row is only defined
   elif [[ -n "${XP_OPT_SIZING_ROWS-}" ]] ;then
-    ## if row is only defined
     read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row 0 "${XP_OPT_SIZING_ROWS-}" "${XP_CELL_NUM}")
     IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+
+  ## if both are undefined
   else
-    ## if both are undefined
     read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row 0 0 "${XP_CELL_NUM}")
     IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
@@ -1248,7 +1250,7 @@ xpns_check_cell_size() {
   local cell_height=$(( ( XP_WINDOW_HEIGHT - XP_OPT_SIZING_ROWS + 1 ) / XP_OPT_SIZING_ROWS ))
   local cell_width=$(( ( XP_WINDOW_WIDTH - XP_OPT_SIZING_COLS + 1 ) / XP_OPT_SIZING_COLS ))
 
-  ## Showing basic information
+  ## Display basic information
   xpns_msg_debug "Window: { Height: $XP_WINDOW_HEIGHT, Width: $XP_WINDOW_WIDTH }"
   xpns_msg_debug "Cell: { Height: $cell_height, Width: $cell_width }"
   xpns_msg_debug "# Of Panes: ${XP_CELL_NUM}"
@@ -1285,6 +1287,8 @@ xpns_pre_execution() {
   if [[ ${XP_NO_OPT} -eq 1 ]]; then
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
+
+  ## TODO: Inject -S option if it is not provided
 
   # If there is any options, escape them.
   if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
