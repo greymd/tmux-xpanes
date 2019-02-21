@@ -387,6 +387,8 @@ divide_five_panes_impl() {
     # |   E   |
     # +---+---+
 
+    echo "= Panes= "
+    ${TMUX_EXEC} list-panes -F '#D #{pane_top} #{pane_left} #{pane_width}'
     echo "Check width"
     a_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==1')
     b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
@@ -559,7 +561,8 @@ setUp(){
 }
 
 tearDown(){
-    stty rows ${TTY_ROWS} cols ${TTY_COLS}
+    stty rows "${TTY_ROWS}" cols "${TTY_COLS}"
+    type resize &> /dev/null && resize
     rm -rf "${TEST_TMP}"
     echo "<<<<<<<<<<" >&2
     echo >&2
