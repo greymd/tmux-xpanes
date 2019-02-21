@@ -4,6 +4,10 @@
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
 readonly TEST_TMP="${THIS_DIR}/test_tmp"
 readonly OLD_PATH="${PATH}"
+IFS=" " read -r TTY_ROWS TTY_COLS < <(stty size)
+TTY_ROWS=${TTY_ROWS:-40}
+TTY_COLS=${TTY_COLS:-80}
+readonly TTY_ROWS TTY_COLS
 
 # func 0 -- Restore old PATH.
 # func 1 -- make PATH include tmux.
@@ -546,6 +550,7 @@ set_tmux_exec_randomly () {
 }
 
 setUp(){
+    stty rows 40 cols 80
     cd "${BIN_DIR}" || exit
     mkdir -p "${TEST_TMP}"
     set_tmux_exec_randomly
@@ -554,6 +559,7 @@ setUp(){
 }
 
 tearDown(){
+    stty rows ${TTY_ROWS} cols ${TTY_COLS}
     rm -rf "${TEST_TMP}"
     echo "<<<<<<<<<<" >&2
     echo >&2
