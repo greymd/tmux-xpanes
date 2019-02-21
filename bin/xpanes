@@ -368,7 +368,7 @@ xpns_nums_accumulate_sum () {
 # 3 [] []    => 2 rows
 # 4 [] []    => 2 rows
 #
-# After the transposition, it mulst be "4 4 1" represents below
+# After the transposition, it must be "4 4 1" which represents below
 #   1  2  3  4
 # 1 [] [] [] [] => 4 rows
 # 2 [] [] [] [] => 4 rows
@@ -639,6 +639,7 @@ xpns_enable_logging() {
   )
 }
 
+## Print "1" on the particular named pipe
 xpns_notify() {
   local _wait_id="$1" ; shift
   local _fifo
@@ -655,11 +656,11 @@ xpns_notify_logging() {
   done
 }
 
-xpns_notify_title() {
+xpns_notify_sync() {
   local _window_name="$1" ; shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
-    xpns_notify "title_${_window_name}-${i}-$$"
+    xpns_notify "sync_${_window_name}-${i}-$$" &
   done
 }
 
@@ -789,7 +790,7 @@ xpns_split_window() {
   local _window_name="$1"     ; shift
   local _log_flag="$1"        ; shift
   local _title_flag="$1"      ; shift
-  local _cmd_exec_flag="$1"   ; shift
+  local _speedy_flag="$1"     ; shift
   local _await_flag="$1"      ; shift
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
@@ -806,26 +807,9 @@ xpns_split_window() {
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
 
     ## Speedy mode
-    if [[ $_cmd_exec_flag -eq 1 ]]; then
+    if [[ $_speedy_flag -eq 1 ]]; then
 
-      ## Speedy mode + logging
-      if [[ ${_log_flag} -eq 1 ]];then
-        # Wait for start of logging
-        # Without this part, logging thread may start after new process is finished.
-        # Execute function to wait for logging start.
-        _exec_cmd="$(xpns_wait_func "log_${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
-      fi
-
-      ## Speedy mode + pane title
-      if [[ ${_title_flag} -eq 1 ]];then
-        _exec_cmd="$(xpns_wait_func "title_${_window_name}-${i}-$$")"$'\n'${_exec_cmd}
-      fi
-
-      ## -ss: Speedy mode + nowait
-      if [[ $_await_flag -eq 1 ]]; then
-        _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-      fi
-
+      _exec_cmd=$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flag}" "${_await_flag}" "$i" "${_exec_cmd}")
       # Execute command as a child process of default-shell.
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
@@ -875,12 +859,21 @@ xpns_inject_wait_command () {
   local _await_flg="$1"   ; shift
   local _idx="$1"         ; shift
   local _exec_cmd="$1"    ; shift
+
+  ## Speedy mode + logging
   if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    # Wait for start of logging
+    # Without this part, logging thread may start after new process is finished.
+    # Execute function to wait for logging start.
     _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
   fi
-  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
-    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
+
+  ## Speedy mode (Do not allow to close panes before the separation is finished).
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "sync_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
   fi
+
+  ## -s: Speedy mode (Not -ss: Speedy mode + nowait)
   if [[ "${_await_flg}" -eq 1 ]]; then
     _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
   fi
@@ -889,70 +882,52 @@ xpns_inject_wait_command () {
 
 xpns_new_window () {
   local _window_name="$1" ; shift
-  local _log_flag="$1"    ; shift
-  local _title_flag="$1"  ; shift
   local _attach_flg="$1"  ; shift
   local _speedy_flg="$1"  ; shift
-  local _await_flg="$1"   ; shift
-  local _idx="$1"         ; shift
   local _exec_cmd="$1"    ; shift
   local window_id
-
-  if [[ "${_await_flg}" -eq 1 ]]; then
-    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-  fi
-  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
-    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
-  fi
-  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
-    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
-  fi
 
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     if [[ "${_speedy_flg}" -eq 1 ]]; then
-      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
+      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
     else
-      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P )
+      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P )
     fi
   else
     # Keep background
     if [[ "${_speedy_flg}" -eq 1 ]]; then
-      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
+      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
     else
-      window_id=$(tmux new-window -n "${_window_name}" -F '#{window_id}' -P -d)
+      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d)
     fi
   fi
-  echo "${window_id}"
+  printf "%s" "${window_id}"
 }
 
-xpns_new_pane () {
+xpns_new_pane_vertical () {
   local _window_id="$1"   ; shift
-  local _log_flag="$1"    ; shift
-  local _title_flag="$1"  ; shift
-  local _attach_flg="$1"  ; shift
   local _speedy_flg="$1"  ; shift
-  local _await_flg="$1"   ; shift
-  local _idx="$1"         ; shift
   local _exec_cmd="$1"    ; shift
   local pane_id
-
-  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
-    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
-  fi
-  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
-    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
-  fi
-  if [[ "${_await_flg}" -eq 1 ]]; then
-    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-  fi
-
   if [[ "${_speedy_flg}" -eq 1 ]]; then
-    pane_id="$(tmux split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
+    pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
   else
-    pane_id="$(tmux split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P)"
+    pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P)"
   fi
   printf "%s\\n" "${pane_id}"
+}
+
+xpns_split_pane_horizontal () {
+  local _target_pane_id="$1" ; shift
+  local _cell_width="$1"     ; shift
+  local _speedy_flg="$1"     ; shift
+  local _exec_cmd="$1"       ; shift
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    ${TMUX_XPANES_EXEC} split-window -t "$_target_pane_id" -h -d -l "$_cell_width" "${_exec_cmd}"
+  else
+    ${TMUX_XPANES_EXEC} split-window -t "$_target_pane_id" -h -d -l "$_cell_width"
+  fi
 }
 
 xpns_prepare_sized_window () {
@@ -978,16 +953,9 @@ xpns_prepare_sized_window () {
   cell_height=$(( ( window_height - row + 1 ) / row ))
   xpns_msg_debug "Insert first element"
   _exec_cmd="${_cmd_template//${_repstr}/${args[0]}}"
-  window_id=$(xpns_new_window \
-    "${_window_name}" \
-    "${_log_flag}" \
-    "${_title_flag}" \
-    "${_attach_flg}" \
-    "${_speedy_flg}" \
-    "${_await_flg}" \
-    0 \
-    "${_exec_cmd}")
-  first_pane_id=$(tmux display-message -t "$window_id" -p -F '#{pane_id}' | head -n 1)
+  _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" 0 "${_exec_cmd}")"
+  window_id=$(xpns_new_window "${_window_name}" "${_attach_flg}" "${_speedy_flg}" "${_exec_cmd}")
+  first_pane_id=$(${TMUX_XPANES_EXEC} display-message -t "$window_id" -p -F '#{pane_id}' | head -n 1)
 
   ## Start from last row
   for (( i = row - 1 ; i > 0 ; i-- ));do
@@ -1003,38 +971,25 @@ xpns_prepare_sized_window () {
         xpns_msg_debug "create row"
         # Insert first element of the row first
         _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
-        pane_id=$(xpns_new_pane \
-          "${_window_name}" \
-          "${_log_flag}" \
-          "${_title_flag}" \
-          "${_attach_flg}" \
-          "${_speedy_flg}" \
-          "${_await_flg}" \
-          "${idx}" \
-          "${_exec_cmd}")
+        _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
+        pane_id=$(xpns_new_pane_vertical "${_window_name}" "${_speedy_flg}" "${_exec_cmd}")
       fi
 
       # Separate row into columns
       if (( j != 0 )) ;then
         (( idx = offset - j ))
         _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
-        if [[ $_await_flg -eq 1 ]]; then
-          _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-        fi
+        _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
         xpns_msg_debug "Separate row into columns"
-        current_pane_width=$(tmux display-message -t "$pane_id" -p '#{pane_width}' | head -n 1)
+        current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$pane_id" -p '#{pane_width}' | head -n 1)
         rest_col=$(( col - j + 1 ))
         cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
-        if [[ "${_speedy_flg}" -eq 1 ]]; then
-          tmux split-window -t "$pane_id" -h -d -l "$cell_width" "${_exec_cmd}"
-        else
-          tmux split-window -t "$pane_id" -h -d -l "$cell_width"
-        fi
+        xpns_split_pane_horizontal "$pane_id" "$cell_width" "${_speedy_flg}" "${_exec_cmd}"
       fi
     done
 
     # Adjust height
-    top_pane_height=$(tmux display-message -t "$window_id" -p '#{pane_height}' | head -n 1)
+    top_pane_height=$(${TMUX_XPANES_EXEC} display-message -t "$window_id" -p '#{pane_height}' | head -n 1)
     rest_row=$(( i ))
     xpns_msg_debug "top_pane_height=$top_pane_height rest_row=$rest_row"
     cell_height=$(( ( top_pane_height - rest_row + 1 ) / rest_row ))
@@ -1046,19 +1001,13 @@ xpns_prepare_sized_window () {
   for (( j = 1 ; j < col ; j++ ));do
     idx=$(( cols_offset[0] - j ))
     # Adjust width
-    current_pane_width=$(tmux display-message -t "$first_pane_id" -p '#{pane_width}' | head -n 1)
+    current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$first_pane_id" -p '#{pane_width}' | head -n 1)
     rest_col=$(( col - j + 1 ))
     cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
     xpns_msg_debug "Split top row into columns"
     _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
-    if [[ $_await_flg -eq 1 ]]; then
-      _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-    fi
-    if [[ "${_speedy_flg}" -eq 1 ]]; then
-      tmux split-window -t "$first_pane_id" -h -d -l "$cell_width" "${_exec_cmd}"
-    else
-      tmux split-window -t "$first_pane_id" -h -d -l "$cell_width"
-    fi
+    _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
+    xpns_split_pane_horizontal "${first_pane_id}" "${cell_width}" "${_speedy_flg}" "${_exec_cmd}"
   done
 }
 
@@ -1209,7 +1158,7 @@ xpns_get_window_height_width() {
     if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      xpns_msg_debug "xpns_set_window_height_width: window height: $_height, width: $_width"
       printf "%s\\n" "$_height $_width"
       return 0
     fi
@@ -1223,7 +1172,7 @@ xpns_get_window_height_width() {
     if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      xpns_msg_debug "xpns_set_window_height_width: window height: $_height, width: $_width"
       printf "%s\\n" "$_height $_width"
       return 0
     fi
@@ -1231,7 +1180,7 @@ xpns_get_window_height_width() {
     if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
-      xpns_msg_debug "xpns_set_window_height_width: wondow height: $_height, width: $_width"
+      xpns_msg_debug "xpns_set_window_height_width: window height: $_height, width: $_width"
       printf "%s\\n" "$_height $_width"
       return 0
     fi
@@ -1464,11 +1413,11 @@ xpns_execution() {
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_ARGS[@]}"
-    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
-      xpns_notify_title \
-        "${_window_name}" \
-        "${XP_ARGS[@]}"
-    fi
+  fi
+  if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+    xpns_notify_sync \
+      "${_window_name}" \
+      "${XP_ARGS[@]}"
   fi
 
   xpns_msg_debug "xpns_is_window_alive:3: After setting title"
