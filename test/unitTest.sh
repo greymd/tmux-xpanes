@@ -201,7 +201,6 @@ test_xpns_clean_session() {
 }
 
 test_xpns_adjust_col_row () {
-  export XP_OPT_DEBUG=1
   actual=$(xpns_adjust_col_row "" "" 20)
   expected="4 5"
   assertEquals "$expected" "$actual"
@@ -248,6 +247,7 @@ test_xpns_divide_equally () {
 }
 
 test_xpns_nums_transpose () {
+  export XP_OPT_DEBUG=1
   actual=$(xpns_nums_transpose 3 2 2 2)
   expected="4 4 1"
   assertEquals "$expected" "$actual"
@@ -268,9 +268,8 @@ test_xpns_nums_transpose () {
   expected="2 1"
   assertEquals "$expected" "$actual"
 
-  (xpns_nums_transpose 1)
-  actual="$?"
-  expected=1
+  actual=$(xpns_nums_transpose 9)
+  expected="1 1 1 1 1 1 1 1 1"
   assertEquals "$expected" "$actual"
 }
 
