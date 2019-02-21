@@ -736,7 +736,7 @@ xpns_send_commands() {
 }
 
 # Separate window vertically, when the number of panes is 1 or 2.
-xpns_arrange_pane_location() {
+xpns_organize_panes() {
   local _window_name="$1" ; shift
   local _args_num="$1"
   ## ----------------
@@ -1409,7 +1409,7 @@ xpns_execution() {
     # Set offset to avoid sending command to the original pane.
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
-    # in xpns_arrange_pane_location
+    # in xpns_organize_panes
     _last_args_idx=$((_last_args_idx + _pane_count))
     # Re-select the windown that was active before.
     ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
@@ -1468,8 +1468,10 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  if [[ $XP_OPT_SIZING -eq 0 ]]; then
-    xpns_arrange_pane_location \
+  ## With -l <layout>, panes are organized.
+  ## As we ll as -x, they are re-organized.
+  if [[ $XP_OPT_SIZING -eq 0 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
+    xpns_organize_panes \
       "${_window_name}" \
       "${_last_args_idx}"
   fi
