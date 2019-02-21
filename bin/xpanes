@@ -868,6 +868,25 @@ xpns_extra_panes_to_window() {
     "$@"
 }
 
+xpns_inject_wait_command () {
+  local _log_flag="$1"    ; shift
+  local _title_flag="$1"  ; shift
+  local _speedy_flg="$1"  ; shift
+  local _await_flg="$1"   ; shift
+  local _idx="$1"         ; shift
+  local _exec_cmd="$1"    ; shift
+  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
+  fi
+  if [[ "${_title_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "title_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
+  fi
+  if [[ "${_await_flg}" -eq 1 ]]; then
+    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+  fi
+  printf "%s" "${_exec_cmd}"
+}
+
 xpns_new_window () {
   local _window_name="$1" ; shift
   local _log_flag="$1"    ; shift
@@ -952,12 +971,13 @@ xpns_prepare_sized_window () {
   local row="$XP_OPT_SIZING_ROWS"
   local cols=("${XP_COLS[@]}")
   local cols_offset=("${XP_COLS_OFFSETS[@]}")
-  local pane_id first_pane_id window_id
+  local _exec_cmd pane_id first_pane_id window_id
   local cell_height cell_width top_pane_height
   local i j rest_row offset
 
   cell_height=$(( ( window_height - row + 1 ) / row ))
   xpns_msg_debug "Insert first element"
+  _exec_cmd="${_cmd_template//${_repstr}/${args[0]}}"
   window_id=$(xpns_new_window \
     "${_window_name}" \
     "${_log_flag}" \
@@ -966,7 +986,7 @@ xpns_prepare_sized_window () {
     "${_speedy_flg}" \
     "${_await_flg}" \
     0 \
-    "${_cmd_template//${_repstr}/${args[0]}}")
+    "${_exec_cmd}")
   first_pane_id=$(tmux display-message -t "$window_id" -p -F '#{pane_id}' | head -n 1)
 
   ## Start from last row
@@ -982,6 +1002,7 @@ xpns_prepare_sized_window () {
         # Create new row
         xpns_msg_debug "create row"
         # Insert first element of the row first
+        _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
         pane_id=$(xpns_new_pane \
           "${_window_name}" \
           "${_log_flag}" \
@@ -990,7 +1011,7 @@ xpns_prepare_sized_window () {
           "${_speedy_flg}" \
           "${_await_flg}" \
           "${idx}" \
-          "${_cmd_template//${_repstr}/${args[idx]}}")
+          "${_exec_cmd}")
       fi
 
       # Separate row into columns
@@ -1009,7 +1030,6 @@ xpns_prepare_sized_window () {
         else
           tmux split-window -t "$pane_id" -h -d -l "$cell_width"
         fi
-        xpns_msg_debug "tmux split-window -t $pane_id -h -d -l $cell_width ${_exec_cmd}"
       fi
     done
 
