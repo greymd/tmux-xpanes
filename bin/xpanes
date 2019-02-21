@@ -1329,14 +1329,14 @@ xpns_execution() {
   local _pane_count=0
   local _is_pane_title_required=0
 
+  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
+    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
+  fi
+
   {
     read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}')
     xpns_check_cell_size
   }
-
-  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
-    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
-  fi
 
   _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
   _last_args_idx=$((${#XP_ARGS[@]} - 1))
