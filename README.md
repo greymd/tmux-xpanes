@@ -637,7 +637,8 @@ With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-ho
 
 #### Share terminal sessions with others
 
- `~/.cache/xpanes/socket` file is automatically created when `xpanes` runs. Importing this socket file, different users can share their screens each other. Off course, you can specify the socket file name as you like with `-S` option.
+You can specify the socket file name with `-S` option.
+Importing this socket file, different users can share their screens each other.
 
 * user1
 
