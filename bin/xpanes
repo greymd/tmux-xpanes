@@ -358,6 +358,39 @@ xpns_nums_accumulate_sum () {
   done < <( cat | tr ' ' '\n')
 }
 
+# func 3 2 2 2
+# => 4 4 1
+#
+# For example, "3 2 2 2" represents following cell positions
+#   1  2  3
+# 1 [] [] [] => 3 rows
+# 2 [] []    => 2 rows
+# 3 [] []    => 2 rows
+# 4 [] []    => 2 rows
+#
+# After the transposition, it mulst be "4 4 1" represents below
+#   1  2  3  4
+# 1 [] [] [] [] => 4 rows
+# 2 [] [] [] [] => 4 rows
+# 3 []          => 1 rows
+xpns_nums_transpose () {
+  local _colnum="$1"
+  local _dots
+  if (( $# < 2 )); then
+    return 1
+  fi
+  _dots="$(for i in "$@";do
+    printf "%${i}s\\n"
+  done)"
+
+  for i in $(xpns_seq 1 "${_colnum}");do
+    ## This part is depending on the following 'cut' behavior
+    ## $ echo 1234 | cut -c 5
+    ## => result is supposed to be empty
+    echo "$_dots" | cut -c "$i" | grep -c .
+  done | xargs
+}
+
 # Adjust size of columns and rows in accordance with given N
 # func <col> <row> <N>
 # i.e:
@@ -1155,7 +1188,7 @@ xpns_check_cell_size() {
     read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row 0 0 "${XP_CELL_NUM}")
   fi
   IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
-  IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}" | xpns_nums_accumulate_sum)"
+  IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
 
   local cell_height=$(( ( XP_WINDOW_HEIGHT - XP_OPT_SIZING_ROWS + 1 ) / XP_OPT_SIZING_ROWS ))
   local cell_width=$(( ( XP_WINDOW_WIDTH - XP_OPT_SIZING_COLS + 1 ) / XP_OPT_SIZING_COLS ))

@@ -247,5 +247,32 @@ test_xpns_divide_equally () {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_nums_transpose () {
+  actual=$(xpns_nums_transpose 3 2 2 2)
+  expected="4 4 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 3 1 1 1)
+  expected="4 1 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 2)
+  expected="2 2"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 1)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 1)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
+  (xpns_nums_transpose 1)
+  actual="$?"
+  expected=1
+  assertEquals "$expected" "$actual"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
