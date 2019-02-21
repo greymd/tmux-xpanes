@@ -387,8 +387,8 @@ divide_five_panes_impl() {
     # |   E   |
     # +---+---+
 
-    echo "= Panes= "
-    ${TMUX_EXEC} list-panes -F '#D #{pane_top} #{pane_left} #{pane_width}'
+    echo "= Panes = "
+    ${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#D #{pane_top} #{pane_left} #{pane_width}'
     echo "Check width"
     a_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==1')
     b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
