@@ -247,7 +247,6 @@ test_xpns_divide_equally () {
 }
 
 test_xpns_nums_transpose () {
-  export XP_OPT_DEBUG=1
   actual=$(xpns_nums_transpose 3 2 2 2)
   expected="4 4 1"
   assertEquals "$expected" "$actual"
@@ -271,6 +270,34 @@ test_xpns_nums_transpose () {
   actual=$(xpns_nums_transpose 9)
   expected="1 1 1 1 1 1 1 1 1"
   assertEquals "$expected" "$actual"
+}
+
+test_xpns_get_window_height_width () {
+  export XP_OPT_DEBUG=1
+
+  # Run with parent process
+  actual_output=$(xpns_get_window_height_width)
+  actual=$?
+  ideal_output="^[0-9]+ [0-9]+$"
+  if [[ "$actual_output" =~ $ideal_output ]]; then
+    expected=0
+    assertEquals "$expected" "$actual"
+  else
+    expected=1
+    assertEquals "$expected" "$actual"
+  fi
+
+  # Run with pipe
+  actual_output=$(seq 10 | cat | cat | xpns_get_window_height_width)
+  actual=$?
+  ideal_output="^[0-9]+ [0-9]+$"
+  if [[ "$actual_output" =~ $ideal_output ]]; then
+    expected=0
+    assertEquals "$expected" "$actual"
+  else
+    expected=1
+    assertEquals "$expected" "$actual"
+  fi
 }
 
 # shellcheck source=/dev/null

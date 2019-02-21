@@ -1170,6 +1170,57 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
+xpns_get_window_height_width() {
+  local _hight _width _result _dev
+  local _pattern='^([0-9]+)[ \t]+([0-9]+)$'
+
+  if ! type stty > /dev/null 2>&1; then
+    xpns_msg_debug "xpns_set_window_height_width: 'stty' does not exist: Failed to get window height and size. Skip checking"
+    return 1
+  fi
+
+  ## This condition is used for unit testing
+  if [[ -z "${XP_IS_PIPE_MODE-}" ]]; then
+    if [[ ! -t 0 ]]; then
+      XP_IS_PIPE_MODE=1
+    fi
+  fi
+  if [[ $XP_IS_PIPE_MODE -eq 0 ]]; then
+    if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _hight="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
+      printf "%s\\n" "$_hight $_width"
+      return 0
+    fi
+  else
+    if ! type ps > /dev/null 2>&1 ;then
+      xpns_msg_debug "xpns_set_window_height_width: 'ps' does not exist: Failed to get window height and size. Skip checking"
+      return 1
+    fi
+    { read -r; read -r _dev; } < <(ps -o tty -p $$)
+
+    ## If it's Linux, -F option is used
+    if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _hight="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
+      printf "%s\\n" "$_hight $_width"
+      return 0
+    fi
+    ## If it's BSD, macOS, -F option is used
+    if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _hight="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "xpns_set_window_height_width: wondow hight: $_hight, width: $_width"
+      printf "%s\\n" "$_hight $_width"
+      return 0
+    fi
+    return 1
+  fi
+  return 1
+}
+
 xpns_check_cell_size() {
   local _rows
   XP_CELL_NUM="${#XP_ARGS[@]}"
@@ -1228,12 +1279,7 @@ xpns_pre_execution() {
 
   # Run as best effort.
   # Because after the tmux session is created, cols and rows would be provided by tmux.
-  if type stty > /dev/null 2>&1; then
-    read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(stty size)
-    xpns_check_cell_size
-  else
-    xpns_msg_debug "'stty' does not exist"
-  fi
+  read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && xpns_check_cell_size
 
   # Append -- flag.
   # Because any arguments may have `-`
