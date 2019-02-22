@@ -1245,6 +1245,8 @@ test_divide_two_panes_eh() {
         divide_two_panes_eh_impl "$_socket_file"
         close_tmux_session "$_socket_file"
 
+        # Somehow it fails at https://travis-ci.org/greymd/tmux-xpanes/jobs/497121894
+        ## SH=bash SH_VERSION=4.0 TMUX_VERSION=2.8
         _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -S $_socket_file -leh"
         printf "\\nTMUX(%s)\\n" "${_cmd}"
         create_tmux_session "$_socket_file"
