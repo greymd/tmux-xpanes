@@ -3347,7 +3347,7 @@ test_ss_option_panes_not_found() {
     local actual expected
 
     : "In TMUX session" && {
-      _cmd="${EXEC} -sse exit exit exit exit ; echo \$? > ${_tmpdir}/exit_status"
+      _cmd="${EXEC} -sse exit ; echo \$? > ${_tmpdir}/exit_status"
       echo $'\n'" $ TMUX($_cmd)"$'\n'
       create_tmux_session "$_socket_file"
       exec_tmux_session "$_socket_file" "$_cmd"
@@ -3357,6 +3357,9 @@ test_ss_option_panes_not_found() {
 
       actual=$( cat "${_tmpdir}/exit_status" )
       expected=31
+      ## This test might be failed if the host sufferes high load or particular conditions.
+      ## Retry the test if it fails.
+      ### In that case, "actual" might be "0".
       assertEquals "$expected" "$actual"
       close_tmux_session "$_socket_file"
       rm -f "${_tmpdir}/exit_status"
