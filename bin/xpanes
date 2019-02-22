@@ -121,7 +121,6 @@ XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
 XP_OPT_CUSTOM_SIZE=1
-XP_CELL_NUM=
 XP_OPT_CUSTOM_SIZE_COLS=
 XP_OPT_CUSTOM_SIZE_ROWS=
 XP_WINDOW_WIDTH=
@@ -1194,50 +1193,51 @@ xpns_get_window_height_width() {
 }
 
 xpns_check_cell_size() {
-  XP_CELL_NUM="${#XP_ARGS[@]}"
+  local _cell_num="$1"    ; shift
+  local _cols="$1"        ; shift
+  local _rows="$1"        ; shift
+  local _win_height="$1"  ; shift
+  local _win_width="$1"   ; shift
+  local _ignore_flag="$1" ; shift
+  local _all_cols _all_rows
 
-  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] && [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]];then
+  if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]];then
     xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
   fi
   ## if col is only defined
-  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] ;then
-    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row "${XP_OPT_CUSTOM_SIZE_COLS-}" 0 "${XP_CELL_NUM}")
-    local _rows
-    IFS=" " read -r -a _rows <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_COLS}")"
-    IFS=" " read -r -a XP_COLS <<< "$(xpns_nums_transpose "${_rows[@]}")"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+  if [[ -n "${_cols-}" ]] ;then
+    read -r _cols _rows < <(xpns_adjust_col_row "${_cols-}" 0 "${_cell_num}")
+    IFS=" " read -r -a _all_rows <<< "$(xpns_divide_equally "${_cell_num}" "${_cols}")"
+    _all_cols="$(xpns_nums_transpose "${_all_rows[@]}")"
 
   ## if row is only defined
-  elif [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]] ;then
-    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row 0 "${XP_OPT_CUSTOM_SIZE_ROWS-}" "${XP_CELL_NUM}")
-    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_ROWS}")"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+  elif [[ -n "${_rows-}" ]] ;then
+    read -r _cols _rows < <(xpns_adjust_col_row 0 "${_rows-}" "${_cell_num}")
+    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
 
   ## if both are undefined
   else
-    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row 0 0 "${XP_CELL_NUM}")
-    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_ROWS}")"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    read -r _cols _rows < <(xpns_adjust_col_row 0 0 "${_cell_num}")
+    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
   fi
 
-  local cell_height=$(( ( XP_WINDOW_HEIGHT - XP_OPT_CUSTOM_SIZE_ROWS + 1 ) / XP_OPT_CUSTOM_SIZE_ROWS ))
-  local cell_width=$(( ( XP_WINDOW_WIDTH - XP_OPT_CUSTOM_SIZE_COLS + 1 ) / XP_OPT_CUSTOM_SIZE_COLS ))
+  local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
+  local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
 
   ## Display basic information
-  xpns_msg_debug "Window: { Height: $XP_WINDOW_HEIGHT, Width: $XP_WINDOW_WIDTH }"
+  xpns_msg_debug "Window: { Height: $_win_height, Width: $_win_width }"
   xpns_msg_debug "Cell: { Height: $cell_height, Width: $cell_width }"
-  xpns_msg_debug "# Of Panes: ${XP_CELL_NUM}"
+  xpns_msg_debug "# Of Panes: ${_cell_num}"
   xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
   xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug "    Col[]| ${XP_COLS[*]}"
+  xpns_msg_debug "    Col[]| ${_all_cols}"
   xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
-  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 
-  if [[ "$XP_OPT_IGNORE_SIZE_LIMIT" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+  if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
-    exit ${XP_ESMLPANE}
+    return 7
   fi
+  printf "%s\\n" "${_cols} ${_rows} ${_all_cols}"
 }
 
 # Execute from Normal mode1
@@ -1252,8 +1252,29 @@ xpns_pre_execution() {
 
   # Run as best effort.
   # Because after the tmux session is created, cols and rows would be provided by tmux.
-  # TODO: How to re-calculate pane size in case of -n option ?
-  read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && xpns_check_cell_size
+  IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && {
+    local _arg_num="${#XP_ARGS[@]}"
+    local _cell_num _tmp_col_row_cols _tmp_cols
+    if [[ -n "$XP_MAX_PANE_ARGS" ]] && (( XP_MAX_PANE_ARGS > 1 ));then
+      _cell_num=$(( _arg_num / XP_MAX_PANE_ARGS ))
+    else
+      _cell_num="${_arg_num}"
+    fi
+    _tmp_col_row_cols="$(xpns_check_cell_size \
+      "${_cell_num}" \
+      "${XP_OPT_CUSTOM_SIZE_COLS-}" \
+      "${XP_OPT_CUSTOM_SIZE_ROWS-}" \
+      "${XP_WINDOW_HEIGHT}" \
+      "${XP_WINDOW_WIDTH}" \
+      "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+    [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+    IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
+    IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
+      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+    xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+  }
 
   # Append -- flag.
   # Because any arguments may have `-`
@@ -1306,9 +1327,25 @@ xpns_execution() {
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
+  ## Fix window size and define pane size
   {
-    read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}')
-    xpns_check_cell_size
+    local  _tmp_col_row_cols _tmp_cols
+    IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < \
+      <(${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}')
+    _tmp_col_row_cols="$(xpns_check_cell_size \
+      "${#XP_ARGS[@]}" \
+      "${XP_OPT_CUSTOM_SIZE_COLS-}" \
+      "${XP_OPT_CUSTOM_SIZE_ROWS-}" \
+      "${XP_WINDOW_HEIGHT}" \
+      "${XP_WINDOW_WIDTH}" \
+      "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+    [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+    IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
+    IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
+      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+    xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
   }
 
   _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
