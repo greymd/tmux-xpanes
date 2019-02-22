@@ -23,6 +23,9 @@ readonly XP_ETTY=5
 # Invalid layout.
 readonly XP_ELAYOUT=6
 
+# Impossible layout: Small pane
+readonly XP_ESMLPANE=7
+
 # Log related exit status is 2x.
 ## Could not create a directory.
 readonly XP_ELOGDIR=20
@@ -1230,10 +1233,9 @@ xpns_check_cell_size() {
   xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
   xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 
-  if [[ "$XP_OPT_IGNORE_SIZE_LIMIT" -eq 0 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+  if [[ "$XP_OPT_IGNORE_SIZE_LIMIT" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
-    # TODO: Set error code
-    exit 1
+    exit ${XP_ESMLPANE}
   fi
 }
 
