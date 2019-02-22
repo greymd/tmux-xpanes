@@ -62,6 +62,16 @@ is_less_than() {
     fi
 }
 
+## Input:
+##         d51b,120x41,0,0[120x13,0,0{60x13,0,0,1,59x13,61,0,6},120x13,0,14{60x13,0,14,4,59x13,61,14,5},120x13,0,28{60x13,0,28,2,59x13,61,28,3}]
+## Output:
+##         120 13 60 13 59 13
+##         120 13 60 13 59 13
+##         120 13 60 13 59 13
+parse_window_layout() {
+  sed 's/{/,&/g' | grep -o -E '[0-9]+x[0-9]+,[0-9]+,[0-9]+,([0-9]+|{[^}]+})' | sed 's/{//;s/}//' | awk -F, '{printf("%s ", $1); for(i=4;i<=NF;i=i+4){printf "%s ", $i};print ""}' | tr x ' '
+}
+
 # !!Run this function at first!!
 check_version() {
     switch_tmux_path 1
@@ -376,6 +386,7 @@ divide_four_panes_impl() {
 divide_five_panes_impl() {
     local _socket_file="$1"
     local _window_name=""
+    local _layout
     _window_name=$(get_window_having_panes "${_socket_file}" "5")
 
     # Window should be divided like this.
@@ -388,13 +399,15 @@ divide_five_panes_impl() {
     # +---+---+
 
     echo "= Panes = "
-    ${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#D #{pane_top} #{pane_left} #{pane_width}'
+    _layout="$(${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 | parse_window_layout)"
+    echo "$_layout"
     echo "Check width"
-    a_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==3')
-    d_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==4')
-    e_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==5')
+    a_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $3}')
+    b_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $5}')
+    c_width=$( echo "$_layout" | awk 'NR==2' | awk '{print $3}')
+    d_width=$( echo "$_layout" | awk 'NR==2' | awk '{print $5}')
+    e_width=$( echo "$_layout" | awk 'NR==3' | awk '{print $1}')
+
     echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width} E:${e_width}"
     assertEquals 1 "$((a_width == c_width))"
     assertEquals 1 "$((b_width == d_width))"
@@ -404,11 +417,12 @@ divide_five_panes_impl() {
     assertEquals 1 "$(( $(( a_width + b_width + 1 )) == e_width))"
 
     echo "Check height"
-    a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
-    d_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==4')
-    e_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==5')
+    a_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $4}')
+    b_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $6}')
+    c_height=$( echo "$_layout" | awk 'NR==2' | awk '{print $4}')
+    d_height=$( echo "$_layout" | awk 'NR==2' | awk '{print $6}')
+    e_height=$( echo "$_layout" | awk 'NR==3' | awk '{print $2}')
+
     echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height} E:${e_height}"
     assertEquals 1 "$(( a_height == b_height ))"
     assertEquals 1 "$(( c_height == d_height ))"
@@ -552,7 +566,7 @@ set_tmux_exec_randomly () {
 }
 
 setUp(){
-    stty rows 40 cols 80
+    # stty rows 40 cols 80
     cd "${BIN_DIR}" || exit
     mkdir -p "${TEST_TMP}"
     set_tmux_exec_randomly
@@ -561,8 +575,8 @@ setUp(){
 }
 
 tearDown(){
-    stty rows "${TTY_ROWS}" cols "${TTY_COLS}"
-    type resize &> /dev/null && resize
+    # stty rows "${TTY_ROWS}" cols "${TTY_COLS}"
+    # type resize &> /dev/null && resize
     rm -rf "${TEST_TMP}"
     echo "<<<<<<<<<<" >&2
     echo >&2
