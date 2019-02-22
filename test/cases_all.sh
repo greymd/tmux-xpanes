@@ -3516,8 +3516,10 @@ test_ss_and_t_option() {
 ## TODO: Test for --cols + -e + log option (normal + pipe)
 ## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
 ## TODO: xpanes -l mh -C 3 1 2 3 => error
-## TODO: Panes are too small error: xpanes -C 2 {1..500}
-## TODO: Panes are too small error: xpanes {1..500}
+## TODO: Panes are too small error: xpanes -C 2 {1..500} (normal + pipe)
+## TODO: Panes are too small error: xpanes {1..500} (normal + pipe)
+## TODO: Panes are too small error: xpanes -C 1 {1..20} (?) (normal + pipe)
+## TODO: Ignore error: xpanes -C 1 -n 2 {1..20} (?) (normal)
 
 ###:-:-:END_TESTING:-:-:###
 
