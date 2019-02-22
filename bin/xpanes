@@ -116,10 +116,10 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
-XP_OPT_SIZING=1
+XP_OPT_CUSTOM_SIZE=1
 XP_CELL_NUM=
-XP_OPT_SIZING_COLS=
-XP_OPT_SIZING_ROWS=
+XP_OPT_CUSTOM_SIZE_COLS=
+XP_OPT_CUSTOM_SIZE_ROWS=
 XP_WINDOW_WIDTH=
 XP_WINDOW_HEIGHT=
 XP_COLS=
@@ -942,8 +942,8 @@ xpns_prepare_sized_window () {
   local args=("$@")
   local window_height="$XP_WINDOW_HEIGHT"
   local window_width="$XP_WINDOW_WIDTH"
-  local col="$XP_OPT_SIZING_COLS"
-  local row="$XP_OPT_SIZING_ROWS"
+  local col="$XP_OPT_CUSTOM_SIZE_COLS"
+  local row="$XP_OPT_CUSTOM_SIZE_ROWS"
   local cols=("${XP_COLS[@]}")
   local cols_offset=("${XP_COLS_OFFSETS[@]}")
   local _exec_cmd pane_id first_pane_id window_id
@@ -1192,32 +1192,32 @@ xpns_get_window_height_width() {
 xpns_check_cell_size() {
   XP_CELL_NUM="${#XP_ARGS[@]}"
 
-  if [[ -n "${XP_OPT_SIZING_COLS-}" ]] && [[ -n "${XP_OPT_SIZING_ROWS-}" ]];then
+  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] && [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]];then
     xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
   fi
   ## if col is only defined
-  if [[ -n "${XP_OPT_SIZING_COLS-}" ]] ;then
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row "${XP_OPT_SIZING_COLS-}" 0 "${XP_CELL_NUM}")
+  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] ;then
+    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row "${XP_OPT_CUSTOM_SIZE_COLS-}" 0 "${XP_CELL_NUM}")
     local _rows
-    IFS=" " read -r -a _rows <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_COLS}")"
+    IFS=" " read -r -a _rows <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_COLS}")"
     IFS=" " read -r -a XP_COLS <<< "$(xpns_nums_transpose "${_rows[@]}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
 
   ## if row is only defined
-  elif [[ -n "${XP_OPT_SIZING_ROWS-}" ]] ;then
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row 0 "${XP_OPT_SIZING_ROWS-}" "${XP_CELL_NUM}")
-    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
+  elif [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]] ;then
+    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row 0 "${XP_OPT_CUSTOM_SIZE_ROWS-}" "${XP_CELL_NUM}")
+    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_ROWS}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
 
   ## if both are undefined
   else
-    read -r XP_OPT_SIZING_COLS XP_OPT_SIZING_ROWS < <(xpns_adjust_col_row 0 0 "${XP_CELL_NUM}")
-    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_SIZING_ROWS}")"
+    read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS < <(xpns_adjust_col_row 0 0 "${XP_CELL_NUM}")
+    IFS=" " read -r -a XP_COLS <<< "$(xpns_divide_equally "${XP_CELL_NUM}" "${XP_OPT_CUSTOM_SIZE_ROWS}")"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
   fi
 
-  local cell_height=$(( ( XP_WINDOW_HEIGHT - XP_OPT_SIZING_ROWS + 1 ) / XP_OPT_SIZING_ROWS ))
-  local cell_width=$(( ( XP_WINDOW_WIDTH - XP_OPT_SIZING_COLS + 1 ) / XP_OPT_SIZING_COLS ))
+  local cell_height=$(( ( XP_WINDOW_HEIGHT - XP_OPT_CUSTOM_SIZE_ROWS + 1 ) / XP_OPT_CUSTOM_SIZE_ROWS ))
+  local cell_width=$(( ( XP_WINDOW_WIDTH - XP_OPT_CUSTOM_SIZE_COLS + 1 ) / XP_OPT_CUSTOM_SIZE_COLS ))
 
   ## Display basic information
   xpns_msg_debug "Window: { Height: $XP_WINDOW_HEIGHT, Width: $XP_WINDOW_WIDTH }"
@@ -1344,7 +1344,7 @@ xpns_execution() {
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
   else
-    if [[ ${XP_OPT_SIZING} -eq 1 ]];then
+    if [[ ${XP_OPT_CUSTOM_SIZE} -eq 1 ]];then
       xpns_prepare_sized_window \
         "${_window_name}" \
         "${XP_OPT_LOG_STORE}" \
@@ -1440,7 +1440,7 @@ xpns_execution() {
 
   ## With -l <layout>, panes are organized.
   ## As we ll as -x, they are re-organized.
-  if [[ $XP_OPT_SIZING -eq 0 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
+  if [[ $XP_OPT_CUSTOM_SIZE -eq 0 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     xpns_organize_panes \
       "${_window_name}" \
       "${_last_args_idx}"
@@ -1590,6 +1590,7 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ x ]]; then
     XP_OPT_EXTRA=1
+    XP_OPT_CUSTOM_SIZE=0 ## Layout presets must be used
     if ! xpns_warning_before_extra; then
       exit ${XP_EINTENT}
     fi
@@ -1645,12 +1646,12 @@ xpns_load_arg_options() {
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
     if [[ "$1" =~ $_pattern ]]; then
-      XP_OPT_SIZING=0
+      XP_OPT_CUSTOM_SIZE=0
       XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
-      XP_OPT_SIZING=0
+      XP_OPT_CUSTOM_SIZE=0
       XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
@@ -1698,12 +1699,12 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*C ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*C([0-9]+)"
-    XP_OPT_SIZING=1
+    XP_OPT_CUSTOM_SIZE=1
     if [[ "$1" =~ $_pattern ]]; then
-      XP_OPT_SIZING_COLS="${BASH_REMATCH[1]}"
+      XP_OPT_CUSTOM_SIZE_COLS="${BASH_REMATCH[1]}"
       return 0
     elif [[ "$2" =~ ^[0-9]+$ ]];then
-      XP_OPT_SIZING_COLS="$2"
+      XP_OPT_CUSTOM_SIZE_COLS="$2"
       return 0
     else
       xpns_msg_error "invalid argument '$2' for -C option"
@@ -1711,12 +1712,12 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*R ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*R([0-9]+)"
-    XP_OPT_SIZING=1
+    XP_OPT_CUSTOM_SIZE=1
     if [[ "$1" =~ $_pattern ]]; then
-      XP_OPT_SIZING_ROWS="${BASH_REMATCH[1]}"
+      XP_OPT_CUSTOM_SIZE_ROWS="${BASH_REMATCH[1]}"
       return 0
     elif [[ "$2" =~ ^[0-9]+$ ]];then
-      XP_OPT_SIZING_ROWS="$2"
+      XP_OPT_CUSTOM_SIZE_ROWS="$2"
       return 0
     else
       xpns_msg_error "invalid argument '$2' for -R option"
@@ -1760,12 +1761,12 @@ xpns_load_long_options() {
     XP_OPT_ATTACH=0
     return 1
   elif [[ "$1" =~ ^--cols=[0-9]+$ ]]; then
-    XP_OPT_SIZING=1
-    XP_OPT_SIZING_COLS="${1#--cols=}"
+    XP_OPT_CUSTOM_SIZE=1
+    XP_OPT_CUSTOM_SIZE_COLS="${1#--cols=}"
     return 1
   elif [[ "$1" =~ ^--rows=[0-9]+$ ]]; then
-    XP_OPT_SIZING=1
-    XP_OPT_SIZING_ROWS="${1#--rows=}"
+    XP_OPT_CUSTOM_SIZE=1
+    XP_OPT_CUSTOM_SIZE_ROWS="${1#--rows=}"
     return 1
   elif [[ "$1" =~ ^--debug$ ]]; then
     XP_OPT_DEBUG=1
@@ -1869,6 +1870,18 @@ xpns_parse_options() {
     xpns_msg_error "No arguments are given."
     xpns_usage
     echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    exit ${XP_EINVAL}
+  fi
+
+  if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
+      && [[ "$XP_OPT_EXTRA" -eq 1 ]]; then
+    XP_OPT_CUSTOM_SIZE=0
+    xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
+  fi
+
+  if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
+      && [[ -n "${XP_LAYOUT-}" ]]; then
+    xpns_msg_error "Combination columns/rows option (-C, --cols, -R, --rows) and -l option is not allowed."
     exit ${XP_EINVAL}
   fi
 
