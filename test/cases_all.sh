@@ -328,18 +328,23 @@ divide_three_panes_impl() {
     echo "Check number of panes"
     assertEquals 3 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
 
+    echo "= Panes = "
+    _layout="$(${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 | parse_window_layout)"
+    echo "$_layout"
     echo "Check width"
-    a_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==3')
+    a_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $3}')
+    b_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $5}')
+    c_width=$( echo "$_layout" | awk 'NR==2' | awk '{print $3}')
     echo "A:${a_width} B:${b_width} C:${c_width}"
+
     assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
     assertEquals 1 "$(( $(( a_width + b_width + 1 )) == c_width ))"
 
     echo "Check height"
-    a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
+    a_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $4}')
+    b_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $6}')
+    c_height=$( echo "$_layout" | awk 'NR==2' | awk '{print $4}')
+
     echo "A:${a_height} B:${b_height} C:${c_height}"
     # In this case, height must be same.
     assertEquals 1 "$(( a_height == b_height ))"
@@ -358,11 +363,15 @@ divide_four_panes_impl() {
     # | C | D |
     # +---+---+
 
+    echo "= Panes = "
+    _layout="$(${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 | parse_window_layout)"
+    echo "$_layout"
     echo "Check width"
-    a_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==1')
-    b_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==2')
-    c_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==3')
-    d_width=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_width}' | awk 'NR==4')
+    a_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $3}')
+    b_width=$( echo "$_layout" | awk 'NR==1' | awk '{print $5}')
+    c_width=$( echo "$_layout" | awk 'NR==2' | awk '{print $3}')
+    d_width=$( echo "$_layout" | awk 'NR==2' | awk '{print $5}')
+
     echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width}"
 
     assertEquals 1 "$((a_width == c_width))"
@@ -371,10 +380,11 @@ divide_four_panes_impl() {
     assertEquals 1 "$(between_plus_minus 1 "${c_width}" "${d_width}")"
 
     echo "Check height"
-    a_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==1')
-    b_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==2')
-    c_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==3')
-    d_height=$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" -F '#{pane_height}' | awk 'NR==4')
+    a_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $4}')
+    b_height=$( echo "$_layout" | awk 'NR==1' | awk '{print $6}')
+    c_height=$( echo "$_layout" | awk 'NR==2' | awk '{print $4}')
+    d_height=$( echo "$_layout" | awk 'NR==2' | awk '{print $6}')
+
     echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height}"
     # In this case, height must be same.
     assertEquals 1 "$(( a_height == b_height ))"
