@@ -1249,6 +1249,7 @@ xpns_pre_execution() {
 
   # Run as best effort.
   # Because after the tmux session is created, cols and rows would be provided by tmux.
+  # TODO: How to re-calculate pane size in case of -n option ?
   read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && xpns_check_cell_size
 
   # Append -- flag.
