@@ -332,24 +332,24 @@ xpns_restore_allow_rename () {
 #  => 6
 # 11 / 2 = 5.5 => ceiling => 6
 xpns_ceiling () {
-  local divide="$1";shift
-  local by="$1"
-  printf "%s\\n" $(( ( divide + by - 1 ) / by ))
+  local _divide="$1";shift
+  local _by="$1"
+  printf "%s\\n" $(( ( _divide + _by - 1 ) / _by ))
 }
 
 # func "10" "3"
 #  => 4 3 3
 # Divide 10 into 3 parts as equally as possible.
 xpns_divide_equally () {
-  local number="$1";shift
-  local count="$1"
-  local upper lower upper_count lower_count
-  upper="$(xpns_ceiling "$number" "$count")"
-  lower=$(( upper - 1 ))
-  lower_count=$(( upper * count - number ))
-  upper_count=$(( count - lower_count ))
-  eval "printf '${upper} %.0s' {1..$upper_count}"
-  (( lower_count > 0 )) && eval "printf '${lower} %.0s' {1..$lower_count}"
+  local _number="$1";shift
+  local _count="$1"
+  local _upper _lower _upper_count _lower_count
+  _upper="$(xpns_ceiling "$_number" "$_count")"
+  _lower=$(( _upper - 1 ))
+  _lower_count=$(( _upper * _count - _number ))
+  _upper_count=$(( _count - _lower_count ))
+  eval "printf '${_upper} %.0s' {1..$_upper_count}"
+  (( _lower_count > 0 )) && eval "printf '${_lower} %.0s' {1..$_lower_count}"
 }
 
 # echo 3 3 3 3 | func
@@ -379,7 +379,8 @@ xpns_nums_accumulate_sum () {
 # 3 []          => 1 rows
 xpns_nums_transpose () {
   local _colnum="$1"
-  local _spaces _result
+  local _spaces=
+  local _result=
   xpns_msg_debug "xpns_nums_transpose: column num = $_colnum, input = $*"
   _spaces="$(for i in "$@";do
     printf "%${i}s\\n"
@@ -646,7 +647,7 @@ xpns_enable_logging() {
 ## Print "1" on the particular named pipe
 xpns_notify() {
   local _wait_id="$1" ; shift
-  local _fifo
+  local _fifo=
   _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
   xpns_msg_debug "xpns_notify:Notify to $_fifo"
   printf "%s\\n" 1 > "$_fifo" &
@@ -685,7 +686,7 @@ xpns_is_window_alive() {
 xpns_inject_title() {
   local _target_pane="$1" ;shift
   local _message="$1"     ;shift
-  local _pane_tty
+  local _pane_tty=
   _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
   printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
   xpns_msg_debug "xpns_inject_title:target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
@@ -693,8 +694,8 @@ xpns_inject_title() {
 
 xpns_is_pane_title_required() {
   local _title_flag="$1"   ; shift
-  local _extra_flag="$1"  ; shift
-  local _pane_border_status
+  local _extra_flag="$1"   ; shift
+  local _pane_border_status=
   _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
   if [[ $_title_flag -eq 1 ]]; then
     return 0
@@ -715,7 +716,7 @@ xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
   local _index=0
-  local _pane_index
+  local _pane_index=
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
@@ -731,7 +732,7 @@ xpns_send_commands() {
   local _repstr="$1"       ; shift
   local _cmd="$1"          ; shift
   local _index=0
-  local _pane_index
+  local _pane_index=
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
@@ -799,7 +800,7 @@ xpns_split_window() {
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
   local _cmd_template="$1"    ; shift
-  local _exec_cmd
+  local _exec_cmd=
   local _sep_count=0
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
@@ -889,37 +890,38 @@ xpns_new_window () {
   local _attach_flg="$1"  ; shift
   local _speedy_flg="$1"  ; shift
   local _exec_cmd="$1"    ; shift
-  local window_id
+  local _window_id=
 
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     if [[ "${_speedy_flg}" -eq 1 ]]; then
-      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
     else
-      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P )
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P )
     fi
   else
     # Keep background
     if [[ "${_speedy_flg}" -eq 1 ]]; then
-      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
     else
-      window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d)
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d)
     fi
   fi
-  printf "%s" "${window_id}"
+  printf "%s" "${_window_id}"
 }
 
 xpns_new_pane_vertical () {
   local _window_id="$1"   ; shift
+  local _cell_height="$1" ; shift
   local _speedy_flg="$1"  ; shift
   local _exec_cmd="$1"    ; shift
-  local pane_id
+  local _pane_id=
   if [[ "${_speedy_flg}" -eq 1 ]]; then
-    pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
+    _pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${_cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
   else
-    pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${cell_height}" -F '#{pane_id}' -P)"
+    _pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${_cell_height}" -F '#{pane_id}' -P)"
   fi
-  printf "%s\\n" "${pane_id}"
+  printf "%s\\n" "${_pane_id}"
 }
 
 xpns_split_pane_horizontal () {
@@ -943,83 +945,90 @@ xpns_prepare_sized_window () {
   local _await_flg="$1"       ; shift
   local _repstr="$1"          ; shift
   local _cmd_template="$1"    ; shift
-  local args=("$@")
-  local window_height="$XP_WINDOW_HEIGHT"
-  local window_width="$XP_WINDOW_WIDTH"
-  local col="$XP_OPT_CUSTOM_SIZE_COLS"
-  local row="$XP_OPT_CUSTOM_SIZE_ROWS"
-  local cols=("${XP_COLS[@]}")
-  local cols_offset=("${XP_COLS_OFFSETS[@]}")
-  local _exec_cmd pane_id first_pane_id window_id
-  local cell_height cell_width top_pane_height
-  local i j rest_row offset
+  local _args=("$@")
+  local _window_height="$XP_WINDOW_HEIGHT"
+  local _window_width="$XP_WINDOW_WIDTH"
+  local _col="$XP_OPT_CUSTOM_SIZE_COLS"
+  local _row="$XP_OPT_CUSTOM_SIZE_ROWS"
+  local _cols=("${XP_COLS[@]}")
+  local _cols_offset=("${XP_COLS_OFFSETS[@]}")
+  local _exec_cmd=
+  local _pane_id=
+  local _first_pane_id=
+  local _window_id=
+  local _cell_height=
+  local _cell_width=
+  local _top_pane_height=
+  local _current_pane_width=
+  local i=
+  local j=
+  local _rest_col=
+  local _rest_row=
+  local _offset=
 
-  cell_height=$(( ( window_height - row + 1 ) / row ))
-  xpns_msg_debug "Insert first element"
-  _exec_cmd="${_cmd_template//${_repstr}/${args[0]}}"
+  _cell_height=$(( ( _window_height - _row + 1 ) / _row ))
+  ## Insert first element
+  _exec_cmd="${_cmd_template//${_repstr}/${_args[0]}}"
   _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" 0 "${_exec_cmd}")"
-  window_id=$(xpns_new_window "${_window_name}" "${_attach_flg}" "${_speedy_flg}" "${_exec_cmd}")
-  first_pane_id=$(${TMUX_XPANES_EXEC} display-message -t "$window_id" -p -F '#{pane_id}' | head -n 1)
+  _window_id=$(xpns_new_window "${_window_name}" "${_attach_flg}" "${_speedy_flg}" "${_exec_cmd}")
+  _first_pane_id=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p -F '#{pane_id}' | head -n 1)
 
   ## Start from last row
-  for (( i = row - 1 ; i > 0 ; i-- ));do
-    col="${cols[i]}"
-    cell_width=$(( ( window_width - col + 1 ) / col ))
-    xpns_msg_debug "col=$col"
-    (( offset = cols_offset[i]  ))
-    for (( j = 0 ; j < col ; j++ ));do
-
+  for (( i = _row - 1 ; i > 0 ; i-- ));do
+    _col="${_cols[i]}"
+    _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
+    xpns_msg_debug "_col=$_col"
+    (( _offset = _cols_offset[i] ))
+    for (( j = 0 ; j < _col ; j++ ));do
       if (( j == 0 )) ;then
-        (( idx = offset - col ))
+        (( idx = _offset - _col ))
         # Create new row
-        xpns_msg_debug "create row"
         # Insert first element of the row first
-        _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
+        _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
         _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
-        pane_id=$(xpns_new_pane_vertical "${_window_name}" "${_speedy_flg}" "${_exec_cmd}")
+        _pane_id=$(xpns_new_pane_vertical "${_window_name}" "${_cell_height}" "${_speedy_flg}" "${_exec_cmd}")
       fi
-
       # Separate row into columns
       if (( j != 0 )) ;then
-        (( idx = offset - j ))
-        _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
+        (( idx = _offset - j ))
+        _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
         _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
-        xpns_msg_debug "Separate row into columns"
-        current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$pane_id" -p '#{pane_width}' | head -n 1)
-        rest_col=$(( col - j + 1 ))
-        cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
-        xpns_split_pane_horizontal "$pane_id" "$cell_width" "${_speedy_flg}" "${_exec_cmd}"
+        ## Separate row into columns
+        _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_pane_id" -p '#{pane_width}' | head -n 1)
+        _rest_col=$(( _col - j + 1 ))
+        _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+        xpns_split_pane_horizontal "$_pane_id" "$_cell_width" "${_speedy_flg}" "${_exec_cmd}"
       fi
     done
 
     # Adjust height
-    top_pane_height=$(${TMUX_XPANES_EXEC} display-message -t "$window_id" -p '#{pane_height}' | head -n 1)
-    rest_row=$(( i ))
-    xpns_msg_debug "top_pane_height=$top_pane_height rest_row=$rest_row"
-    cell_height=$(( ( top_pane_height - rest_row + 1 ) / rest_row ))
+    _top_pane_height=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p '#{pane_height}' | head -n 1)
+    _rest_row=$(( i ))
+    xpns_msg_debug "_top_pane_height=$_top_pane_height _rest_row=$_rest_row"
+    _cell_height=$(( ( _top_pane_height - _rest_row + 1 ) / _rest_row ))
   done
 
   # Split first row into columns
-  col="${cols[0]}"
-  cell_width=$(( ( window_width - col + 1 ) / col ))
-  for (( j = 1 ; j < col ; j++ ));do
-    idx=$(( cols_offset[0] - j ))
+  _col="${_cols[0]}"
+  _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
+  for (( j = 1 ; j < _col ; j++ ));do
+    idx=$(( _cols_offset[0] - j ))
     # Adjust width
-    current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$first_pane_id" -p '#{pane_width}' | head -n 1)
-    rest_col=$(( col - j + 1 ))
-    cell_width=$(( ( current_pane_width - rest_col + 1 ) / rest_col ))
-    xpns_msg_debug "Split top row into columns"
-    _exec_cmd="${_cmd_template//${_repstr}/${args[idx]}}"
+    _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_first_pane_id" -p '#{pane_width}' | head -n 1)
+    _rest_col=$(( _col - j + 1 ))
+    _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+    ## Split top row into columns
+    _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
     _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
-    xpns_split_pane_horizontal "${first_pane_id}" "${cell_width}" "${_speedy_flg}" "${_exec_cmd}"
+    xpns_split_pane_horizontal "${_first_pane_id}" "${_cell_width}" "${_speedy_flg}" "${_exec_cmd}"
   done
 }
 
 # Remove unnecessary session files as much as possible
 # to let xpanes avoids to load old .tmux.conf.
 xpns_clean_session() {
-  local _xpns_pid
-  local _pattern
+  local _xpns_pid=
+  local _pattern=
   if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
     return
   fi
@@ -1144,7 +1153,10 @@ xpns_set_args_per_pane() {
 }
 
 xpns_get_window_height_width() {
-  local _height _width _result _dev
+  local _height=
+  local _width=
+  local _result=
+  local _dev=
   local _pattern='^([0-9]+)[ \t]+([0-9]+)$'
 
   if ! type stty > /dev/null 2>&1; then
@@ -1200,6 +1212,7 @@ xpns_check_cell_size_bulk() {
   local _win_width="$1"   ; shift
   local _ignore_flag="$1" ; shift
   local _all_cols=()
+  # shellcheck disable=SC2178
   local _cols=0
   local _rows=0
   local _sum_cell=0
@@ -1240,7 +1253,8 @@ xpns_check_cell_size() {
   local _win_height="$1"  ; shift
   local _win_width="$1"   ; shift
   local _ignore_flag="$1" ; shift
-  local _all_cols _all_rows
+  local _all_cols=
+  local _all_rows=()
 
   if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]];then
     xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
@@ -1670,7 +1684,8 @@ xpns_is_valid_layout() {
 }
 
 xpns_warning_before_extra() {
-  local _ans _synchronized
+  local _ans=
+  local _synchronized=
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
     xpns_msg_warning "Panes are now synchronized.
@@ -1728,7 +1743,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  local _pattern
+  local _pattern=
   xpns_load_flag_options "$(xpns_extract_matched "$1" "^-${XP_FLAG_OPTIONS}+")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
