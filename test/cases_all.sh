@@ -1321,7 +1321,7 @@ test_invalid_layout() {
     ${EXEC} -l mh -C 3 1 2 3
     assertEquals "6" "$?"
 
-    ${EXEC} -lt  --rows 5 1 2 3
+    ${EXEC} -lt  --rows=5 1 2 3
     assertEquals "6" "$?"
 
     ${EXEC} --bulk-cols=1,2,3 A B C D E
