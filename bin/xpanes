@@ -1324,7 +1324,7 @@ xpns_pre_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      [[ $? -eq 1 ]] && exit 1
+      [[ $? -eq 1 ]] && exit ${XP_ELAYOUT}
       [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
     else
       _tmp_col_row_cols="$(xpns_check_cell_size \
@@ -1408,8 +1408,7 @@ xpns_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      # TODO: Set error code
-      [[ $? -eq 1 ]] && exit 1
+      [[ $? -eq 1 ]] && exit ${XP_ELAYOUT}
       [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
     else
       _tmp_col_row_cols="$(xpns_check_cell_size \
