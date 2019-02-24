@@ -184,6 +184,18 @@ close_tmux_session() {
     rm "${_socket_file}"
 }
 
+get_window_id_from_prefix() {
+    local _socket_file="$1"
+    local _window_name_prefix="$2"
+    local _window_id=
+    ## tmux bug: tmux does not handle the window_name which has dot(.) at the begining of the name. Use window_id instead.
+    _window_id=$(${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' \
+      | grep "^${_window_name_prefix}" \
+      | head -n 1 \
+      | perl -anle 'print $F[$#F]')
+    echo "${_window_id}"
+}
+
 wait_panes_separation() {
     local _socket_file="$1"
     local _window_name_prefix="$2"
@@ -194,11 +206,7 @@ wait_panes_separation() {
     # Wait until pane separation is completed
     for i in $(seq "${_wait_seconds}") ;do
         sleep 1
-        ## tmux bug: tmux does not handle the window_name which has dot(.) at the begining of the name. Use window_id instead.
-        _window_id=$(${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' \
-          | grep "^${_window_name_prefix}" \
-          | head -n 1 \
-          | perl -anle 'print $F[$#F]')
+        _window_id=$(get_window_id_from_prefix "${_socket_file}" "${_window_name_prefix}")
         printf "%s\\n" "wait_panes_separation: ${i} sec..." >&2
         ${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' >&2
         printf "_window_id:[%s]\\n" "${_window_id}"
