@@ -1324,6 +1324,9 @@ test_invalid_layout() {
     ${EXEC} -lt  --rows 5 1 2 3
     assertEquals "6" "$?"
 
+    ${EXEC} --bulk-cols=1,2,3 A B C D E
+    assertEquals "6" "$?"
+
 }
 
 # @case: 13
@@ -4063,7 +4066,7 @@ test_rows_log_t_option() {
     }
 }
 
-# @case: 72
+# @case: 73
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_ss_t_option() {
 
@@ -4178,7 +4181,7 @@ test_rows_log_ss_t_option() {
     }
 }
 
-# @case: 73
+# @case: 74
 # @skip:
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4203,7 +4206,7 @@ test_too_small_panes() {
   restore_terminal_size
 }
 
-# @case: 74
+# @case: 75
 # @skip:
 test_too_small_panes_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4232,7 +4235,7 @@ test_too_small_panes_cols() {
   restore_terminal_size
 }
 
-# @case: 75
+# @case: 76
 # @skip:
 test_too_small_panes_avoided_by_n() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4276,8 +4279,49 @@ test_too_small_panes_avoided_by_n() {
   restore_terminal_size
 }
 
+# @case: 77
+# @skip:
 test_bulk_cols() {
-  :
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  _cmd="${EXEC} --bulk-cols=3,2,1,2,2 -S $_socket_file --stay AAAA {2..10}"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-----------+
+  # | A | 1 | 2 |
+  # +-----------+
+  # |  3  |  4  |
+  # +-----------+
+  # |     6     |
+  # +-----------+
+  # |  7  |  8  |
+  # +-----------+
+  # |  9  |  10 |
+  # +-----------+
+  wait_panes_separation "$_socket_file" "AAAA" "10"
+  assert_cols "$_socket_file" "AAAA" 3 2 1 2 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+  assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 2 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 4 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 5 1 5 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 5 1
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+      wait_panes_separation "$_socket_file" "AAAA" "10"
+      assert_cols "$_socket_file" "AAAA" 3 2 1 2 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+      assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 2 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 4 1 4 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 5 1 5 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 5 1
+      close_tmux_session "$_socket_file"
+    }
 }
 
 ###:-:-:END_TESTING:-:-:###
