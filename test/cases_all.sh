@@ -496,7 +496,7 @@ divide_two_panes_ev_impl() {
 
     echo "Check width"
     a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 1 2 )
+    b_width=$( window_layout_get width 2 1 )
     echo "A:${a_width} B:${b_width}"
     # true:1, false:0
     # In this case, height must be same.
@@ -504,7 +504,7 @@ divide_two_panes_ev_impl() {
 
     echo "Check height"
     a_height=$( window_layout_get width 1 1 )
-    b_height=$( window_layout_get width 1 2 )
+    b_height=$( window_layout_get width 2 1 )
     echo "A:${a_height} B:${b_height}"
     # a_height +- 1 is b_height
     assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${b_height}")"
