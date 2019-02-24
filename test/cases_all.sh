@@ -108,6 +108,10 @@ window_layout_get() {
     return 0
 }
 
+window_layout_dump() {
+  printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}"
+}
+
 # !!Run this function at first!!
 check_version() {
     switch_tmux_path 1
@@ -185,8 +189,8 @@ close_tmux_session() {
 }
 
 get_window_id_from_prefix() {
-    local _socket_file="$1"
-    local _window_name_prefix="$2"
+    local _socket_file="$1" ; shift
+    local _window_name_prefix="$1" ; shift
     local _window_id=
     ## tmux bug: tmux does not handle the window_name which has dot(.) at the begining of the name. Use window_id instead.
     _window_id=$(${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' \
@@ -326,6 +330,44 @@ get_window_having_panes() {
     echo -n "${idx} "; ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${idx}" -F '#{pane_index}' | grep -c .
   done < <(${TMUX_EXEC}  -S "${_socket_file}" list-windows -F '#{window_index}') \
     | awk '$2==pane_num{print $1}' pane_num="${_pane_num}" | head -n 1
+}
+
+assert_same_width_same_cols() {
+    local _socket_file="$1" ; shift
+    local _window_name_prefix="$1" ; shift
+    local _rows="$1" ; shift
+    local _cols="$1" ; shift
+    local _window_id=
+    _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+
+    echo "== Window Layout Dump (window_id:[$_window_id]) =="
+    window_layout_dump
+
+    local col=1
+    for (( ; col <= _cols; col++ )); do
+      local row=1
+      local _base_width=
+      _base_width=$(window_layout_get width $row $col)
+      for (( ; row <= _rows; row++ )); do
+        local _target_width=
+        _target_width=$(window_layout_get width $row $col)
+        assertEquals 1 "$(( _base_width == _target_width ))" || \
+        echo "[row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
+      done
+    done
+}
+
+assert_same_height_same_rows() {
+    local _socket_file="$1"
+}
+
+assert_near_width_each_cols() {
+    local _socket_file="$1"
+}
+
+assert_near_height_each_rows() {
+    local _socket_file="$1"
 }
 
 divide_two_panes_impl() {
@@ -3529,6 +3571,33 @@ test_ss_and_t_option() {
       actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
       assertEquals "$expected" "$actual"
       close_tmux_session "$_socket_file"
+    }
+}
+
+# @case: 67
+# @skip:
+test_cols_option() {
+    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+    local _cmd=""
+
+    _cmd="${EXEC} -C 2 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH"
+    printf "\\n$ %s\\n" "${_cmd}"
+    eval "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "8"
+    ## TODO: Implement them
+    assert_same_width_same_cols "$_socket_file" "AAAA" 4 2
+    # assert_same_height_same_rows "$_socket_file" 8 2
+    # assert_near_width_each_cols "$_socket_file" 8 2
+    # assert_near_height_each_rows "$_socket_file" 8 2
+    close_tmux_session "$_socket_file"
+
+    : "In TMUX session" && {
+        printf "\\nTMUX(%s)\\n" "${_cmd}"
+        create_tmux_session "$_socket_file"
+        exec_tmux_session "$_socket_file" "$_cmd"
+        wait_panes_separation "$_socket_file" "AAAA" "8"
+        assert_same_width_same_cols "$_socket_file" "AAAA" 4 2
+        close_tmux_session "$_socket_file"
     }
 }
 
