@@ -94,22 +94,36 @@ window_layout_set() {
     return 0
 }
 
-# width 1 1 => 1 1
-# width 1 2 => 1 3
-# width 1 3 => 1 5
-# width 1 4 => 1 7
 window_layout_get() {
-    local _hw="$1"  ; shift ## "height" or "width"
-    local _row="$1" ; shift
-    local _col="$1" ; shift
-    (( _col = _col * 2 - 1 ))
-    [[ "$_hw" == "height" ]] && (( _col = _col + 1 ))
+  local _op="$1" ## "height" "width" or "cols"
+  local _row="${2-}"
+  local _col="${3-}"
+
+  if [[ "$_op" == "width" ]] || [[ "$_op" == "height" ]]; then
+    (( _col = _col * 2 ))
+    [[ "$_op" == "width" ]] && (( _col = _col - 1 ))
     printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}" | awk "NR==$_row{print \$($_col)}"
-    return 0
+  elif [[ "$_op" == "cols" ]]; then
+    printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}" | awk '{print NF/2}' | xargs
+  fi
+  return 0
 }
 
 window_layout_dump() {
-  printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}"
+  if ! type column > /dev/null 2>&1 ;then
+    printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}"
+  else
+    printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}" \
+      | sed -r 's/([0-9]+) ([0-9]+)/| w:\1 h:\2/g' \
+      | sed 's/^/@/' \
+      | sed 's/$/@|/' \
+      | awk 'BEGIN {s="@|---@|"; print s} {print}' \
+      | column -t -s '@' \
+      | sed '/---/s/ /-/g' \
+      | awk 'NR==1{s=$0;print $0} NR > 1{print $0; print s}' \
+      | sed 's/|-/+-/g;s/-|/-+/g' \
+      | cat
+  fi
 }
 
 # !!Run this function at first!!
@@ -306,7 +320,7 @@ wait_all_non_empty_files(){
             break
         fi
         if [ "${i}" -eq "${_wait_seconds}" ]; then
-            echo "wait_all_non_empty_files: Test failed" >&2
+            echo "${FUNCNAME[0]}: Test failed" >&2
             return 1
         fi
         sleep 1
@@ -332,6 +346,18 @@ get_window_having_panes() {
     | awk '$2==pane_num{print $1}' pane_num="${_pane_num}" | head -n 1
 }
 
+assert_cols() {
+  local _socket_file="$1" ; shift
+  local _window_name_prefix="$1" ; shift
+  _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+  window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+
+  echo "== Window Layout Dump (window_id:[$_window_id]) =="
+  window_layout_dump
+
+  IFS=" " assertEquals "$*" "$(window_layout_get cols)"
+}
+
 assert_same_width_same_cols() {
   local _socket_file="$1" ; shift
   local _window_name_prefix="$1" ; shift
@@ -343,9 +369,6 @@ assert_same_width_same_cols() {
   _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
   window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
 
-  echo "== Window Layout Dump (window_id:[$_window_id]) =="
-  window_layout_dump
-
   local col="$_start_col"
   for (( ; col <= _end_col; col++ )); do
     local row="$_start_row"
@@ -355,7 +378,7 @@ assert_same_width_same_cols() {
       local _target_width=
       _target_width=$(window_layout_get width "$row" "$col")
       assertEquals 1 "$(( _base_width == _target_width ))" || \
-      echo "[row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
+      echo "${FUNCNAME[0]} [row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
     done
   done
 }
@@ -371,9 +394,6 @@ assert_same_height_same_rows() {
   _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
   window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
 
-  echo "== Window Layout Dump (window_id:[$_window_id]) =="
-  window_layout_dump
-
   local row="$_start_row"
   for (( ; row <= _end_row; row++ )); do
     local col="$_start_col"
@@ -383,17 +403,59 @@ assert_same_height_same_rows() {
       local _target_height=
       _target_height=$(window_layout_get height "$row" "$col")
       assertEquals 1 "$(( _base_height == _target_height ))" || \
-      echo "[row=1 col=$col height=${_base_height}] vs [row=$row col=$col height=${_target_height}]"
+      echo "${FUNCNAME[0]} [row=1 col=$col height=${_base_height}] vs [row=$row col=$col height=${_target_height}]"
     done
   done
 }
 
 assert_near_width_each_cols() {
-    local _socket_file="$1"
+  local _socket_file="$1" ; shift
+  local _window_name_prefix="$1" ; shift
+  local _start_row="$1" ; shift
+  local _start_col="$1" ; shift
+  local _end_row="$1" ; shift
+  local _end_col="$1" ; shift
+  local _window_id=
+  _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+  window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+
+  local row="$_start_row"
+  for (( ; row <= _end_row; row++ )); do
+    local col="$_start_col"
+    local _base_width=
+    _base_width=$(window_layout_get width "$row" "$col")
+    for (( ; col <= _end_col; col++ )); do
+      local _target_width=
+      _target_width=$(window_layout_get width "$row" "$col")
+      assertEquals 1 "$(between_plus_minus 1 "${_base_width}" "${_target_width}")" || \
+      echo "${FUNCNAME[0]} [row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
+    done
+  done
 }
 
 assert_near_height_each_rows() {
-    local _socket_file="$1"
+  local _socket_file="$1" ; shift
+  local _window_name_prefix="$1" ; shift
+  local _start_row="$1" ; shift
+  local _start_col="$1" ; shift
+  local _end_row="$1" ; shift
+  local _end_col="$1" ; shift
+  local _window_id=
+  _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+  window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+
+  local col="$_start_col"
+  for (( ; col <= _end_col; col++ )); do
+    local row="$_start_row"
+    local _base_height=
+    _base_height=$(window_layout_get height "$row" "$col")
+    for (( ; row <= _end_row; row++ )); do
+      local _target_height=
+      _target_height=$(window_layout_get height "$row" "$col")
+      assertEquals 1 "$(between_plus_minus 1 "${_base_height}" "${_target_height}")" || \
+      echo "${FUNCNAME[0]} [row=1 col=$col height=${_base_height}] vs [row=$row col=$col height=${_target_height}]"
+    done
+  done
 }
 
 divide_two_panes_impl() {
@@ -3602,37 +3664,389 @@ test_ss_and_t_option() {
 
 # @case: 67
 # @skip:
-test_cols_option() {
-    local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
-    local _cmd=""
+test_cols_option1() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
 
-    _cmd="${EXEC} -C 2 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH"
-    printf "\\n$ %s\\n" "${_cmd}"
-    eval "$_cmd"
-    wait_panes_separation "$_socket_file" "AAAA" "8"
-    ## TODO: Implement them
-    assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
-    assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
-    # assert_same_height_same_rows "$_socket_file" 8 2
-    # assert_near_width_each_cols "$_socket_file" 8 2
-    # assert_near_height_each_rows "$_socket_file" 8 2
-    close_tmux_session "$_socket_file"
+  _cmd="${EXEC} -C 2 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+  wait_panes_separation "$_socket_file" "AAAA" "8"
 
-    : "In TMUX session" && {
-        printf "\\nTMUX(%s)\\n" "${_cmd}"
-        create_tmux_session "$_socket_file"
-        exec_tmux_session "$_socket_file" "$_cmd"
-        wait_panes_separation "$_socket_file" "AAAA" "8"
-        assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
-        assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
-        close_tmux_session "$_socket_file"
+  ## It is suppose to be following position
+  # +---+---+
+  # | A | B |
+  # +---+---+
+  # | C | D |
+  # +---+---+
+  # | E | F |
+  # +---+---+
+  # | G | H |
+  # +---+---+
+  assert_cols "$_socket_file" "AAAA" 2 2 2 2
+  assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
+  assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 4 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 2
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+      wait_panes_separation "$_socket_file" "AAAA" "8"
+      assert_cols "$_socket_file" "AAAA" 2 2 2 2
+      assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
+      assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 4 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 2
+      close_tmux_session "$_socket_file"
     }
 }
 
-## TODO: Test for -C option (normal + pipe)
-## TODO: Test for -R option (normal + pipe)
-## TODO: Test for --cols + -e + log option (normal + pipe)
-## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
+# @case: 68
+# @skip:
+test_cols_option2() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+
+  _cmd="${EXEC} -t --cols=3 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+  wait_panes_separation "$_socket_file" "AAAA" "8"
+
+  ## It is suppose to be following position
+  # +---+---+---+
+  # | A | B | C |
+  # +---+---+---+
+  # | E | F | G |
+  # +---+---+---+
+  # |  G  |  H  |
+  # +-----+-----+
+  assert_cols "$_socket_file" "AAAA" 3 3 2
+  assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 2 3
+  assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 2 3
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 2 3
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 3
+  assert_near_width_each_cols "$_socket_file" "AAAA" 3 1 3 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+      wait_panes_separation "$_socket_file" "AAAA" "8"
+      assert_cols "$_socket_file" "AAAA" 3 3 2
+      assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 2 3
+      assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 2 3
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 2 3
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 3
+      assert_near_width_each_cols "$_socket_file" "AAAA" 3 1 3 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+      close_tmux_session "$_socket_file"
+    }
+}
+
+# @case: 69
+# @skip:
+test_rows_option1() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+
+  _cmd="${EXEC} -R 2 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +---------------+
+  # | A | B | C | D |
+  # +---------------+
+  # | E | F | G | H |
+  # +---------------+
+  wait_panes_separation "$_socket_file" "AAAA" "8"
+  assert_cols "$_socket_file" "AAAA" 4 4
+  assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 2 4
+  assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 2 4
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 2 4
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 4
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+      wait_panes_separation "$_socket_file" "AAAA" "8"
+      assert_cols "$_socket_file" "AAAA" 4 4
+      assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 2 4
+      assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 2 4
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 2 4
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 4
+      close_tmux_session "$_socket_file"
+    }
+}
+
+# @case: 70
+# @skip:
+test_rows_option2() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  _cmd="${EXEC} --rows=4 -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH IIII"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-----------+
+  # | A | B | C |
+  # +-----------+
+  # |  D  |  E  |
+  # +-----------+
+  # |  F  |  G  |
+  # +-----------+
+  # |  H  |  I  |
+  # +-----------+
+  wait_panes_separation "$_socket_file" "AAAA" "9"
+  assert_cols "$_socket_file" "AAAA" 3 2 2 2
+  assert_same_width_same_cols "$_socket_file" "AAAA" 2 1 4 2
+  assert_same_height_same_rows "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+      wait_panes_separation "$_socket_file" "AAAA" "9"
+      assert_cols "$_socket_file" "AAAA" 3 2 2 2
+      assert_same_width_same_cols "$_socket_file" "AAAA" 2 1 4 2
+      assert_same_height_same_rows "$_socket_file" "AAAA" 2 1 4 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 4 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 2 1 4 2
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
+      close_tmux_session "$_socket_file"
+    }
+}
+
+# @case: 71
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
+test_cols_log_option() {
+
+  if ! (is_less_than "2.6");then
+      echo "Skip this test for $(tmux_version_number)." >&2
+      echo 'Even the test is tried, the result will be failed.' >&2
+      echo 'This is due to the known bug (https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs).' >&2
+      return 0
+  fi
+
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  local _logdir="${_tmpdir}/hoge"
+  mkdir -p "${_tmpdir}"
+
+  _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]\" -I@ --cols=3 -S $_socket_file --stay -c \"echo HOGE_@_ | sed s/HOGE/GEGE/\" AAAA BBBB CCCC DDDD"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-----------+
+  # | A | B | C |
+  # +-----------+
+  # |     D     |
+  # +-----------+
+
+  wait_panes_separation "$_socket_file" "AAAA" "4"
+  assert_cols "$_socket_file" "AAAA" 3 1
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 1
+
+  _log_files=()
+  while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+  wait_all_non_empty_files "${_log_files[@]}"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+  close_tmux_session "$_socket_file"
+  rm -f "${_logdir}"/*
+  rmdir "${_logdir}"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+
+      wait_panes_separation "$_socket_file" "AAAA" "4"
+      assert_cols "$_socket_file" "AAAA" 3 1
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 1
+
+      _log_files=()
+      while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+      wait_all_non_empty_files "${_log_files[@]}"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+      close_tmux_session "$_socket_file"
+      rm -f "${_logdir}"/*
+      rmdir "${_logdir}"
+    }
+}
+
+# @case: 72
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
+test_rows_log_t_option() {
+
+  ## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
+  if ! (is_less_than "2.6");then
+      echo "Skip this test for $(tmux_version_number)." >&2
+      echo 'Even the test is tried, the result will be failed.' >&2
+      echo 'This is due to the known bug (https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs).' >&2
+      return 0
+  fi
+
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  local _logdir="${_tmpdir}/hoge"
+  mkdir -p "${_tmpdir}"
+
+  _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]\" -I@ --rows=3 -S $_socket_file --stay -sstc \"echo HOGE_@_ | sed s/HOGE/GEGE/;sleep 30\" AAAA BBBB CCCC DDDD"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-------+
+  # | A | B |
+  # +-------+
+  # |   C   |
+  # +-------+
+  # |   D   |
+  # +-------+
+
+  wait_panes_separation "$_socket_file" "AAAA" "4"
+  assert_cols "$_socket_file" "AAAA" 2 1 1
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+
+  _log_files=()
+  while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+  wait_all_non_empty_files "${_log_files[@]}"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+  # Check pane_title
+  expected="AAAA@BBBB@CCCC@DDDD@"
+  actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
+  assertEquals "$expected" "$actual"
+
+  close_tmux_session "$_socket_file"
+  rm -f "${_logdir}"/*
+  rmdir "${_logdir}"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+
+      wait_panes_separation "$_socket_file" "AAAA" "4"
+      assert_cols "$_socket_file" "AAAA" 2 1 1
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+
+      _log_files=()
+      while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+      wait_all_non_empty_files "${_log_files[@]}"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+      # Check pane_title
+      _window_id="$(get_window_id_from_prefix "$_socket_file" "AAAA" )"
+      expected="AAAA@BBBB@CCCC@DDDD@"
+      actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "$_window_id" -F '#{pane_title}' | tr '\n' '@')"
+      assertEquals "$expected" "$actual"
+
+      close_tmux_session "$_socket_file"
+      rm -f "${_logdir}"/*
+      rmdir "${_logdir}"
+    }
+}
+
 ## TODO: xpanes -l mh -C 3 1 2 3 => error
 ## TODO: Panes are too small error: xpanes -C 2 {1..500} (normal + pipe)
 ## TODO: Panes are too small error: xpanes {1..500} (normal + pipe)
