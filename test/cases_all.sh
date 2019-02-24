@@ -333,33 +333,59 @@ get_window_having_panes() {
 }
 
 assert_same_width_same_cols() {
-    local _socket_file="$1" ; shift
-    local _window_name_prefix="$1" ; shift
-    local _rows="$1" ; shift
-    local _cols="$1" ; shift
-    local _window_id=
-    _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+  local _socket_file="$1" ; shift
+  local _window_name_prefix="$1" ; shift
+  local _start_row="$1" ; shift
+  local _start_col="$1" ; shift
+  local _end_row="$1" ; shift
+  local _end_col="$1" ; shift
+  local _window_id=
+  _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+  window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
 
-    echo "== Window Layout Dump (window_id:[$_window_id]) =="
-    window_layout_dump
+  echo "== Window Layout Dump (window_id:[$_window_id]) =="
+  window_layout_dump
 
-    local col=1
-    for (( ; col <= _cols; col++ )); do
-      local row=1
-      local _base_width=
-      _base_width=$(window_layout_get width $row $col)
-      for (( ; row <= _rows; row++ )); do
-        local _target_width=
-        _target_width=$(window_layout_get width $row $col)
-        assertEquals 1 "$(( _base_width == _target_width ))" || \
-        echo "[row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
-      done
+  local col="$_start_col"
+  for (( ; col <= _end_col; col++ )); do
+    local row="$_start_row"
+    local _base_width=
+    _base_width=$(window_layout_get width "$row" "$col")
+    for (( ; row <= _end_row; row++ )); do
+      local _target_width=
+      _target_width=$(window_layout_get width "$row" "$col")
+      assertEquals 1 "$(( _base_width == _target_width ))" || \
+      echo "[row=1 col=$col width=${_base_width}] vs [row=$row col=$col width=${_target_width}]"
     done
+  done
 }
 
 assert_same_height_same_rows() {
-    local _socket_file="$1"
+  local _socket_file="$1" ; shift
+  local _window_name_prefix="$1" ; shift
+  local _start_row="$1" ; shift
+  local _start_col="$1" ; shift
+  local _end_row="$1" ; shift
+  local _end_col="$1" ; shift
+  local _window_id=
+  _window_id="$(get_window_id_from_prefix "$_socket_file" "$_window_name_prefix" )"
+  window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_id}" -F '#{window_layout}' | head -n 1 )"
+
+  echo "== Window Layout Dump (window_id:[$_window_id]) =="
+  window_layout_dump
+
+  local row="$_start_row"
+  for (( ; row <= _end_row; row++ )); do
+    local col="$_start_col"
+    local _base_height=
+    _base_height=$(window_layout_get height "$row" "$col")
+    for (( ; col <= _end_col; col++ )); do
+      local _target_height=
+      _target_height=$(window_layout_get height "$row" "$col")
+      assertEquals 1 "$(( _base_height == _target_height ))" || \
+      echo "[row=1 col=$col height=${_base_height}] vs [row=$row col=$col height=${_target_height}]"
+    done
+  done
 }
 
 assert_near_width_each_cols() {
@@ -3585,7 +3611,8 @@ test_cols_option() {
     eval "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "8"
     ## TODO: Implement them
-    assert_same_width_same_cols "$_socket_file" "AAAA" 4 2
+    assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
+    assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
     # assert_same_height_same_rows "$_socket_file" 8 2
     # assert_near_width_each_cols "$_socket_file" 8 2
     # assert_near_height_each_rows "$_socket_file" 8 2
@@ -3596,7 +3623,8 @@ test_cols_option() {
         create_tmux_session "$_socket_file"
         exec_tmux_session "$_socket_file" "$_cmd"
         wait_panes_separation "$_socket_file" "AAAA" "8"
-        assert_same_width_same_cols "$_socket_file" "AAAA" 4 2
+        assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 4 2
+        assert_same_height_same_rows "$_socket_file" "AAAA" 1 1 4 2
         close_tmux_session "$_socket_file"
     }
 }
