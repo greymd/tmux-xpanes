@@ -199,7 +199,7 @@ capture_tmux_session() {
 close_tmux_session() {
     local _socket_file="$1"
     ${TMUX_EXEC} -S "${_socket_file}" kill-session
-    rm "${_socket_file}"
+    rm -f "${_socket_file}"
 }
 
 get_window_id_from_prefix() {
@@ -301,7 +301,7 @@ all_non_empty_files(){
       if [ -s "$f" ]; then
         _count=$(( _count + 1 ))
       else
-        echo "all_non_empty_files: $f is still empty" >&2
+        echo "${FUNCNAME[0]}: $f is still empty" >&2
       fi
     done
     if [[ $_count -eq $# ]]; then
@@ -753,8 +753,19 @@ set_tmux_exec_randomly () {
   fi
 }
 
+change_terminal_size() {
+  if ! type stty &> /dev/null ;then
+    return 1
+  fi
+  stty rows 40 cols 80
+}
+
+restore_terminal_size() {
+  stty rows "${TTY_ROWS}" cols "${TTY_COLS}"
+  type resize &> /dev/null && resize
+}
+
 setUp(){
-    # stty rows 40 cols 80
     cd "${BIN_DIR}" || exit
     mkdir -p "${TEST_TMP}"
     set_tmux_exec_randomly
@@ -763,8 +774,6 @@ setUp(){
 }
 
 tearDown(){
-    # stty rows "${TTY_ROWS}" cols "${TTY_COLS}"
-    # type resize &> /dev/null && resize
     rm -rf "${TEST_TMP}"
     echo "<<<<<<<<<<" >&2
     echo >&2
@@ -1308,6 +1317,13 @@ test_invalid_layout() {
     # Option and arguments are separated.
     ${EXEC} -l mem 1 2 3
     assertEquals "6" "$?"
+
+    ${EXEC} -l mh -C 3 1 2 3
+    assertEquals "6" "$?"
+
+    ${EXEC} -lt  --rows 5 1 2 3
+    assertEquals "6" "$?"
+
 }
 
 # @case: 13
@@ -3950,6 +3966,121 @@ test_rows_log_t_option() {
   local _logdir="${_tmpdir}/hoge"
   mkdir -p "${_tmpdir}"
 
+  _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]\" -I@ --rows=3 -S $_socket_file --stay -tc \"echo HOGE_@_ | sed s/HOGE/GEGE/\" AAAA BBBB CCCC DDDD"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-------+
+  # | A | B |
+  # +-------+
+  # |   C   |
+  # +-------+
+  # |   D   |
+  # +-------+
+
+  wait_panes_separation "$_socket_file" "AAAA" "4"
+  assert_cols "$_socket_file" "AAAA" 2 1 1
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+
+  _log_files=()
+  while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+  wait_all_non_empty_files "${_log_files[@]}"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+  printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+  assertEquals 0 $?
+  _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+  assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+  # Check pane_title
+  expected="AAAA@BBBB@CCCC@DDDD@"
+  actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -F '#{pane_title}' | tr '\n' '@')"
+  assertEquals "$expected" "$actual"
+
+  close_tmux_session "$_socket_file"
+  rm -f "${_logdir}"/*
+  rmdir "${_logdir}"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+      create_tmux_session "$_socket_file"
+      exec_tmux_session "$_socket_file" "$_cmd"
+
+      wait_panes_separation "$_socket_file" "AAAA" "4"
+      assert_cols "$_socket_file" "AAAA" 2 1 1
+      assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 2
+      assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
+
+      _log_files=()
+      while read -r elem; do _log_files+=("$elem") ;done < <(printf "%s\\n" "${_logdir}"/*)
+      wait_all_non_empty_files "${_log_files[@]}"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "CCCC-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
+
+      printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$"
+      assertEquals 0 $?
+      _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "DDDD-1$")
+      assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
+
+      # Check pane_title
+      _window_id="$(get_window_id_from_prefix "$_socket_file" "AAAA" )"
+      expected="AAAA@BBBB@CCCC@DDDD@"
+      actual="$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "$_window_id" -F '#{pane_title}' | tr '\n' '@')"
+      assertEquals "$expected" "$actual"
+
+      close_tmux_session "$_socket_file"
+      rm -f "${_logdir}"/*
+      rmdir "${_logdir}"
+    }
+}
+
+# @case: 72
+# @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
+test_rows_log_ss_t_option() {
+
+  ## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
+  if ! (is_less_than "2.6");then
+      echo "Skip this test for $(tmux_version_number)." >&2
+      echo 'Even the test is tried, the result will be failed.' >&2
+      echo 'This is due to the known bug (https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs).' >&2
+      return 0
+  fi
+
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  local _logdir="${_tmpdir}/hoge"
+  mkdir -p "${_tmpdir}"
+
   _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]\" -I@ --rows=3 -S $_socket_file --stay -sstc \"echo HOGE_@_ | sed s/HOGE/GEGE/;sleep 30\" AAAA BBBB CCCC DDDD"
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
@@ -4047,11 +4178,107 @@ test_rows_log_t_option() {
     }
 }
 
-## TODO: xpanes -l mh -C 3 1 2 3 => error
-## TODO: Panes are too small error: xpanes -C 2 {1..500} (normal + pipe)
-## TODO: Panes are too small error: xpanes {1..500} (normal + pipe)
-## TODO: Panes are too small error: xpanes -C 1 {1..20} (?) (normal + pipe)
-## TODO: Ignore error: xpanes -C 1 -n 2 {1..20} (?) (normal)
+# @case: 73
+# @skip:
+test_too_small_panes() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  _cmd="${EXEC}  -S $_socket_file --stay {1..500}; echo \$? > ${_tmpdir}/status"
+  printf "\\n$ %s\\n" "${_cmd}"
+
+  change_terminal_size
+  eval "$_cmd"
+  wait_all_non_empty_files "${_tmpdir}/status"
+  assertEquals 7 "$(<"${_tmpdir}/status")"
+  rm -f "${_tmpdir}/status"
+  close_tmux_session "$_socket_file"
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_all_non_empty_files "${_tmpdir}/status"
+    assertEquals 7 "$(<"${_tmpdir}/status")"
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
+}
+
+# @case: 74
+# @skip:
+test_too_small_panes_cols() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  ## In terminal size rows=40, cols=80, 13 arguments is the maximum
+  _cmd="${EXEC} -sC 1 -S $_socket_file --stay {1..14}; echo \$? > ${_tmpdir}/status"
+  printf "\\n$ %s\\n" "${_cmd}"
+
+  change_terminal_size || {
+    echo "Skip this test because terminal size cannot be changed"
+    return 0
+  }
+  eval "$_cmd"
+  wait_all_non_empty_files "${_tmpdir}/status"
+  assertEquals 7 "$(<"${_tmpdir}/status")"
+  rm -f "${_tmpdir}/status"
+  close_tmux_session "$_socket_file"
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_all_non_empty_files "${_tmpdir}/status"
+    assertEquals 7 "$(<"${_tmpdir}/status")"
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
+}
+
+# @case: 75
+# @skip:
+test_too_small_panes_avoided_by_n() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  ## In terminal size rows=40, cols=80, 13 arguments is the maximum
+  _cmd="${EXEC} -sC 1 -n 2 -S $_socket_file --stay AAAA {2..14}"
+  printf "\\n$ %s\\n" "${_cmd}"
+
+  change_terminal_size || {
+    echo "Skip this test because terminal size cannot be changed"
+    return 0
+  }
+  eval "$_cmd"
+  ## It is suppose to be following position
+  # +-------+
+  # | AAAA 2|
+  # +-------+
+  # |  3 4  |
+  # +-------+
+  # |  5 6  |
+  # +-------+
+  # |  ...  |
+  # +-------+
+  # | 13 14 |
+  # +-------+
+
+  wait_panes_separation "$_socket_file" "AAAA" "7"
+  assert_cols "$_socket_file" "AAAA" 1 1 1 1 1 1 1
+  assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 7 1
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 7 1
+  close_tmux_session "$_socket_file"
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_panes_separation "$_socket_file" "AAAA" "7"
+    assert_cols "$_socket_file" "AAAA" 1 1 1 1 1 1 1
+    assert_same_width_same_cols "$_socket_file" "AAAA" 1 1 7 1
+    assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 7 1
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
+}
+
+test_bulk_cols() {
+  :
+}
 
 ###:-:-:END_TESTING:-:-:###
 

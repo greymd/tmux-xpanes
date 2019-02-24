@@ -158,6 +158,7 @@ xpns_msg_warning() {
 }
 
 xpns_msg_debug() {
+  ## TODO: Use FUNCNAME
   if [[ $XP_OPT_DEBUG -eq 1 ]];then
     xpns_msg "Debug" "$(date "+[%F_%T]") $1"
   fi
@@ -2008,7 +2009,7 @@ xpns_parse_options() {
   if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
       && [[ "${XP_OPT_PRESET_LAYOUT}" -eq 1 ]]; then
     xpns_msg_error "Combination columns/rows option (-C, --cols, -R, --rows) and -l option is not allowed."
-    exit ${XP_EINVAL}
+    exit ${XP_ELAYOUT}
   fi
 
   # Set default value in case of empty.
