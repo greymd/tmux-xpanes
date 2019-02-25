@@ -766,6 +766,7 @@ restore_terminal_size() {
 }
 
 setUp(){
+    export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/cache"
     cd "${BIN_DIR}" || exit
     mkdir -p "${TEST_TMP}"
     set_tmux_exec_randomly
@@ -1321,7 +1322,10 @@ test_invalid_layout() {
     ${EXEC} -l mh -C 3 1 2 3
     assertEquals "6" "$?"
 
-    ${EXEC} -lt  --rows=5 1 2 3
+    ${EXEC} -C 1 -l ev A B C D
+    assertEquals "6" "$?"
+
+    ${EXEC} -lt --rows=5 1 2 3
     assertEquals "6" "$?"
 
     ${EXEC} --bulk-cols=1,2,3 A B C D E
@@ -1330,6 +1334,26 @@ test_invalid_layout() {
 }
 
 # @case: 13
+# @skip:
+test_invalid_layout_tmux() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  local _exit_status=
+  mkdir -p "${_tmpdir}"
+
+  : "In TMUX session" && {
+    _cmd="${EXEC} -C 1 -l ev -e exit exit exit; echo \$? > ${_tmpdir}/status"
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    assertEquals 6 "$(<"${_tmpdir}/status")"
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}/status"
+  }
+}
+
+# @case: 14
 # @skip:
 test_invalid_layout_pipe() {
     # Option and arguments are continuous.
@@ -1342,7 +1366,7 @@ test_invalid_layout_pipe() {
 }
 
 
-# @case: 14
+# @case: 15
 # @skip:
 test_divide_two_panes_ev() {
     # divide window into two panes even-vertically
@@ -1384,7 +1408,7 @@ test_divide_two_panes_ev() {
     }
 }
 
-# @case: 15
+# @case: 16
 # @skip:
 test_divide_two_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1427,7 +1451,7 @@ test_divide_two_panes_eh() {
     }
 }
 
-# @case: 16
+# @case: 17
 # @skip:
 test_divide_three_panes_ev() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1466,7 +1490,7 @@ test_divide_three_panes_ev() {
     }
 }
 
-# @case: 17
+# @case: 18
 # @skip:
 test_divide_three_panes_eh() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1506,7 +1530,7 @@ test_divide_three_panes_eh() {
     }
 }
 
-# @case: 18
+# @case: 19
 # @skip:
 test_append_arg_to_utility_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1551,7 +1575,7 @@ test_append_arg_to_utility_pipe() {
     }
 }
 
-# @case: 19
+# @case: 20
 # @skip:
 test_execute_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1590,7 +1614,7 @@ test_execute_option() {
     }
 }
 
-# @case: 20
+# @case: 21
 # @skip:
 test_execute_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1632,21 +1656,21 @@ test_execute_option_pipe() {
     }
 }
 
-# @case: 21
+# @case: 22
 # @skip:
 test_argument_and_utility_pipe() {
     echo 10 | ${EXEC} -c 'seq {}' factor {}
     assertEquals "4" "$?"
 }
 
-# @case: 22
+# @case: 23
 # @skip:
 test_unsupported_version() {
     XP_HOST_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
     assertEquals "0" "$?"
 }
 
-# @case: 23
+# @case: 24
 # @skip:
 test_invalid_args() {
     local _cmd="${EXEC} -Z"
@@ -1663,7 +1687,7 @@ test_invalid_args() {
     assertEquals "4" "$?"
 }
 
-# @case: 24
+# @case: 25
 # @skip:
 test_valid_and_invalid_args() {
     local _cmd="${EXEC} -Zc @@@"
@@ -1673,7 +1697,7 @@ test_valid_and_invalid_args() {
     assertEquals "4" "$?"
 }
 
-# @case: 25
+# @case: 26
 # @skip:
 test_invalid_long_args() {
     local _cmd="${EXEC} --hogehoge"
@@ -1683,7 +1707,7 @@ test_invalid_long_args() {
     assertEquals "4" "$?"
 }
 
-# @case: 26
+# @case: 27
 # @skip:
 test_no_args() {
     local _cmd="${EXEC}"
@@ -1693,7 +1717,7 @@ test_no_args() {
     assertEquals "4" "$?"
 }
 
-# @case: 27
+# @case: 28
 # @skip:
 test_hyphen_only() {
     local _cmd="${EXEC} --"
@@ -1703,7 +1727,7 @@ test_hyphen_only() {
     assertEquals "4" "$?"
 }
 
-# @case: 28
+# @case: 29
 # @skip:
 test_pipe_without_repstr() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1724,7 +1748,7 @@ test_pipe_without_repstr() {
     }
 }
 
-# @case: 29
+# @case: 30
 # @skip:
 test_hyphen_and_option1() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1766,7 +1790,7 @@ test_hyphen_and_option1() {
     }
 }
 
-# @case: 30
+# @case: 31
 # @skip:
 test_hyphen_and_option2() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1808,7 +1832,7 @@ test_hyphen_and_option2() {
     }
 }
 
-# @case: 31
+# @case: 32
 # @skip: 1.8
 test_desync_option_1() {
     # If tmux version is less than 1.9, skip this test.
@@ -1875,7 +1899,7 @@ test_desync_option_1() {
 }
 
 
-# @case: 32
+# @case: 33
 # @skip: 1.8
 test_desync_option_2() {
     # This test uses continuous options like '-dI@'
@@ -1942,7 +1966,7 @@ test_desync_option_2() {
     }
 }
 
-# @case: 33
+# @case: 34
 # @skip:
 test_failed_creat_directory() {
     local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
@@ -1953,7 +1977,7 @@ test_failed_creat_directory() {
     assertEquals "20" "$?"
 }
 
-# @case: 34
+# @case: 35
 # @skip:
 test_non_writable_directory() {
     local _user=${USER:-$(whoami)}
@@ -1972,14 +1996,14 @@ test_non_writable_directory() {
     assertEquals "21" "$?"
 }
 
-# @case: 35
+# @case: 36
 # @skip:
 test_insufficient_cmd() {
     XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
     assertEquals "127" "$?"
 }
 
-# @case: 36
+# @case: 37
 # @skip:
 test_version() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2014,7 +2038,7 @@ test_version() {
     }
 }
 
-# @case: 37
+# @case: 38
 # @skip:
 test_help() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2050,7 +2074,7 @@ test_help() {
     }
 }
 
-# @case: 38
+# @case: 39
 # @skip:
 test_start_separation() {
     local _window_name=""
@@ -2087,7 +2111,7 @@ test_start_separation() {
     }
 }
 
-# @case: 39
+# @case: 40
 # @skip:
 test_divide_two_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2110,7 +2134,7 @@ test_divide_two_panes() {
     }
 }
 
-# @case: 40
+# @case: 41
 # @skip:
 test_divide_three_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2133,7 +2157,7 @@ test_divide_three_panes() {
     }
 }
 
-# @case: 41
+# @case: 42
 # @skip:
 test_divide_three_panes_tiled() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2157,7 +2181,7 @@ test_divide_three_panes_tiled() {
     }
 }
 
-# @case: 42
+# @case: 43
 # @skip:
 test_divide_four_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2180,7 +2204,7 @@ test_divide_four_panes() {
     }
 }
 
-# @case: 43
+# @case: 44
 # @skip:
 test_divide_four_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2204,7 +2228,7 @@ test_divide_four_panes_pipe() {
     }
 }
 
-# @case: 44
+# @case: 45
 # @skip:
 test_divide_five_panes() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2227,7 +2251,7 @@ test_divide_five_panes() {
     }
 }
 
-# @case: 45
+# @case: 46
 # @skip:
 test_divide_five_panes_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2251,7 +2275,7 @@ test_divide_five_panes_pipe() {
     }
 }
 
-# @case: 46
+# @case: 47
 # @skip:
 test_command_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2289,7 +2313,7 @@ test_command_option() {
     }
 }
 
-# @case: 47
+# @case: 48
 # @skip:
 test_repstr_command_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2331,7 +2355,7 @@ test_repstr_command_option() {
     }
 }
 
-# @case: 48
+# @case: 49
 # @skip:
 test_repstr_command_option_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2369,7 +2393,7 @@ test_repstr_command_option_pipe() {
     }
 }
 
-# @case: 49
+# @case: 50
 # @skip: 1.8,2.3
 test_log_option() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2457,7 +2481,7 @@ test_log_option() {
     }
 }
 
-# @case: 50
+# @case: 51
 # @skip: 1.8,2.3
 test_log_format_option() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2557,7 +2581,7 @@ test_log_format_option() {
     }
 }
 
-# @case: 51
+# @case: 52
 # @skip: 1.8,2.3
 test_log_format_env_var() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2665,7 +2689,7 @@ test_log_format_env_var() {
     }
 }
 
-# @case: 52
+# @case: 53
 # @skip: 1.8,2.3
 test_log_format_option2() {
     if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2766,7 +2790,7 @@ test_log_format_option2() {
     }
 }
 
-# @case: 53
+# @case: 54
 # @skip: 1.8,2.3
 test_log_format_and_desync_option() {
     if (is_less_than "1.9");then
@@ -2877,7 +2901,7 @@ test_log_format_and_desync_option() {
     }
 }
 
-# @case: 54
+# @case: 55
 # @skip: 1.8,2.3
 test_log_format_and_desync_option_pipe() {
     if (is_less_than "1.9");then
@@ -2951,7 +2975,7 @@ test_log_format_and_desync_option_pipe() {
     }
 }
 
-# @case: 55
+# @case: 56
 # @skip:
 test_x_option_abort() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2984,7 +3008,7 @@ test_x_option_abort() {
     }
 }
 
-# @case: 56
+# @case: 57
 # @skip: 1.8,2.3
 test_x_option_with_log() {
 
@@ -3104,7 +3128,7 @@ test_x_option_with_log() {
     }
 }
 
-# @case: 57
+# @case: 58
 # @skip:
 test_x_option_with_pipe() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3168,7 +3192,7 @@ test_x_option_with_pipe() {
     }
 }
 
-# @case: 58
+# @case: 59
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_and_x_option() {
 
@@ -3235,7 +3259,7 @@ test_t_and_x_option() {
     }
 }
 
-# @case: 59
+# @case: 60
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_option_pipe() {
 
@@ -3269,7 +3293,7 @@ test_t_option_pipe() {
     }
 }
 
-# @case: 60
+# @case: 61
 # @skip: 2.3,2.4,2.5,2.6,2.7
 test_t_option_warning() {
     if ! (is_less_than "2.3");then
@@ -3295,7 +3319,7 @@ test_t_option_warning() {
     rmdir "${_tmpdir}"/fin
 }
 
-# @case: 61
+# @case: 62
 # @skip: 2.3
 test_s_and_x_and_log() {
 
@@ -3406,7 +3430,7 @@ test_s_and_x_and_log() {
     }
 }
 
-# @case: 62
+# @case: 63
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_ss_and_x_and_log() {
 
@@ -3511,7 +3535,7 @@ test_ss_and_x_and_log() {
     }
 }
 
-# @case: 63
+# @case: 64
 # @skip:
 test_ss_option_panes_not_found() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3538,7 +3562,7 @@ test_ss_option_panes_not_found() {
     }
 }
 
-# @case: 64
+# @case: 65
 # @skip:
 test_ss_option() {
     local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3570,7 +3594,7 @@ test_ss_option() {
     }
 }
 
-# @case: 65
+# @case: 66
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_s_and_t_option() {
     if (is_less_than "2.3");then
@@ -3642,7 +3666,7 @@ test_s_and_t_option() {
     }
 }
 
-# @case: 66
+# @case: 67
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_ss_and_t_option() {
     if (is_less_than "2.3");then
@@ -3681,7 +3705,7 @@ test_ss_and_t_option() {
     }
 }
 
-# @case: 67
+# @case: 68
 # @skip:
 test_cols_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3723,7 +3747,7 @@ test_cols_option1() {
     }
 }
 
-# @case: 68
+# @case: 69
 # @skip:
 test_cols_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3767,7 +3791,7 @@ test_cols_option2() {
     }
 }
 
-# @case: 69
+# @case: 70
 # @skip:
 test_rows_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3805,7 +3829,7 @@ test_rows_option1() {
     }
 }
 
-# @case: 70
+# @case: 71
 # @skip:
 test_rows_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3850,7 +3874,7 @@ test_rows_option2() {
     }
 }
 
-# @case: 71
+# @case: 72
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_cols_log_option() {
 
@@ -3951,7 +3975,7 @@ test_cols_log_option() {
     }
 }
 
-# @case: 72
+# @case: 73
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_t_option() {
 
@@ -4066,7 +4090,7 @@ test_rows_log_t_option() {
     }
 }
 
-# @case: 73
+# @case: 74
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_ss_t_option() {
 
@@ -4181,7 +4205,7 @@ test_rows_log_ss_t_option() {
     }
 }
 
-# @case: 74
+# @case: 75
 # @skip:
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4206,7 +4230,7 @@ test_too_small_panes() {
   restore_terminal_size
 }
 
-# @case: 75
+# @case: 76
 # @skip:
 test_too_small_panes_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4235,7 +4259,7 @@ test_too_small_panes_cols() {
   restore_terminal_size
 }
 
-# @case: 76
+# @case: 77
 # @skip:
 test_too_small_panes_avoided_by_n() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4279,7 +4303,7 @@ test_too_small_panes_avoided_by_n() {
   restore_terminal_size
 }
 
-# @case: 77
+# @case: 78
 # @skip:
 test_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4322,6 +4346,51 @@ test_bulk_cols() {
       assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 5 1
       close_tmux_session "$_socket_file"
     }
+}
+
+# @case: 79
+# @skip:
+test_multiple_recovery_session() {
+  local _socket_file="${XDG_CACHE_HOME}/xpanes/socket.test"
+  local _cmd1=""
+  local _cmd2=""
+  local _recovery_cmd=""
+  local _recovery_socket=""
+
+  : "Create new session to be recovered" && {
+    _cmd1="seq 321 323 | ${EXEC}"
+    printf "\\n$ %s\\n" "${_cmd1}"
+    eval "${_cmd1}"
+    _recovery_cmd="$(eval "$_cmd1" 2>&1 | grep attach-session)"
+    ## ATTENTION: If the socket file path includes the space, the test is failed.
+    _recovery_socket="$(echo "$_recovery_cmd" | grep -o -- '-S [^ ]*' | awk -F' ' '{print $2}')"
+    echo "Recovery Socket: ${_recovery_socket}"
+    wait_panes_separation "$_recovery_socket" "321" "3"
+  }
+
+  : "Run another session to be recovered" && {
+    _cmd2="seq 123 125 | ${EXEC} -S $_socket_file"
+    printf "\\n$ %s\\n" "${_cmd2}"
+    eval "${_cmd2}"
+    wait_panes_separation "$_socket_file" "123" "3"
+  }
+
+  : "Assert" && {
+    # +-----------+
+    # | 123 | 124 |
+    # +-----------+
+    # |    125    |
+    # +-----------+
+    assert_cols "$_socket_file" "123" 2 1
+    assert_near_height_each_rows "$_socket_file" "123" 1 1 2 1
+
+    assert_cols "$_recovery_socket" "321" 2 1
+    assert_near_height_each_rows "$_recovery_socket" "321" 1 1 2 1
+  }
+
+  ## Cleaning
+  close_tmux_session "$_socket_file"
+  close_tmux_session "$_recovery_socket"
 }
 
 ###:-:-:END_TESTING:-:-:###
