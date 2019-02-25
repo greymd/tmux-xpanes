@@ -47,11 +47,13 @@ $ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 
 # Features
 * Split tmux window into multiple panes
-  + Build command lines from given arguments & execute them on the panes
+  + Build command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log
-* Layout arrangement for panes
+* Flexible layout arrangement for panes
+  + Select layout presets
+  + Set columns or rows as you like
 * Display pane title on each pane
 * Generate command lines from standard input (Pipe mode)
 
@@ -140,13 +142,13 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a login shell.
+  -s                           Speedy mode: Run command without creating a interactive shell.
   -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
-  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
-  --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
+  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
+  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
   --ssh                        Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
