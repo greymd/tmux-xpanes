@@ -57,15 +57,27 @@ $ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 
 # Requirements
 
-* Bash (version 3.2 and more)
-* tmux (version 1.8 and more)
+* Bash (version 3.2 or later)
+* tmux (version 1.8 or later)
 
-If you prefer older tmux versions,
+If you prefer older tmux versions (1.6 and 1.7),
 Use stable version [v2.2.3](https://github.com/greymd/tmux-xpanes/tree/v2.2.3).
 
 # Installation
 
 Please refer to [wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation) in further details. Here is the some examples for installing.
+
+## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
+
+```sh
+$ brew install tmux-xpanes
+```
+
+## With `yum` (For CentOS, RHEL users)
+
+```sh
+$ yum install https://github.com/greymd/tmux-xpanes/releases/download/v3.1.1/tmux-xpanes_v3.1.1.rpm
+```
 
 ## With `apt` (For Ubuntu users)
 
@@ -78,24 +90,11 @@ $ sudo apt update
 $ sudo apt install tmux-xpanes
 ```
 
-## With `yum` (For CentOS, RHEL users)
-
-```sh
-$ yum install https://github.com/greymd/tmux-xpanes/releases/download/v3.1.1/tmux-xpanes_v3.1.1.rpm
-```
-
-## With [Homebrew](https://github.com/Homebrew/brew) (for macOS users)
-
-```sh
-$ brew install tmux-xpanes
-```
-
-
 ## With Zsh plugin managers
 
 **Attention:** With this way, please install tmux manually.
 
-Add this line to `~/.zshrc` in case of [zplug](https://zplug.sh).
+Add this line to `~/.zshrc` in case of [zplug](https://github.com/zplug/zplug).
 Zsh-completion for `xpanes` command is also available. See [Wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation).
 
 ```sh
@@ -132,15 +131,17 @@ OPTIONS:
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
-  -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
-                               t    tiled (default)
+  -C NUM,--cols=NUM            Number of columns of window layout.
+  -R NUM,--rows=NUM            Number of rows of window layout.
+  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+                               t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
   -s                           Speedy mode: Run command without creating a login shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process ends.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
@@ -148,6 +149,7 @@ OPTIONS:
   --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
   --ssh                        Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
   --stay                       Do not switch to new window.
+  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 ```
 
@@ -183,8 +185,12 @@ You will get the screen like this.
     +-------------------------------+-------------------------------+
 ```
 
-Oh, you are not familiar with key bindings of tmux?
-Don't worry. Just type `exit` and "Enter" key to close the panes.
+As you can see, each argument of `xpanes` is going to be re-assigned as a `echo`'s argument.
+You can split the window into multiple panes successfully, great!
+
+Next, let's close those panes.
+Don't worry if you are not familiar with key bindings of tmux.
+Just type `exit` and "Enter" key to close the panes.
 
 ```
     +-------------------------------+-------------------------------+
@@ -219,7 +225,9 @@ $ xpanes -d 1 2 3 4
 ```
 
 ### `-c` option and `-I` option
-`-c` option allows to execute original command line.
+
+`-c` option is one of the fundamental options of `xpanes`.
+Its argument is used as a command to be executed.
 For example, try this one.
 
 ```sh
@@ -259,7 +267,7 @@ $ xpanes -I@ -c 'seq @' 1 2 3 4
 
 `echo {}` is used as the default placeholder when no command is specified by `-c` option.
 
-[Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) given by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
+[Brace expansion](https://www.gnu.org/software/bash/manual/html_node/Brace-Expansion.html) provided by Bash or Zsh is very useful to generate sequential numbers or alphabetical characters.
 
 ```sh
 # Same as $ xpanes 1 2 3 4
@@ -268,12 +276,12 @@ $ xpanes {1..4}
 
 ## Behavior modes
 
-It is good to know about the conditional behavior of `xpanes`  command, before checking further usages.
+It is good to know about the conditional behavior of `xpanes` before checking further usages.
 
 
 ### [Normal mode1] Outside of tmux session
 
-When the tmux is not open and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
+When the tmux is not open and `xpanes` is executed on the normal terminal, the command's behavior is as follows:
 
  - The command newly creates a tmux session and new window on the session.
  - In addition, it separates the window into multiple panes.
@@ -281,16 +289,15 @@ When the tmux is not open and `xpanes` command is executed on the normal termina
 
 ### [Normal mode2] Inside of tmux session
 
-When the tmux is already open and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
+When the tmux is already open and `xpanes` is executed on the existing tmux session, the command's behavior is as follows:
 
  - The command newly creates a window **on the existing active session**.
  - In addition, it separates the window into multiple panes.
- - Finally, the window will be active window.
+ - Finally, the window will be active.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input
 
-When the tmux is open and `xpanes` command is executed from within tmux (Normal mode2)
-and the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be the special "Pipe mode".
+When `xpanes` accepts standard input (i.e, `xpanes` follows another command and pipe `|`) under **Normal mode2** , `xpanes`'s behavior will be the special one called "Pipe mode".
 It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
@@ -329,7 +336,7 @@ The result is like this.
     +------------------------------------------+------------------------------------------+
 ```
 
-Hmm? Do you want to monitor those files through the SSH? Just do it like this.
+Hmm? Do you want to monitor those files through the SSH? Just do it.
 
 ```sh
 # 'ssh user@host' is added.
@@ -364,7 +371,7 @@ $ xpanes -c "ssh myuser@{}" host1 host2
 
 #### Use SSH with ignoring alert message
 
-`--ssh` option is helpful to ignore the alert message from OpenSSH. It is not required to answer yes/no question against it. Use it if you are fully sure that destination host is reliable one.
+`--ssh` option is helpful to ignore the alert message from OpenSSH. It is not required to answer yes/no question against it. Use it if you are fully sure that the connection is reliable one.
 
 ```sh
 $ xpanes --ssh myuser1@host1 myuser2@host2
@@ -414,7 +421,7 @@ user2@host2-1.log.2017-03-15_21-30-07
 
 File name format for log file can be specified with `--log-format` option. Please refer to `xpanes --help`.
 
-**Attention:** Logging feature does not work properly with specific tmux version. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
+**Attention:** Logging feature does not work properly with specific tmux versions. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
 #### Execute the same sudo command on multiple hosts via SSH, entering your password once
 
@@ -452,7 +459,7 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
 
 `-s` option is useful if you have following issues.
 
- * It takes long time to open the multiple new panes because login shell loads a bunch of configures (i.e `~/.zshrc` loads something ).
+ * It takes long time to open the multiple new panes because default shell loads a bunch of configures (i.e `~/.zshrc` loads something ).
  * If you do not want to leave commands on your shell history.
 
 With `-s` option, `xpanes` does not create a new login shell.
@@ -464,7 +471,7 @@ Here is the example.
 $ xpanes -s -c "seq {}" 2 3 4 5
 ```
 
-As you can see, each pane starts from command's result not `$ seq ...`.
+As you can see, each pane starts from command's result, not interactive shell like `$ seq ...`.
 
 ```
     +------------------------------------------+------------------------------------------+
@@ -492,7 +499,7 @@ As you can see, each pane starts from command's result not `$ seq ...`.
     +------------------------------------------+------------------------------------------+
 ```
 
-Confirmation message like `Pane is dead...` is shown when process ends.
+Confirmation message like `Pane is dead...` is displayed when every process ends.
 To suppress the message, use `-ss` instead of `-s`.
 
 #### Display host always
@@ -505,7 +512,7 @@ The result is like this.
 
 ![png image](https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/ping_pane_title.png)
 
-As you notice that, `-t` displays each argument on the each pane border.
+As you notice, `-t` displays each argument on the each pane border.
 It is called "pane title". The pane title is displayed with green background and black characters by default.
 See [Environment variables](#shell-variables) section to change the default format.
 
@@ -600,10 +607,8 @@ $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 
 #### Changing layout of panes
 
-To change the layout of panes, put an argument followed by `-l` option.
-This is the example that lines up some panes vertically.
-
-For example, to line up panes vertically, put `ev` (it is corresponding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)).
+`-l` option is useful to change the layout of panes.
+For example, to line up panes vertically, put `ev` (it is corresponding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)) followed by `-l`.
 
 ```bash
 $ xpanes -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
@@ -635,6 +640,20 @@ It would be like this.
 
 With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
 
+#### Recover crushed session
+
+You may restore the tmux session created by `xpanes` after the session is unexpectedly disconnected from your terminal.
+`xpanes` creates `~/.cache/xpanes/socket.<PID>` file as socket file by default.
+
+```
+## Try to find socket file
+$ ls ~/.cache/xpanes/socket.*
+/home/user/.cache/xpanes/socket.1234
+
+## Re-attach the session
+$ tmux -S /home/user/.cache/xpanes/socket.1234 attach
+```
+
 #### Share terminal sessions with others
 
 You can specify the socket file name with `-S` option.
@@ -653,6 +672,7 @@ Importing this socket file, different users can share their screens each other.
 ```
 
 ... then, user1 and user2 can share their screen each other.
+
 
 ## Pipe mode
 
