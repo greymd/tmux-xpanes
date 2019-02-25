@@ -6,6 +6,8 @@ readonly XP_SHELL="/bin/bash"
 
 set -u
 readonly XP_VERSION="4.0.0-beta"
+
+## trap might be updated in 'xpns_pre_execution' function
 trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
 
 ## --------------------------------
@@ -1333,9 +1335,9 @@ xpns_pre_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+      [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
     fi
 
-    [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
     IFS=" " read -r -a XP_COLS_OFFSETS <<< \
@@ -1349,8 +1351,6 @@ xpns_pre_execution() {
   if [[ ${XP_NO_OPT} -eq 1 ]]; then
     XP_ARGS=("--" "${XP_ARGS[@]}")
   fi
-
-  ## TODO: Inject -S option if it is not provided
 
   # If there is any options, escape them.
   if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
@@ -1371,6 +1371,9 @@ xpns_pre_execution() {
   if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
     if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
       && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
+      ## In recovery case, overwrite trap to keep socket file
+      trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$;' EXIT
+
       xpns_msg "Recovery" \
 "Execute below command line to re-attach the new session.
 
