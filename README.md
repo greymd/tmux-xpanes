@@ -607,9 +607,80 @@ You will get the same result with this command line.
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 ```
 
-#### Changing layout of panes
+## Layout of panes
 
-`-l` option is useful to change the layout of panes.
+### Columns and rows
+
+`-C` and `-R` options are useful to change tha layout of panes.
+
+Number of columns can be specified by `-C` (or `--cols`) option.
+Here is the example that the panes are organized in 2 columns.
+
+```sh
+$ xpanes -C 2 AAA BBB CCC DDD EEE FFF GGG HHH III
+```
+
+The result is like this.
+
+```
+    +------------------------------+------------------------------+
+    │$ echo AAA                    │$ echo BBB                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo CCC                    │$ echo DDD                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo EEE                    │$ echo FFF                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo GGG                    │$ echo HHH                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+```
+
+As you may expect, `-R` (or `--rows`) option can fix the number of rows.
+
+```sh
+$ xpanes -R 5 AAA BBB CCC DDD EEE FFF GGG HHH
+```
+
+Panes are organized in 5 rows.
+Even if the number of arguments is not multiple of provided number, the number of panes on each row is adjusted to be as close as possible.
+
+```
+    +------------------------------+------------------------------+
+    │$ echo AAA                    │$ echo BBB                    │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo CCC                    │$ echo DDD                    │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo EEE                    │$ echo FFF                    │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo GGG                                                   │
+    │                                                             │
+    +-------------------------------------------------------------+
+    │$ echo HHH                                                   │
+    │                                                             │
+    +-------------------------------------------------------------+
+```
+
+### Bulk columns
+
+<!-- TODO -->
+
+```sh
+$ xpanes -s --bulk-cols=1,3,1,2,5 {A..L}
+```
+
+### Layout presets
+
+`-l` option is also useful to change the layout of panes.
 For example, to line up panes vertically, put `ev` (it is corresponding to `even-vertical` in [tmux manual](http://man7.org/linux/man-pages/man1/tmux.1.html)) followed by `-l`.
 
 ```bash
