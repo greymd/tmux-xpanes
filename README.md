@@ -642,45 +642,6 @@ It would be like this.
 
 With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
 
-#### Recover disconnected session
-
-You may restore the tmux session created by `xpanes` even if it is unexpectedly disconnected from your terminal.
-`xpanes` creates `~/.cache/xpanes/socket.<PID>` file as socket file by default.
-
-Try to find socket file like this.
-
-```sh
-$ ls ~/.cache/xpanes/socket.*
-/home/user/.cache/xpanes/socket.1234
-```
-
-If you find any socket files, try to attach it.
-The session might be recovered.
-
-```sh
-$ tmux -S /home/user/.cache/xpanes/socket.1234 attach
-```
-
-#### Share terminal sessions with others
-
-You can specify the socket file name with `-S` option.
-Importing this socket file, different users can share their screens each other.
-
-* user1
-
-```sh
-[user1@host] $ xpanes -S /home/user1/mysocket a b c d ...
-```
-
-* user2
-
-```sh
-[user2@host] $ tmux -S /home/user1/mysocket attach
-```
-
-... then, user1 and user2 can share their screen each other.
-
-
 ## Pipe mode
 
 Pipe mode is activated when `xpanes` command is accepting standard input.
@@ -834,6 +795,48 @@ The results would be like this.
     │                                                             │
     +------------------------------+------------------------------+
 ```
+
+## Session
+
+### Recover disconnected session
+
+You may restore the tmux session created by `xpanes` even if it is unexpectedly disconnected from your terminal.
+`xpanes` creates `~/.cache/xpanes/socket.<PID>` file as socket file by default.
+
+Try to find socket file like this.
+
+```sh
+$ ls ~/.cache/xpanes/socket.*
+/home/user/.cache/xpanes/socket.1234
+```
+
+If you find any socket files, try to attach it.
+The session might be recovered.
+
+```sh
+$ tmux -S /home/user/.cache/xpanes/socket.1234 attach
+```
+
+### Share terminal sessions with others
+
+You can specify the socket file name with `-S` option.
+Importing this socket file, different users can share their screens each other.
+
+* user1
+
+```sh
+[user1@host] $ xpanes -S /home/user1/mysocket a b c d ...
+```
+
+* user2
+
+```sh
+[user2@host] $ tmux -S /home/user1/mysocket attach
+```
+
+... then, user1 and user2 can share their screen each other.
+
+
 
 ## Shell variables
 
