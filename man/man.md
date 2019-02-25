@@ -23,13 +23,16 @@ DESCRIPTION
 `xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes
-  * Build command lines from given arguments & execute them on the panes
+  * Build command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log
-* Layout arrangement for panes
+* Flexible layout arrangement for panes
+  * Select layout presets
+  * Set columns or rows as you like
 * Display pane title on each pane
 * Generate command lines from standard input (Pipe mode)
+
 
 OPTIONS
 -------
@@ -52,6 +55,12 @@ OPTIONS
 `-I` <*repstr*>
   Replacing one or more occurrences of <*repstr*> in <*utility*> given by -c option. Default value of <*repstr*> is {}.
 
+`-C` *NUM*, `--cols=`*NUM*
+  Number of columns of window layout.
+
+`-R` *NUM*, `--rows=`*NUM*
+  Number of rows of window layout.
+
 `-l` <*layout*>
   Specify a layout for a window. Recognized layout arguments are:
     `t`    tiled (default)
@@ -61,7 +70,7 @@ OPTIONS
     `mv`   main-vertical
 
 `-s`
-  Speedy mode: Run command without creating a login shell. A pane is not going to be interactive.
+  Speedy mode: Run command without creating a interactive shell.
 
 `-ss`
   Speedy mode AND close the pane automatically at the same time as the process ends.
@@ -79,16 +88,19 @@ OPTIONS
   Create extra panes on the current active window.
 
 `--log`[`=`<*directory*>]
-  Enable logging and store log files to ~/.cache/xpanes/logs or given <*directory*>.
+  Enable logging and store log files to ~/.cache/xpanes/logs or <*directory*>.
 
 `--log-format=`<*FORMAT*>
-  File name of log files follows given <*FORMAT*>.
+  File name of log files follows <*FORMAT*>.
 
 `--ssh`
   Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
 
 `--stay`
   Do not switch to new window.
+
+`--bulk-cols=`*NUM1*[,*NUM2* ...]
+  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
 
 `--debug`
   Print debug message.

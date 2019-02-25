@@ -17,14 +17,14 @@ BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 %description
 xpanes or tmux-xpanes (alias of xpanes) commands have following features:
 
-  - Split tmux window into multiple panes.
-  - Build command lines from given arguments & execute them on the panes.
-  - Runnable from outside of tmux session.
-  - Runnable from inside of tmux session.
-  - Record operation log.
-  - Layout arrangement for panes.
+  - Split tmux window into multiple panes
+  - Build command lines & execute them on the panes
+  - Runnable from outside of tmux session
+  - Runnable from inside of tmux session
+  - Record operation log
+  - Flexible layout arrangement for panes
   - Display pane title on each pane
-  - Generate command lines from standard input (Pipe mode).
+  - Generate command lines from standard input (Pipe mode)
 
 
 %prep

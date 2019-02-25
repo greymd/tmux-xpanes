@@ -17,7 +17,7 @@ command ... | \fB\fCxpanes\fR [\fB\fCOPTIONS\fR] [<\fIutility\fP> ...]
 Split tmux window into multiple panes
 .RS
 .IP \(bu 2
-Build command lines from given arguments & execute them on the panes
+Build command lines & execute them on the panes
 .RE
 .IP \(bu 2
 Runnable from outside of tmux session
@@ -26,7 +26,13 @@ Runnable from inside of tmux session
 .IP \(bu 2
 Record operation log
 .IP \(bu 2
-Layout arrangement for panes
+Flexible layout arrangement for panes
+.RS
+.IP \(bu 2
+Select layout presets
+.IP \(bu 2
+Set columns or rows as you like
+.RE
 .IP \(bu 2
 Display pane title on each pane
 .IP \(bu 2
@@ -51,6 +57,12 @@ Execute given arguments as is.
 .TP
 \fB\fC\-I\fR <\fIrepstr\fP>
 Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by \-c option. Default value of <\fIrepstr\fP> is {}.
+.TP
+\fB\fC\-C\fR \fINUM\fP, \fB\fC\-\-cols=\fR\fINUM\fP
+Number of columns of window layout.
+.TP
+\fB\fC\-R\fR \fINUM\fP, \fB\fC\-\-rows=\fR\fINUM\fP
+Number of rows of window layout.
 .PP
 \fB\fC\-l\fR <\fIlayout\fP>
   Specify a layout for a window. Recognized layout arguments are:
@@ -61,7 +73,7 @@ Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by 
     \fB\fCmv\fR   main\-vertical
 .TP
 \fB\fC\-s\fR
-Speedy mode: Run command without creating a login shell. A pane is not going to be interactive.
+Speedy mode: Run command without creating a interactive shell.
 .TP
 \fB\fC\-ss\fR
 Speedy mode AND close the pane automatically at the same time as the process ends.
@@ -79,16 +91,19 @@ Display each argument on the each pane's border.
 Create extra panes on the current active window.
 .TP
 \fB\fC\-\-log\fR[\fB\fC=\fR<\fIdirectory\fP>]
-Enable logging and store log files to ~/.cache/xpanes/logs or given <\fIdirectory\fP>.
+Enable logging and store log files to ~/.cache/xpanes/logs or <\fIdirectory\fP>.
 .TP
 \fB\fC\-\-log\-format=\fR<\fIFORMAT\fP>
-File name of log files follows given <\fIFORMAT\fP>.
+File name of log files follows <\fIFORMAT\fP>.
 .TP
 \fB\fC\-\-ssh\fR
 Same as \fB\fC\-t \-s \-c 'ssh \-o StrictHostKeyChecking=no {}'\fR\&.
 .TP
 \fB\fC\-\-stay\fR
 Do not switch to new window.
+.TP
+\fB\fC\-\-bulk\-cols=\fR\fINUM1\fP[,\fINUM2\fP ...]
+Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
 .TP
 \fB\fC\-\-debug\fR
 Print debug message.
