@@ -94,8 +94,8 @@ $ sudo apt install tmux-xpanes
 
 **Attention:** With this way, please install tmux manually.
 
-Add this line to `~/.zshrc` in case of [zplug](https://github.com/zplug/zplug).
-Zsh-completion for `xpanes` command is also available. See [Wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation).
+Add this line to `~/.zshrc` for [zplug](https://github.com/zplug/zplug).
+Zsh-completion for `xpanes` is also available. See [Wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki/Installation).
 
 ```sh
 zplug "greymd/tmux-xpanes"
@@ -185,8 +185,8 @@ You will get the screen like this.
     +-------------------------------+-------------------------------+
 ```
 
-As you can see, each argument of `xpanes` is going to be re-assigned as a `echo`'s argument.
 You can split the window into multiple panes successfully, great!
+As you can see, each argument of `xpanes` is re-assigned to `echo`'s argument.
 
 Next, let's close those panes.
 Don't worry if you are not familiar with key bindings of tmux.
@@ -218,7 +218,7 @@ As shown above, input from keyboard is synchronized within multiple panes by def
 
 #### Suppress input synchronization
 
-To disable the synchronization of keyboard input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` in order to re-enable synchronization.
+To disable the synchronization of keyboard input within panes, use `-d` (or `--desync`)  option. The input is applied to only one of them. Set `tmux synchronized-pane` `on` to re-enable synchronization.
 
 ```
 $ xpanes -d 1 2 3 4
@@ -281,9 +281,9 @@ It is good to know about the conditional behavior of `xpanes` before checking fu
 
 ### [Normal mode1] Outside of tmux session
 
-When the tmux is not open and `xpanes` is executed on the normal terminal, the command's behavior is as follows:
+When the tmux is not open and `xpanes` is executed on the normal terminal, the `xpanes`'s behavior is as follows:
 
- - The command newly creates a tmux session and new window on the session.
+ - It newly creates a tmux session and new window on the session.
  - In addition, it separates the window into multiple panes.
  - Finally, the session will be attached.
 
@@ -291,13 +291,13 @@ When the tmux is not open and `xpanes` is executed on the normal terminal, the c
 
 When the tmux is already open and `xpanes` is executed on the existing tmux session, the command's behavior is as follows:
 
- - The command newly creates a window **on the existing active session**.
+ - It newly creates a window **on the existing active session**.
  - In addition, it separates the window into multiple panes.
  - Finally, the window will be active.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input
 
-When `xpanes` accepts standard input (i.e, `xpanes` follows another command and pipe `|`) under **Normal mode2** , `xpanes`'s behavior will be the special one called "Pipe mode".
+When `xpanes` accepts standard input (i.e, `xpanes` follows another command and pipe `|`) under **Normal mode2** , `xpanes`'s behavior is going to be the special one called "Pipe mode".
 It is documented in the [Pipe mode section](#pipe-mode).
 
 ## Further Examples
@@ -421,7 +421,7 @@ user2@host2-1.log.2017-03-15_21-30-07
 
 File name format for log file can be specified with `--log-format` option. Please refer to `xpanes --help`.
 
-**Attention:** Logging feature does not work properly with specific tmux versions. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
+**Attention:** Logging feature does not work properly with particular tmux versions. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
 #### Execute the same sudo command on multiple hosts via SSH, entering your password once
 
@@ -462,7 +462,7 @@ $ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.c
  * It takes long time to open the multiple new panes because default shell loads a bunch of configures (i.e `~/.zshrc` loads something ).
  * If you do not want to leave commands on your shell history.
 
-With `-s` option, `xpanes` does not create a new login shell.
+With `-s` option, `xpanes` does not create a new interactive shell.
 Instead, a command is going to be executed as a direct child process of `xpanes`.
 
 Here is the example.
@@ -471,7 +471,7 @@ Here is the example.
 $ xpanes -s -c "seq {}" 2 3 4 5
 ```
 
-As you can see, each pane starts from command's result, not interactive shell like `$ seq ...`.
+As you can see, each pane starts from command's result, not shell's prompt like `$ seq ...`.
 
 ```
     +------------------------------------------+------------------------------------------+
@@ -499,7 +499,7 @@ As you can see, each pane starts from command's result, not interactive shell li
     +------------------------------------------+------------------------------------------+
 ```
 
-Confirmation message like `Pane is dead...` is displayed when every process ends.
+Confirmation message like "Pane is dead..." is displayed when every process ends.
 To suppress the message, use `-ss` instead of `-s`.
 
 #### Display host always
@@ -640,17 +640,22 @@ It would be like this.
 
 With same way, `eh` (`even-horizontal`), `mv`(`main-vertical`) and `mh`(`main-horizontal`) are available. Please refer to `xpanes --help` also.
 
-#### Recover crushed session
+#### Recover disconnected session
 
-You may restore the tmux session created by `xpanes` after the session is unexpectedly disconnected from your terminal.
+You may restore the tmux session created by `xpanes` even if it is unexpectedly disconnected from your terminal.
 `xpanes` creates `~/.cache/xpanes/socket.<PID>` file as socket file by default.
 
-```
-## Try to find socket file
+Try to find socket file like this.
+
+```sh
 $ ls ~/.cache/xpanes/socket.*
 /home/user/.cache/xpanes/socket.1234
+```
 
-## Re-attach the session
+If you find any socket files, try to attach it.
+The session might be recovered.
+
+```sh
 $ tmux -S /home/user/.cache/xpanes/socket.1234 attach
 ```
 
@@ -710,8 +715,8 @@ With this command line, the output would be like this.
 
 Pipe mode has two features.
 
-1. `xpanes` command's argument will be the common command line which will be used within all panes (this is corresponding to the `-c` option's argument in Normal mode).
-1. Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
+1. `xpanes`'s argument will be the common command line which will be used within all panes (this is same as the `-c` option's argument in Normal mode).
+1. Each line provided by standard input is corresponding to the each pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
 
 
 ```bash:tmux_session
@@ -830,8 +835,8 @@ The results would be like this.
 
 ## Shell variables
 
-`xpanes` referes to following shell variables.
-Add the statement to your default login shell's
+`xpanes` refers to following shell variables.
+Add the statement to your default shell's
 configure file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 
 ### `TMUX_XPANES_EXEC`
@@ -852,7 +857,7 @@ export TMUX_XPANES_EXEC="/usr/local/bin/tmux1.8 -2"
 
 **DEFAULT VALUE:** `$HOME/.cache/xpanes/logs`
 
-Path to which log files generated by `--log` option are stored.
+Path to store log files generated by `--log` option.
 It is ignored if the path is explicitly given by `--log=`.
 
 ### `TMUX_XPANES_LOG_FORMAT`
@@ -873,18 +878,17 @@ export TMUX_XPANES_LOG_FORMAT="[:ARG:]_mylog.log"
 **DEFAULT VALUE:** `#[bg=green,fg=black] #T #[default]`
 
 It defines format of the pane's title.
-It is corresponding to the [pane-border-format](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
 See [FORMATS section in man of tmux](http://man7.org/linux/man-pages/man1/tmux.1.html#FORMATS) for further details.
-It overwrites tmux's `pane-border-format` in the `xpanes`'s session.
-Further example is [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
+It overwrites tmux's [`pane-border-format`](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS) in the `xpanes`'s session.
+
+There are some examples [here](https://github.com/greymd/tmux-xpanes/wiki/Utilize-pane-title).
 
 ### `TMUX_XPANES_PANE_BORDER_STATUS`
 
 **DEFAULT VALUE:** `bottom`
 
 It defines location of the pane's title.
-It is corresponding to the [pane-border-status](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS).
-It overwrites tmux's `pane-border-status` in the `xpanes`'s session.
+It overwrites tmux's [`pane-border-status`](http://man7.org/linux/man-pages/man1/tmux.1.html#OPTIONS) in the `xpanes`'s session.
 
 Example:
 
