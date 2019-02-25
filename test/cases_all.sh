@@ -3979,7 +3979,6 @@ test_cols_log_option() {
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_t_option() {
 
-  ## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
   if ! (is_less_than "2.6");then
       echo "Skip this test for $(tmux_version_number)." >&2
       echo 'Even the test is tried, the result will be failed.' >&2
@@ -4094,7 +4093,6 @@ test_rows_log_t_option() {
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_ss_t_option() {
 
-  ## TODO: Test for --rows + -c + -I + -t option (normal + pipe)
   if ! (is_less_than "2.6");then
       echo "Skip this test for $(tmux_version_number)." >&2
       echo 'Even the test is tried, the result will be failed.' >&2
