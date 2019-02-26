@@ -456,280 +456,133 @@ assert_near_height_each_rows() {
   done
 }
 
-## TODO: Replace it
 divide_two_panes_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "2")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "2")
 
-    # Window should be divided like this.
-    # +---+---+
-    # | A | B |
-    # +---+---+
-
-    echo "Check number of panes"
-    assertEquals 2 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$(window_layout_get width 1 1)
-    b_width=$(window_layout_get width 1 2)
-    echo "A:${a_width} B:${b_width}"
-    # true:1, false:0
-    # a_width +- 1 is b_width
-    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
-
-    echo "Check height"
-    a_height=$(window_layout_get height 1 1)
-    b_height=$(window_layout_get height 1 2)
-    echo "A:${a_height} B:${b_height}"
-    # In this case, height must be same.
-    assertEquals 1 "$(( a_height == b_height ))"
+  # Window should be divided like this.
+  # +---+---+
+  # | A | B |
+  # +---+---+
+  wait_panes_separation "$_socket_file" "$_window_name" 2
+  assert_cols "$_socket_file" "$_window_name" 2
+  assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 1 2
+  assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 2
 }
 
-## TODO: Replace it
 divide_three_panes_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "3")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "3")
 
-    # Window should be divided like this.
-    # +---+---+
-    # | A | B |
-    # +---+---+
-    # |   C   |
-    # +---+---+
-
-    echo "Check number of panes"
-    assertEquals 3 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 1 2 )
-    c_width=$( window_layout_get width 2 1 )
-    echo "A:${a_width} B:${b_width} C:${c_width}"
-
-    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
-    assertEquals 1 "$(( $(( a_width + b_width + 1 )) == c_width ))"
-
-    echo "Check height"
-    a_height=$( window_layout_get height 1 1 )
-    b_height=$( window_layout_get height 1 2 )
-    c_height=$( window_layout_get height 2 1 )
-    echo "A:${a_height} B:${b_height} C:${c_height}"
-
-    # In this case, height must be same.
-    assertEquals 1 "$(( a_height == b_height ))"
-    assertEquals 1 "$(between_plus_minus 1 "${c_height}" "${a_height}")"
+  # Window should be divided like this.
+  # +---+---+
+  # | A | B |
+  # +---+---+
+  # |   C   |
+  # +---+---+
+  wait_panes_separation "$_socket_file" "$_window_name" 3
+  assert_cols "$_socket_file" "$_window_name" 2 1
+  assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 2
+  assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 1
 }
 
-## TODO: Replace it
 divide_four_panes_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "4")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "4")
 
-    # Window should be divided like this.
-    # +---+---+
-    # | A | B |
-    # +---+---+
-    # | C | D |
-    # +---+---+
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 1 2 )
-    c_width=$( window_layout_get width 2 1 )
-    d_width=$( window_layout_get width 2 2 )
-
-    echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width}"
-
-    assertEquals 1 "$((a_width == c_width))"
-    assertEquals 1 "$((b_width == d_width))"
-    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
-    assertEquals 1 "$(between_plus_minus 1 "${c_width}" "${d_width}")"
-
-    echo "Check height"
-    a_height=$( window_layout_get height 1 1 )
-    b_height=$( window_layout_get height 1 2 )
-    c_height=$( window_layout_get height 2 1 )
-    d_height=$( window_layout_get height 2 2 )
-
-    echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height}"
-    # In this case, height must be same.
-    assertEquals 1 "$(( a_height == b_height ))"
-    assertEquals 1 "$(( c_height == d_height ))"
-    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${c_height}")"
-    assertEquals 1 "$(between_plus_minus 1 "${b_height}" "${d_height}")"
+  # Window should be divided like this.
+  # +---+---+
+  # | A | B |
+  # +---+---+
+  # | C | D |
+  # +---+---+
+  wait_panes_separation "$_socket_file" "$_window_name" 4
+  assert_cols "$_socket_file" "$_window_name" 2 2
+  assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 2
+  assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 2 2
+  assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 2 2
+  assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 2
 }
 
-## TODO: Replace it
 divide_five_panes_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "5")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "5")
 
-    # Window should be divided like this.
-    # +---+---+
-    # | A | B |
-    # +---+---+
-    # | C | D |
-    # +---+---+
-    # |   E   |
-    # +---+---+
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 1 2 )
-    c_width=$( window_layout_get width 2 1 )
-    d_width=$( window_layout_get width 2 2 )
-    e_width=$( window_layout_get width 3 1 )
-
-    echo "A:${a_width} B:${b_width} C:${c_width} D:${d_width} E:${e_width}"
-    assertEquals 1 "$((a_width == c_width))"
-    assertEquals 1 "$((b_width == d_width))"
-    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
-    assertEquals 1 "$(between_plus_minus 1 "${c_width}" "${d_width}")"
-    # Width of A + B is less than E with 1 px. Because of the border.
-    assertEquals 1 "$(( $(( a_width + b_width + 1 )) == e_width))"
-
-    echo "Check height"
-    a_height=$( window_layout_get height 1 1 )
-    b_height=$( window_layout_get height 1 2 )
-    c_height=$( window_layout_get height 2 1 )
-    d_height=$( window_layout_get height 2 2 )
-    e_height=$( window_layout_get height 3 1 )
-
-    echo "A:${a_height} B:${b_height} C:${c_height} D:${d_height} E:${e_height}"
-    assertEquals 1 "$(( a_height == b_height ))"
-    assertEquals 1 "$(( c_height == d_height ))"
-    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${c_height}")"
-    assertEquals 1 "$(between_plus_minus 1 "${b_height}" "${d_height}")"
-    # On author's machine, following two tests does not pass with 1 ... somehow.
-    assertEquals 1 "$(between_plus_minus 2 "${a_height}" "${e_height}")"
-    assertEquals 1 "$(between_plus_minus 2 "${c_height}" "${e_height}")"
+  # Window should be divided like this.
+  # +---+---+
+  # | A | B |
+  # +---+---+
+  # | C | D |
+  # +---+---+
+  # |   E   |
+  # +---+---+
+  wait_panes_separation "$_socket_file" "$_window_name" 5
+  assert_cols "$_socket_file" "$_window_name" 2 2 1
+  assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 2
+  assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 2 2
+  assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 2 2
+  assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 3 1
 }
 
-## TODO: Replace it
 divide_two_panes_ev_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "2")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "2")
 
-    # Window should be divided like this.
-    # +-------+
-    # |   A   |
-    # +-------+
-    # |   B   |
-    # +-------+
-
-    echo "Check number of panes"
-    assertEquals 2 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 2 1 )
-    echo "A:${a_width} B:${b_width}"
-    # true:1, false:0
-    # In this case, height must be same.
-    assertEquals 1 "$(( a_width == b_width ))"
-
-    echo "Check height"
-    a_height=$( window_layout_get width 1 1 )
-    b_height=$( window_layout_get width 2 1 )
-    echo "A:${a_height} B:${b_height}"
-    # a_height +- 1 is b_height
-    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${b_height}")"
+  # Window should be divided like this.
+  # +-------+
+  # |   A   |
+  # +-------+
+  # |   B   |
+  # +-------+
+  wait_panes_separation "$_socket_file" "$_window_name" 2
+  assert_cols "$_socket_file" "$_window_name" 1 1
+  assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 1
+  assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 1
 }
 
-## TODO: Replace it
 divide_two_panes_eh_impl() {
     divide_two_panes_impl "$1"
 }
 
-## TODO: Replace it
 divide_three_panes_ev_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "3")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "3")
 
-    # Window should be divided like this.
-    # +-------+
-    # |   A   |
-    # +-------+
-    # |   B   |
-    # +-------+
-    # |   C   |
-    # +-------+
+  # Window should be divided like this.
+  # +-------+
+  # |   A   |
+  # +-------+
+  # |   B   |
+  # +-------+
+  # |   C   |
+  # +-------+
 
-    echo "Check number of panes"
-    assertEquals 3 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 2 1 )
-    c_width=$( window_layout_get width 3 1 )
-    echo "A:${a_width} B:${b_width} C:${c_width}"
-    # true:1, false:0
-    # In this case, height must be same.
-    assertEquals 1 "$(( a_width == b_width ))"
-    assertEquals 1 "$(( b_width == c_width ))"
-
-    echo "Check height"
-    a_height=$( window_layout_get height 1 1 )
-    b_height=$( window_layout_get height 2 1 )
-    c_height=$( window_layout_get height 3 1 )
-    echo "A:${a_height} B:${b_height} C:${c_height}"
-
-    assertEquals 1 "$(between_plus_minus 1 "${a_height}" "${b_height}")"
-    assertEquals 1 "$(between_plus_minus 2 "${b_height}" "${c_height}")"
+  wait_panes_separation "$_socket_file" "$_window_name" 3
+  assert_cols "$_socket_file" "$_window_name" 1 1 1
+  assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 3 1
+  assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 3 1
 }
 
-## TODO: Replace it
 divide_three_panes_eh_impl() {
-    local _socket_file="$1"
-    local _window_name=""
-    _window_name=$(get_window_having_panes "${_socket_file}" "3")
+  local _socket_file="$1"
+  local _window_name=""
+  _window_name=$(get_window_having_panes "${_socket_file}" "3")
 
-    # Window should be divided like this.
-    # +---+---+---+
-    # | A | B | C |
-    # +---+---+---+
+  # Window should be divided like this.
+  # +---+---+---+
+  # | A | B | C |
+  # +---+---+---+
 
-    echo "Check number of panes"
-    assertEquals 3 "$(${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_name}" | grep -c .)"
-
-    window_layout_set "$( ${TMUX_EXEC} -S "${_socket_file}" list-pane -t "${_window_name}" -F '#{window_layout}' | head -n 1 )"
-
-    echo "Check width"
-    a_width=$( window_layout_get width 1 1 )
-    b_width=$( window_layout_get width 1 2 )
-    c_width=$( window_layout_get width 1 3 )
-    echo "A:${a_width} B:${b_width} C:${c_width}"
-    # true:1, false:0
-    # In this case, height must be same.
-    assertEquals 1 "$(between_plus_minus 1 "${a_width}" "${b_width}")"
-    assertEquals 1 "$(between_plus_minus 2 "${b_width}" "${c_width}")"
-
-    echo "Check height"
-    a_height=$( window_layout_get height 1 1 )
-    b_height=$( window_layout_get height 1 2 )
-    c_height=$( window_layout_get height 1 3 )
-    echo "A:${a_height} B:${b_height} C:${c_height}"
-
-    assertEquals 1 "$(( a_height == b_height ))"
-    assertEquals 1 "$(( b_height == c_height ))"
+  wait_panes_separation "$_socket_file" "$_window_name" 3
+  assert_cols "$_socket_file" "$_window_name" 3
+  assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 1 3
+  assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 3
 }
 
 get_tmux_full_path () {
