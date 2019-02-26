@@ -149,28 +149,29 @@ MODES
 
 ### [Normal mode1] Outside of tmux session.
 
-When the tmux is not opened and `xpanes` command is executed on the normal terminal, the command's behavior is as follows:
+When the tmux is not open and `xpanes` is executed on the normal terminal, the `xpanes`'s behavior is as follows:
 
-* The command newly creates a tmux session and new window on the session.
+* It newly creates a tmux session and new window on the session.
 * In addition, it separates the window into multiple panes.
 * Finally, the session will be attached.
 
 ### [Normal mode2] Inside of tmux session.
 
-When the tmux is already opened and `xpanes` command is executed from within the existing tmux session, the command's behavior is as follows:
+When the tmux is already open and `xpanes` is executed on the existing tmux session, the command's behavior is as follows:
 
-* The command newly creates a window **on the existing active session**.
+* It newly creates a window **on the existing active session**.
 * In addition, it separates the window into multiple panes.
-* Finally, the window will be active window.
+* Finally, the window will be active.
+
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input.
 
-When the tmux is already being opened and `xpanes` command is executed on the tmux (Normal mode2)and the command is accepting standard input ( the command followed by any other commands and pipe `|`), the command's behavior will be special one called "Pipe mode". Then, `xpanes` behaves like UNIX `xargs(1)`.
+When `xpanes` accepts standard input (i.e, `xpanes` follows another command and pipe `|`) under **Normal mode2** , `xpanes`'s behavior is going to be the special one called "Pipe mode".
 
 Pipe mode has two features.
 
-1. `xpanes` command's argument will be the common command line which will be used within all panes (this is corresponding to the `-c` option's argument in Normal mode).
-1. Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
+1. `xpanes`'s argument will be the common command line which will be used within all panes (this is same as the `-c` option's argument in Normal mode).
+1. Each line provided by standard input is corresponding to the each pane's command line (this is corresponding to normal argument of `xpanes` in Normal mode).
 
 EXAMPLES
 -------
@@ -384,7 +385,7 @@ EXAMPLES
     │                                                              │
     +--------------------------------------------------------------+
 
-#### Change layout of panes
+#### Change layout of panes (using presets)
 
 `xpanes` -l ev -c "{}" "top" "vmstat 1" "watch -n 1 df"
 
@@ -407,6 +408,28 @@ EXAMPLES
     |                                                             |
     |                                                             |
     +-------------------------------------------------------------+
+
+### Change layout of panes (Fixed number of columns)
+
+`xpanes` -C 2 AAA BBB CCC DDD EEE FFF GGG HHH III
+
+    +------------------------------+------------------------------+
+    │$ echo AAA                    │$ echo BBB                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo CCC                    │$ echo DDD                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo EEE                    │$ echo FFF                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
+    │$ echo GGG                    │$ echo HHH                    │
+    │                              │                              │
+    │                              │                              │
+    +------------------------------+------------------------------+
 
 #### Pipe mode
 
