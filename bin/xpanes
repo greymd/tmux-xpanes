@@ -837,7 +837,7 @@ xpns_split_window() {
 # Usage:
 #    func <window name> <offset of index> <number of pane>
 #
-xpns_extra_panes_to_window() {
+xpns_prepare_extra_panes() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _log_flag="$1"        ; shift
@@ -939,7 +939,7 @@ xpns_split_pane_horizontal () {
   fi
 }
 
-xpns_prepare_sized_window () {
+xpns_prepare_window () {
   local _window_name="$1"     ; shift
   local _log_flag="$1"        ; shift
   local _title_flag="$1"      ; shift
@@ -1059,9 +1059,9 @@ xpns_clean_session() {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#    xpns_prepare_window <window name> <offset of index> <number of pane> <attach or not>
+#    xpns_prepare_preset_layout_window <window name> <offset of index> <number of pane> <attach or not>
 #
-xpns_prepare_window() {
+xpns_prepare_preset_layout_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _log_flag="$1"        ; shift
@@ -1457,7 +1457,7 @@ xpns_execution() {
   # Prepare window and panes
   ## --------------------
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_extra_panes_to_window \
+    xpns_prepare_extra_panes \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_OPT_LOG_STORE}" \
@@ -1467,31 +1467,29 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  else
-    if [[ ${XP_OPT_CUSTOM_SIZE} -eq 1 ]];then
-      xpns_prepare_sized_window \
-        "${_window_name}" \
-        "${XP_OPT_LOG_STORE}" \
-        "${XP_OPT_SET_TITLE}" \
-        "${XP_OPT_ATTACH}" \
-        "${XP_OPT_SPEEDY}" \
-        "${XP_OPT_SPEEDY_AWAIT}" \
-        "${XP_REPSTR}" \
-        "${XP_CMD_UTILITY}" \
-        "${XP_ARGS[@]}"
-    else
-      xpns_prepare_window \
-        "${_window_name}" \
-        "${_pane_base_index}" \
-        "${XP_OPT_LOG_STORE}" \
-        "${XP_OPT_SET_TITLE}" \
-        "${XP_OPT_ATTACH}" \
-        "${XP_OPT_SPEEDY}" \
-        "${XP_OPT_SPEEDY_AWAIT}" \
-        "${XP_REPSTR}" \
-        "${XP_CMD_UTILITY}" \
-        "${XP_ARGS[@]}"
-    fi
+  elif [[ ${XP_OPT_CUSTOM_SIZE} -eq 0 ]];then
+    xpns_prepare_preset_layout_window \
+      "${_window_name}" \
+      "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_ATTACH}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  elif [[ ${XP_OPT_CUSTOM_SIZE} -eq 1 ]];then
+    xpns_prepare_window \
+      "${_window_name}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_ATTACH}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
   fi
 
   ## With -ss option, it is possible to close all the panes as of here.
@@ -2009,6 +2007,7 @@ xpns_parse_options() {
     xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
   fi
 
+  # TODO: Prioritize the either option
   if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
       && [[ "${XP_OPT_PRESET_LAYOUT}" -eq 1 ]]; then
     xpns_msg_error "Combination columns/rows option (-C, --cols, -R, --rows) and -l option is not allowed."
