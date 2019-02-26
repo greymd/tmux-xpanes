@@ -670,7 +670,7 @@ Even if the number of arguments is not multiple of provided number, the number o
     +-------------------------------------------------------------+
 ```
 
-### Bulk columns
+### Set columns in bulk
 
 `--bulk-cols` accepts comma-separated numbers.
 Each number is corresponding to the number of columns of each row.
