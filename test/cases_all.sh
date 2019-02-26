@@ -4228,6 +4228,8 @@ test_too_small_panes() {
   restore_terminal_size
 }
 
+# TODO: Add test to check too small panes with --bulk-cols
+
 # @case: 76
 # @skip:
 test_too_small_panes_cols() {

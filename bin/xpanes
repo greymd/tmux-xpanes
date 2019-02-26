@@ -1228,7 +1228,7 @@ xpns_check_cell_size_bulk() {
   if (( _sum_cell != _cell_num )) ;then
     xpns_msg_error "Number of cols does not equals to the number of arguments."
     xpns_msg_error "Expected (# of args) : $_cell_num, Actual (--bulk-cols) : $_sum_cell)."
-    return 1
+    return ${XP_ELAYOUT:-6}
   fi
   local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
   local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
@@ -1244,7 +1244,7 @@ xpns_check_cell_size_bulk() {
 
   if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
-    return 7
+    return ${XP_ESMLPANE:-7}
   fi
   printf "%s\\n" "${_cols} ${_rows} ${_all_cols[*]}"
 }
@@ -1293,7 +1293,7 @@ xpns_check_cell_size() {
 
   if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
-    return 7
+    return "${XP_ESMLPANE:-7}"
   fi
   printf "%s\\n" "${_cols} ${_rows} ${_all_cols}"
 }
@@ -1325,8 +1325,9 @@ xpns_pre_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      [[ $? -eq 1 ]] && exit ${XP_ELAYOUT}
-      [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+      local _exit_status="$?"
+      [[ $_exit_status -eq ${XP_ELAYOUT} ]] && exit ${XP_ELAYOUT}
+      [[ $_exit_status -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
     else
       _tmp_col_row_cols="$(xpns_check_cell_size \
         "${_cell_num}" \
@@ -1335,7 +1336,7 @@ xpns_pre_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+      [[ $? -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
     fi
 
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
@@ -1410,8 +1411,9 @@ xpns_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      [[ $? -eq 1 ]] && exit ${XP_ELAYOUT}
-      [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+      local _exit_status="$?"
+      [[ $_exit_status -eq ${XP_ELAYOUT} ]] && exit ${XP_ELAYOUT}
+      [[ $_exit_status -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
     else
       _tmp_col_row_cols="$(xpns_check_cell_size \
         "${#XP_ARGS[@]}" \
@@ -1420,7 +1422,7 @@ xpns_execution() {
         "${XP_WINDOW_HEIGHT}" \
         "${XP_WINDOW_WIDTH}" \
         "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
-      [[ $? -eq 7 ]] && exit ${XP_ESMLPANE}
+      [[ $? -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
     fi
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
