@@ -503,9 +503,7 @@ assert_tiled_four_panes() {
 
 assert_tiled_five_panes() {
   local _socket_file="$1"
-  local _window_name=""
-  _window_name=$(get_window_having_panes "${_socket_file}" "5")
-
+  local _window_name="$2"
   # Window should be divided like this.
   # +---+---+
   # | A | B |
@@ -812,7 +810,6 @@ test_divide_five_panes_special_chars() {
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" '\.' '5'
     assert_tiled_five_panes "$_socket_file"
-    # ${TMUX_EXEC} -S "$_socket_file" attach-session
     close_tmux_session "$_socket_file"
   }
 }
@@ -2108,7 +2105,7 @@ test_divide_five_panes_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "5"
-    assert_tiled_five_panes "$_socket_file"
+    assert_tiled_five_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
 }
