@@ -4228,8 +4228,6 @@ test_too_small_panes() {
   restore_terminal_size
 }
 
-# TODO: Add test to check too small panes with --bulk-cols
-
 # @case: 76
 # @skip:
 test_too_small_panes_cols() {
@@ -4258,6 +4256,7 @@ test_too_small_panes_cols() {
   }
   restore_terminal_size
 }
+
 
 # @case: 77
 # @skip:
@@ -4305,6 +4304,35 @@ test_too_small_panes_avoided_by_n() {
 
 # @case: 78
 # @skip:
+test_too_small_panes_bulk_cols() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  ## In terminal size rows=40, cols=80, 13 arguments is the maximum
+  _cmd="${EXEC} --bulk-cols=1,1,1,1,1,1,1,1,1,1,1,1,1,1 -S $_socket_file --stay {1..14}; echo \$? > ${_tmpdir}/status"
+  printf "\\n$ %s\\n" "${_cmd}"
+
+  change_terminal_size || {
+    echo "Skip this test because terminal size cannot be changed"
+    return 0
+  }
+  eval "$_cmd"
+  wait_all_non_empty_files "${_tmpdir}/status"
+  assertEquals 7 "$(<"${_tmpdir}/status")"
+  rm -f "${_tmpdir}/status"
+  close_tmux_session "$_socket_file"
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_all_non_empty_files "${_tmpdir}/status"
+    assertEquals 7 "$(<"${_tmpdir}/status")"
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
+}
+
+# @case: 79
+# @skip:
 test_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _cmd=""
@@ -4348,7 +4376,7 @@ test_bulk_cols() {
     }
 }
 
-# @case: 79
+# @case: 80
 # @skip:
 test_multiple_recovery_session() {
   local _socket_file="${XDG_CACHE_HOME}/xpanes/socket.test"
