@@ -672,11 +672,36 @@ Even if the number of arguments is not multiple of provided number, the number o
 
 ### Bulk columns
 
-<!-- TODO -->
+`--bulk-cols` accepts comma-separated numbers.
+Each number is corresponding to the number of columns of each row.
 
 ```sh
-$ xpanes -s --bulk-cols=1,3,1,2,5 {A..L}
+$ xpanes --bulk-cols=1,3,1,2,5 {A..L}
 ```
+
+Here is the result.
+
+```
+    +-------------------------------------------------------------+
+    │$ echo A                                                     │
+    │                                                             │
+    +-------------------------------------------------------------+
+    │$ echo B            │$ echo C            │$ echo D           │
+    │                    │                    │                   │
+    +-------------------------------------------------------------+
+    │$ echo E                                                     │
+    │                                                             │
+    +-------------------------------------------------------------+
+    │$ echo F                      │$ echo G                      │
+    │                              │                              │
+    +-------------------------------------------------------------+
+    │$ echo H     │$ echo I    │$ echo J    │$ echo K   │$ echo L │
+    │             │            │            │           │         │
+    +-------------------------------------------------------------+
+```
+
+The number of argument must equal to the sum of the comma-separated numbers.
+In this example, the sum of the numbers of `--bulk-cols` is 12 (1 + 3 + 1 + 2 + 5 = 12) because there are 12 characters from A to L.
 
 ### Layout presets
 
