@@ -16,7 +16,7 @@ _xpanes () {
       "($opts_omit -C --cols -R --rows --bulk-cols -l -x)"{-C,--cols=}"[Number of columns of window layout.]:num:" \
       "($opts_omit -R --rows -C --cols --bulk-cols -l -x)"{-R,--rows=}"[Number of rows of window layout.]:num:" \
       "($opts_omit --bulk-cols -C --cols -R --rows -l -x)--bulk-cols=[Number of columns on multiple rows (i.e, \"2,2,2\" represents 2 cols x 3 rows).]:comma_num:" \
-      "($opts_omit -l)-l[Specify a layout for a window.]:layout:__xpanes-layout" \
+      "($opts_omit -l -C --cols -R --rows --bulk-cols)-l[Specify a layout for a window.]:layout:__xpanes-layout" \
       "($opts_omit -s -ss --ssh)-s[Speedy mode: Run command without creating a interactive shell.]" \
       "($opts_omit -ss -s)-ss[Speedy mode AND close the pane automatically at the same time as the process ends.]" \
       "($opts_omit -n)-n[Set the maximum number of arguments taken for each pane of <utility>.]:num:" \
