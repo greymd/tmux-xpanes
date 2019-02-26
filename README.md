@@ -613,8 +613,8 @@ $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 
 `-C` and `-R` options are useful to change tha layout of panes.
 
-Number of columns can be specified by `-C` (or `--cols`) option.
-Here is the example that the panes are organized in 2 columns.
+A number of columns can be specified by `-C` (or `--cols`) option.
+Here is the example that panes are organized in 2 columns.
 
 ```sh
 $ xpanes -C 2 AAA BBB CCC DDD EEE FFF GGG HHH III
@@ -649,7 +649,6 @@ $ xpanes -R 5 AAA BBB CCC DDD EEE FFF GGG HHH
 ```
 
 Panes are organized in 5 rows.
-Even if the number of arguments is not multiple of provided number, the number of panes on each row is adjusted to be as close as possible.
 
 ```
     +------------------------------+------------------------------+
@@ -669,6 +668,8 @@ Even if the number of arguments is not multiple of provided number, the number o
     │                                                             │
     +-------------------------------------------------------------+
 ```
+
+Even if the number of arguments is not multiple of provided number, the number of panes on each row is adjusted to be as close as possible.
 
 ### Set columns in bulk
 
