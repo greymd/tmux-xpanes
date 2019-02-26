@@ -456,50 +456,44 @@ assert_near_height_each_rows() {
   done
 }
 
-divide_two_panes_impl() {
+assert_horizontal_two_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "2")
-
   # Window should be divided like this.
   # +---+---+
   # | A | B |
   # +---+---+
-  wait_panes_separation "$_socket_file" "$_window_name" 2
   assert_cols "$_socket_file" "$_window_name" 2
   assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 1 2
   assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 2
 }
 
-divide_three_panes_impl() {
+assert_tiled_three_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "3")
-
   # Window should be divided like this.
   # +---+---+
   # | A | B |
   # +---+---+
   # |   C   |
   # +---+---+
-  wait_panes_separation "$_socket_file" "$_window_name" 3
   assert_cols "$_socket_file" "$_window_name" 2 1
   assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 2
   assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 1
 }
 
-divide_four_panes_impl() {
+assert_tiled_four_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "4")
-
   # Window should be divided like this.
   # +---+---+
   # | A | B |
   # +---+---+
   # | C | D |
   # +---+---+
-  wait_panes_separation "$_socket_file" "$_window_name" 4
   assert_cols "$_socket_file" "$_window_name" 2 2
   assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 2
   assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 2 2
@@ -507,7 +501,7 @@ divide_four_panes_impl() {
   assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 2
 }
 
-divide_five_panes_impl() {
+assert_tiled_five_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "5")
@@ -520,7 +514,6 @@ divide_five_panes_impl() {
   # +---+---+
   # |   E   |
   # +---+---+
-  wait_panes_separation "$_socket_file" "$_window_name" 5
   assert_cols "$_socket_file" "$_window_name" 2 2 1
   assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 2
   assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 2 2
@@ -528,32 +521,25 @@ divide_five_panes_impl() {
   assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 3 1
 }
 
-divide_two_panes_ev_impl() {
+assert_vertical_two_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "2")
-
   # Window should be divided like this.
   # +-------+
   # |   A   |
   # +-------+
   # |   B   |
   # +-------+
-  wait_panes_separation "$_socket_file" "$_window_name" 2
   assert_cols "$_socket_file" "$_window_name" 1 1
   assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 2 1
   assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 2 1
 }
 
-divide_two_panes_eh_impl() {
-    divide_two_panes_impl "$1"
-}
-
-divide_three_panes_ev_impl() {
+assert_vertical_three_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "3")
-
   # Window should be divided like this.
   # +-------+
   # |   A   |
@@ -562,24 +548,19 @@ divide_three_panes_ev_impl() {
   # +-------+
   # |   C   |
   # +-------+
-
-  wait_panes_separation "$_socket_file" "$_window_name" 3
   assert_cols "$_socket_file" "$_window_name" 1 1 1
   assert_same_width_same_cols "$_socket_file" "$_window_name" 1 1 3 1
   assert_near_height_each_rows "$_socket_file" "$_window_name" 1 1 3 1
 }
 
-divide_three_panes_eh_impl() {
+assert_horizontal_three_panes() {
   local _socket_file="$1"
   local _window_name=""
   _window_name=$(get_window_having_panes "${_socket_file}" "3")
-
   # Window should be divided like this.
   # +---+---+---+
   # | A | B | C |
   # +---+---+---+
-
-  wait_panes_separation "$_socket_file" "$_window_name" 3
   assert_cols "$_socket_file" "$_window_name" 3
   assert_same_height_same_rows "$_socket_file" "$_window_name" 1 1 1 3
   assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 3
@@ -806,14 +787,14 @@ test_divide_five_panes_special_chars() {
   printf "\\n $ %s\\n" "$_cmd"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" '%s' '5'
-  divide_five_panes_impl "$_socket_file"
+  assert_tiled_five_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
   printf "\\n $ %s\\n" "$_cmd"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" '\.' '5'
-  divide_five_panes_impl "$_socket_file"
+  assert_tiled_five_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -822,7 +803,7 @@ test_divide_five_panes_special_chars() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" '%s' '5'
-    divide_five_panes_impl "$_socket_file"
+    assert_tiled_five_panes "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
@@ -830,7 +811,7 @@ test_divide_five_panes_special_chars() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" '\.' '5'
-    divide_five_panes_impl "$_socket_file"
+    assert_tiled_five_panes "$_socket_file"
     # ${TMUX_EXEC} -S "$_socket_file" attach-session
     close_tmux_session "$_socket_file"
   }
@@ -946,7 +927,7 @@ test_n_option() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "2" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
   assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
   close_tmux_session "$_socket_file"
@@ -957,7 +938,7 @@ test_n_option() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "2" "4"
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
   assertEquals "$(seq 2)" "$(cat "${TEST_TMP}"/2)"
   assertEquals "$(seq 4)" "$(cat "${TEST_TMP}"/4)"
   assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
@@ -971,7 +952,7 @@ test_n_option() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "2" "2"
-    divide_two_panes_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
     assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
     close_tmux_session "$_socket_file"
@@ -981,7 +962,7 @@ test_n_option() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "2" "4"
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
     assertEquals "$(seq 2)" "$(cat "${TEST_TMP}"/2)"
     assertEquals "$(seq 4)" "$(cat "${TEST_TMP}"/4)"
     assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
@@ -1000,7 +981,7 @@ test_n_option_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "2" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
   assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
   close_tmux_session "$_socket_file"
@@ -1011,7 +992,7 @@ test_n_option_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "2" "3"
-  divide_three_panes_impl "$_socket_file"
+  assert_tiled_three_panes "$_socket_file"
   assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
   assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
   assertEquals "$(seq 10)" "$(cat "${TEST_TMP}"/10)"
@@ -1024,7 +1005,7 @@ test_n_option_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "2" "2"
-    divide_two_panes_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
     assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
     close_tmux_session "$_socket_file"
@@ -1034,7 +1015,7 @@ test_n_option_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "2" "3"
-    divide_three_panes_impl "$_socket_file"
+    assert_tiled_three_panes "$_socket_file"
     assertEquals "$(seq 2 4)" "$(cat "${TEST_TMP}"/24)"
     assertEquals "$(seq 6 8)" "$(cat "${TEST_TMP}"/68)"
     assertEquals "$(seq 10)" "$(cat "${TEST_TMP}"/10)"
@@ -1236,7 +1217,7 @@ test_divide_two_panes_ev() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "2"
-  divide_two_panes_ev_impl "$_socket_file"
+  assert_vertical_two_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   # Run with pipe mode
@@ -1244,7 +1225,7 @@ test_divide_two_panes_ev() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "2"
-  divide_two_panes_ev_impl "$_socket_file"
+  assert_vertical_two_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -1253,7 +1234,7 @@ test_divide_two_panes_ev() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_ev_impl "$_socket_file"
+    assert_vertical_two_panes "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="echo  AAAA BBBB | xargs -n 1 | ${EXEC} -S $_socket_file -lev"
@@ -1261,7 +1242,7 @@ test_divide_two_panes_ev() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_ev_impl "$_socket_file"
+    assert_vertical_two_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -1277,7 +1258,7 @@ test_divide_two_panes_eh() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "2"
-  divide_two_panes_eh_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   # Run with pipe mode
@@ -1285,7 +1266,7 @@ test_divide_two_panes_eh() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "2"
-  divide_two_panes_eh_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -1294,7 +1275,7 @@ test_divide_two_panes_eh() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_eh_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     close_tmux_session "$_socket_file"
 
     # Somehow it fails at https://travis-ci.org/greymd/tmux-xpanes/jobs/497121894
@@ -1304,7 +1285,7 @@ test_divide_two_panes_eh() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_eh_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -1319,14 +1300,14 @@ test_divide_three_panes_ev() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_ev_impl "$_socket_file"
+  assert_vertical_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l ev -S $_socket_file --stay"
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_ev_impl "$_socket_file"
+  assert_vertical_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -1335,7 +1316,7 @@ test_divide_three_panes_ev() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_ev_impl "$_socket_file"
+    assert_vertical_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -S $_socket_file -lev"
@@ -1343,7 +1324,7 @@ test_divide_three_panes_ev() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_ev_impl "$_socket_file"
+    assert_vertical_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -1358,14 +1339,14 @@ test_divide_three_panes_eh() {
   printf "\\n$ %s\\n" "${_cmd}"
   $_cmd
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_eh_impl "$_socket_file"
+  assert_horizontal_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -l eh -S $_socket_file --stay"
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_eh_impl "$_socket_file"
+  assert_horizontal_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -1375,7 +1356,7 @@ test_divide_three_panes_eh() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_eh_impl "$_socket_file"
+    assert_horizontal_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
 
     _cmd="echo AAAA BBBB CCCC | xargs -n 1 | ${EXEC} -S $_socket_file -leh"
@@ -1383,7 +1364,7 @@ test_divide_three_panes_eh() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_eh_impl "$_socket_file"
+    assert_horizontal_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -1401,7 +1382,7 @@ test_append_arg_to_utility_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "$TEST_TMP" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
 
   find "${TEST_TMP}"
   [ -e "${TEST_TMP}"/tmp2/tmp1 ]
@@ -1420,7 +1401,7 @@ test_append_arg_to_utility_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "$TEST_TMP" "2"
-    divide_two_panes_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
 
     find "${TEST_TMP}"
     [ -e "${TEST_TMP}"/tmp2/tmp1 ]
@@ -1443,7 +1424,7 @@ test_execute_option() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "seq" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/1)"
   assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/2)"
   close_tmux_session "$_socket_file"
@@ -1454,7 +1435,7 @@ test_execute_option() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "seq" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/1)"
   assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/2)"
   close_tmux_session "$_socket_file"
@@ -1465,7 +1446,7 @@ test_execute_option() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "seq" "2"
-    divide_two_panes_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/3)"
     assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/4)"
     close_tmux_session "$_socket_file"
@@ -1482,7 +1463,7 @@ test_execute_option_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "seq" "3"
-  divide_three_panes_impl "$_socket_file"
+  assert_tiled_three_panes "$_socket_file"
   assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/1)"
   assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/2)"
   assertEquals "$(yes | head -n 3)" "$(cat "${TEST_TMP}"/3)"
@@ -1494,7 +1475,7 @@ test_execute_option_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "seq" "3"
-  divide_three_panes_impl "$_socket_file"
+  assert_tiled_three_panes "$_socket_file"
   assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/1)"
   assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/2)"
   assertEquals "$(yes | head -n 3)" "$(cat "${TEST_TMP}"/3)"
@@ -1506,7 +1487,7 @@ test_execute_option_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "seq" "3"
-    divide_three_panes_impl "$_socket_file"
+    assert_tiled_three_panes "$_socket_file"
     assertEquals "$(seq 5 15)" "$(cat "${TEST_TMP}"/4)"
     assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/5)"
     assertEquals "$(yes | head -n 3)" "$(cat "${TEST_TMP}"/6)"
@@ -1601,7 +1582,7 @@ test_pipe_without_repstr() {
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "5" "3"
     # check number of divided panes
-    divide_three_panes_impl "$_socket_file"
+    assert_tiled_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -1978,7 +1959,7 @@ test_divide_two_panes() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "2"
-  divide_two_panes_impl "$_socket_file"
+  assert_horizontal_two_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -1986,7 +1967,7 @@ test_divide_two_panes() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "2"
-    divide_two_panes_impl "$_socket_file"
+    assert_horizontal_two_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2001,7 +1982,7 @@ test_divide_three_panes() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_impl "$_socket_file"
+  assert_tiled_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2009,7 +1990,7 @@ test_divide_three_panes() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_impl "$_socket_file"
+    assert_tiled_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2024,7 +2005,7 @@ test_divide_three_panes_tiled() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "3"
-  divide_three_panes_impl "$_socket_file"
+  assert_tiled_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2033,7 +2014,7 @@ test_divide_three_panes_tiled() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "3"
-    divide_three_panes_impl "$_socket_file"
+    assert_tiled_three_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2048,7 +2029,7 @@ test_divide_four_panes() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "4"
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2056,7 +2037,7 @@ test_divide_four_panes() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "4"
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2071,7 +2052,7 @@ test_divide_four_panes_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "4"
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2080,7 +2061,7 @@ test_divide_four_panes_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "4"
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2095,7 +2076,7 @@ test_divide_five_panes() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "5"
-  divide_five_panes_impl "$_socket_file"
+  assert_tiled_five_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2103,7 +2084,7 @@ test_divide_five_panes() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "5"
-    divide_five_panes_impl "$_socket_file"
+    assert_tiled_five_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2118,7 +2099,7 @@ test_divide_five_panes_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "5"
-  divide_five_panes_impl "$_socket_file"
+  assert_tiled_five_panes "$_socket_file"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2127,7 +2108,7 @@ test_divide_five_panes_pipe() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "5"
-    divide_five_panes_impl "$_socket_file"
+    assert_tiled_five_panes "$_socket_file"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2907,7 +2888,7 @@ test_x_option_with_log() {
 
   wait_panes_separation "$_socket_file" "AAAA" "4"
   wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
 
   # Wait several seconds just in case.
   sleep 3
@@ -2953,7 +2934,7 @@ test_x_option_with_log() {
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
 
     # Wait several seconds just in case.
     sleep 3
@@ -3009,7 +2990,7 @@ test_x_option_with_pipe() {
 
   wait_panes_separation "$_socket_file" "AAAA" "3"
   wait_existing_file_number "${_tmpdir}/fin" "3"
-  divide_three_panes_ev_impl "$_socket_file"
+  assert_vertical_three_panes "$_socket_file"
 
   # Wait several seconds just in case.
   sleep 3
@@ -3036,7 +3017,7 @@ test_x_option_with_pipe() {
 
     wait_panes_separation "$_socket_file" "AAAA" "3"
     wait_existing_file_number "${_tmpdir}/fin" "3"
-    divide_three_panes_eh_impl "$_socket_file"
+    assert_horizontal_three_panes "$_socket_file"
 
     # Wait several seconds just in case.
     sleep 3
@@ -3080,7 +3061,7 @@ test_t_and_x_option() {
 
   wait_panes_separation "$_socket_file" "AAAA" "4"
   wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
 
   assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
@@ -3106,7 +3087,7 @@ test_t_and_x_option() {
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
 
     assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
@@ -3170,7 +3151,7 @@ test_t_option_warning() {
 
   wait_panes_separation "$_socket_file" "--AA" "3"
   wait_existing_file_number "${_tmpdir}/fin" "3"
-  divide_three_panes_ev_impl "$_socket_file"
+  assert_vertical_three_panes "$_socket_file"
   close_tmux_session "$_socket_file"
   rm -f "${_tmpdir}"/fin/*
   rmdir "${_tmpdir}"/fin
@@ -3209,7 +3190,7 @@ test_s_and_x_and_log() {
 
   wait_panes_separation "$_socket_file" "AAAA" "4"
   wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-  divide_four_panes_impl "$_socket_file"
+  assert_tiled_four_panes "$_socket_file"
 
   # Wait several seconds just in case.
   sleep 2
@@ -3255,7 +3236,7 @@ test_s_and_x_and_log() {
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
     wait_existing_file_number "${_tmpdir}/fin" "4" # AAAA BBBB CCCC DDDD
-    divide_four_panes_impl "$_socket_file"
+    assert_tiled_four_panes "$_socket_file"
 
     # Wait several seconds just in case.
     sleep 2
