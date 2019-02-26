@@ -785,14 +785,14 @@ test_divide_five_panes_special_chars() {
   printf "\\n $ %s\\n" "$_cmd"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" '%s' '5'
-  assert_tiled_five_panes "$_socket_file"
+  assert_tiled_five_panes "$_socket_file" '%s'
   close_tmux_session "$_socket_file"
 
   _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
   printf "\\n $ %s\\n" "$_cmd"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" '\.' '5'
-  assert_tiled_five_panes "$_socket_file"
+  assert_tiled_five_panes "$_socket_file" '\.'
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -801,7 +801,7 @@ test_divide_five_panes_special_chars() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" '%s' '5'
-    assert_tiled_five_panes "$_socket_file"
+    assert_tiled_five_panes "$_socket_file" '%s'
     close_tmux_session "$_socket_file"
 
     _cmd="${EXEC} -S $_socket_file --stay '.' '%' '' '' ';;'"
@@ -809,7 +809,7 @@ test_divide_five_panes_special_chars() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" '\.' '5'
-    assert_tiled_five_panes "$_socket_file"
+    assert_tiled_five_panes "$_socket_file" '\.'
     close_tmux_session "$_socket_file"
   }
 }
@@ -2073,7 +2073,7 @@ test_divide_five_panes() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "5"
-  assert_tiled_five_panes "$_socket_file"
+  assert_tiled_five_panes "$_socket_file" "AAAA"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
@@ -2081,7 +2081,7 @@ test_divide_five_panes() {
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
     wait_panes_separation "$_socket_file" "AAAA" "5"
-    assert_tiled_five_panes "$_socket_file"
+    assert_tiled_five_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
 }
@@ -2096,7 +2096,7 @@ test_divide_five_panes_pipe() {
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
   wait_panes_separation "$_socket_file" "AAAA" "5"
-  assert_tiled_five_panes "$_socket_file"
+  assert_tiled_five_panes "$_socket_file" "AAAA"
   close_tmux_session "$_socket_file"
 
   : "In TMUX session" && {
