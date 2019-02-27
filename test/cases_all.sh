@@ -1150,15 +1150,6 @@ test_invalid_layout() {
   ${EXEC} -l mem 1 2 3
   assertEquals "6" "$?"
 
-  ${EXEC} -l mh -C 3 1 2 3
-  assertEquals "6" "$?"
-
-  ${EXEC} -C 1 -l ev A B C D
-  assertEquals "6" "$?"
-
-  ${EXEC} -lt --rows=5 1 2 3
-  assertEquals "6" "$?"
-
   ${EXEC} --bulk-cols=1,2,3 A B C D E
   assertEquals "6" "$?"
 }
@@ -1173,7 +1164,7 @@ test_invalid_layout_tmux() {
   mkdir -p "${_tmpdir}"
 
   : "In TMUX session" && {
-    _cmd="${EXEC} -C 1 -l ev -e exit exit exit; echo \$? > ${_tmpdir}/status"
+    _cmd="${EXEC} --bulk-cols=1,2,3 A B C D E; echo \$? > ${_tmpdir}/status"
     echo $'\n'" $ TMUX($_cmd)"$'\n'
     create_tmux_session "$_socket_file"
     exec_tmux_session "$_socket_file" "$_cmd"
