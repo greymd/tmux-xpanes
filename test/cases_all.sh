@@ -3021,6 +3021,70 @@ test_x_option_with_pipe() {
 }
 
 # @case: 59
+# @skip:
+test_x_option_with_cols_rows() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  local _year
+  _year="$(date +%Y)"
+  mkdir -p "${_tmpdir}/fin"
+
+  _cmd="echo AAAA | ${EXEC} -d -S $_socket_file -c \"echo {} > ${_tmpdir}/fin/{}\""
+  echo $'\n'" $ $_cmd"$'\n'
+  # Execute command
+  eval "$_cmd"
+  wait_panes_separation "$_socket_file" "AAAA" "1"
+
+  _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} --cols=2 -xe -lev -S $_socket_file"
+  echo $'\n'" $ $_cmd"$'\n'
+  exec_tmux_session "$_socket_file" "$_cmd"
+
+  wait_panes_separation "$_socket_file" "AAAA" "3"
+  wait_existing_file_number "${_tmpdir}/fin" "3"
+  # --cols/rows must be ignored
+  assert_vertical_three_panes "$_socket_file" "AAAA"
+
+  # Wait several seconds just in case.
+  sleep 3
+  assertEquals "BBBB" "$(cat "${_tmpdir}/fin/BBBB")"
+  assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
+
+  close_tmux_session "$_socket_file"
+  rm -f "${_tmpdir}"/fin/*
+  rmdir "${_tmpdir}"/fin
+
+  : "In TMUX session" && {
+    _cmd="echo AAAA | ${EXEC} -d -S $_socket_file -c \"echo {} > ${_tmpdir}/fin/{}\""
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    mkdir -p "${_tmpdir}/fin"
+
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "1"
+    wait_existing_file_number "${_tmpdir}/fin" "1"
+
+    # Append two more panes with log setting
+    _cmd="printf \"%s\\\\n\" \"echo BBBB > ${_tmpdir}/fin/BBBB\" \"echo CCCC > ${_tmpdir}/fin/CCCC\" | ${EXEC} -x -S $_socket_file -l eh -e --rows=2"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    wait_panes_separation "$_socket_file" "AAAA" "3"
+    wait_existing_file_number "${_tmpdir}/fin" "3"
+    # --cols/rows must be ignored
+    assert_horizontal_three_panes "$_socket_file" "AAAA"
+
+    # Wait several seconds just in case.
+    sleep 3
+    assertEquals "BBBB" "$(cat "${_tmpdir}/fin/BBBB")"
+    assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
+
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+  }
+}
+
+# @case: 60
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_and_x_option() {
 
@@ -3087,7 +3151,7 @@ test_t_and_x_option() {
   }
 }
 
-# @case: 60
+# @case: 61
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_option_pipe() {
 
@@ -3121,7 +3185,7 @@ test_t_option_pipe() {
   }
 }
 
-# @case: 61
+# @case: 62
 # @skip: 2.3,2.4,2.5,2.6,2.7
 test_t_option_warning() {
   if ! (is_less_than "2.3");then
@@ -3147,7 +3211,7 @@ test_t_option_warning() {
   rmdir "${_tmpdir}"/fin
 }
 
-# @case: 62
+# @case: 63
 # @skip: 2.3
 test_s_and_x_and_log() {
 
@@ -3258,7 +3322,7 @@ test_s_and_x_and_log() {
   }
 }
 
-# @case: 63
+# @case: 64
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_ss_and_x_and_log() {
 
@@ -3363,7 +3427,7 @@ test_ss_and_x_and_log() {
   }
 }
 
-# @case: 64
+# @case: 65
 # @skip:
 test_ss_option_panes_not_found() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3390,7 +3454,7 @@ test_ss_option_panes_not_found() {
   }
 }
 
-# @case: 65
+# @case: 66
 # @skip:
 test_ss_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3422,7 +3486,7 @@ test_ss_option() {
   }
 }
 
-# @case: 66
+# @case: 67
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_s_and_t_option() {
   if (is_less_than "2.3");then
@@ -3494,7 +3558,7 @@ test_s_and_t_option() {
   }
 }
 
-# @case: 67
+# @case: 68
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_ss_and_t_option() {
   if (is_less_than "2.3");then
@@ -3533,7 +3597,7 @@ test_ss_and_t_option() {
   }
 }
 
-# @case: 68
+# @case: 69
 # @skip:
 test_cols_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3575,7 +3639,7 @@ test_cols_option1() {
   }
 }
 
-# @case: 69
+# @case: 70
 # @skip:
 test_cols_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3619,7 +3683,7 @@ test_cols_option2() {
   }
 }
 
-# @case: 70
+# @case: 71
 # @skip:
 test_rows_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3657,7 +3721,7 @@ test_rows_option1() {
   }
 }
 
-# @case: 71
+# @case: 72
 # @skip:
 test_rows_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3702,7 +3766,53 @@ test_rows_option2() {
   }
 }
 
-# @case: 72
+# @case: 73
+# @skip:
+test_rows_option3() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd=""
+  ## -lev option must be ignored
+  _cmd="${EXEC} -R 4 -t -lev -S $_socket_file --stay AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH IIII"
+  printf "\\n$ %s\\n" "${_cmd}"
+  eval "$_cmd"
+
+  ## It is suppose to be following position
+  # +-----------+
+  # | A | B | C |
+  # +-----------+
+  # |  D  |  E  |
+  # +-----------+
+  # |  F  |  G  |
+  # +-----------+
+  # |  H  |  I  |
+  # +-----------+
+  wait_panes_separation "$_socket_file" "AAAA" "9"
+  assert_cols "$_socket_file" "AAAA" 3 2 2 2
+  assert_same_width_same_cols "$_socket_file" "AAAA" 2 1 4 2
+  assert_same_height_same_rows "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_height_each_rows "$_socket_file" "AAAA" 2 1 4 2
+  assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+  assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
+  close_tmux_session "$_socket_file"
+
+  : "In TMUX session" && {
+    printf "\\nTMUX(%s)\\n" "${_cmd}"
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    wait_panes_separation "$_socket_file" "AAAA" "9"
+    assert_cols "$_socket_file" "AAAA" 3 2 2 2
+    assert_same_width_same_cols "$_socket_file" "AAAA" 2 1 4 2
+    assert_same_height_same_rows "$_socket_file" "AAAA" 2 1 4 2
+    assert_near_width_each_cols "$_socket_file" "AAAA" 2 1 4 2
+    assert_near_height_each_rows "$_socket_file" "AAAA" 2 1 4 2
+    assert_near_width_each_cols "$_socket_file" "AAAA" 1 1 1 3
+    assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
+    close_tmux_session "$_socket_file"
+  }
+}
+
+# @case: 74
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_cols_log_option() {
 
@@ -3803,7 +3913,7 @@ test_cols_log_option() {
   }
 }
 
-# @case: 73
+# @case: 75
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_t_option() {
 
@@ -3917,7 +4027,7 @@ test_rows_log_t_option() {
   }
 }
 
-# @case: 74
+# @case: 76
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_ss_t_option() {
 
@@ -4031,7 +4141,7 @@ test_rows_log_ss_t_option() {
   }
 }
 
-# @case: 75
+# @case: 77
 # @skip:
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4056,7 +4166,7 @@ test_too_small_panes() {
   restore_terminal_size
 }
 
-# @case: 76
+# @case: 78
 # @skip:
 test_too_small_panes_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4086,7 +4196,7 @@ test_too_small_panes_cols() {
 }
 
 
-# @case: 77
+# @case: 79
 # @skip:
 test_too_small_panes_avoided_by_n() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4130,7 +4240,7 @@ test_too_small_panes_avoided_by_n() {
   restore_terminal_size
 }
 
-# @case: 78
+# @case: 80
 # @skip:
 test_too_small_panes_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4159,7 +4269,7 @@ test_too_small_panes_bulk_cols() {
   restore_terminal_size
 }
 
-# @case: 79
+# @case: 81
 # @skip:
 test_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4204,7 +4314,7 @@ test_bulk_cols() {
   }
 }
 
-# @case: 80
+# @case: 82
 # @skip:
 test_multiple_recovery_session() {
   local _socket_file="${XDG_CACHE_HOME}/xpanes/socket.test"
