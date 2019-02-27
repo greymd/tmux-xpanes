@@ -1996,7 +1996,7 @@ xpns_parse_options() {
     elif [[ "$XP_OPT_EXTRA" -eq 0 ]] && [[ "${XP_OPT_USE_PRESET_LAYOUT}" -eq 1 ]]; then
       # This part is required to keep backward compatibility.
       ## Users can simulate xpanes v3.x to set : alias xpanes="xpanes -lt"
-      xpns_msg_debug "Columns/rows option (-C, --cols, -R, --rows) and -l option are provided. Disable -l. "
+      xpns_msg_info "Columns/rows option (-C, --cols, -R, --rows) and -l option are provided. Disable -l. "
       XP_OPT_USE_PRESET_LAYOUT=0
     fi
   fi
