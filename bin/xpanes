@@ -114,7 +114,6 @@ XP_SOCKET_PATH="${XP_SOCKET_PATH:-${XP_DEFAULT_SOCKET_PATH}}"
 XP_NO_OPT=0
 XP_OPT_CMD_UTILITY=0
 XP_CMD_UTILITY=""
-XP_OPT_PRESET_LAYOUT=0
 XP_LAYOUT="${XP_DEFAULT_LAYOUT}"
 XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
@@ -122,7 +121,7 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
-XP_OPT_CUSTOM_SIZE=1
+XP_OPT_USE_PRESET_LAYOUT=0
 XP_OPT_CUSTOM_SIZE_COLS=
 XP_OPT_CUSTOM_SIZE_ROWS=
 XP_OPT_BULK_COLS=
@@ -1393,7 +1392,6 @@ xpns_execution() {
   local _last_args_idx=
   local _def_allow_rename=
   local _pane_count=0
-  local _is_pane_title_required=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
@@ -1467,7 +1465,7 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_CUSTOM_SIZE} -eq 0 ]];then
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]];then
     xpns_prepare_preset_layout_window \
       "${_window_name}" \
       "${_pane_base_index}" \
@@ -1479,7 +1477,7 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_CUSTOM_SIZE} -eq 1 ]];then
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]];then
     xpns_prepare_window \
       "${_window_name}" \
       "${XP_OPT_LOG_STORE}" \
@@ -1526,17 +1524,14 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:2: After logging"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
-    _is_pane_title_required=1
-  fi
-
   # Set pane titles for each pane.
-  if [[ $_is_pane_title_required -eq 1 ]];then
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
     xpns_set_titles \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_ARGS[@]}"
   fi
+
   if [[ $XP_OPT_SPEEDY -eq 1 ]];then
     xpns_notify_sync \
       "${_window_name}" \
@@ -1561,8 +1556,8 @@ xpns_execution() {
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
   ## With -l <layout>, panes are organized.
-  ## As we ll as -x, they are re-organized.
-  if [[ $XP_OPT_CUSTOM_SIZE -eq 0 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
+  ## As well as -x, they are re-organized.
+  if [[ $XP_OPT_USE_PRESET_LAYOUT -eq 1 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     xpns_organize_panes \
       "${_window_name}" \
       "${_last_args_idx}"
@@ -1713,7 +1708,7 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ x ]]; then
     XP_OPT_EXTRA=1
-    XP_OPT_CUSTOM_SIZE=0 ## Layout presets must be used
+    XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
     if ! xpns_warning_before_extra; then
       exit ${XP_EINTENT}
     fi
@@ -1769,14 +1764,12 @@ xpns_load_arg_options() {
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
     if [[ "$1" =~ $_pattern ]]; then
-      XP_OPT_CUSTOM_SIZE=0
-      XP_OPT_PRESET_LAYOUT=1
+      XP_OPT_USE_PRESET_LAYOUT=1
       XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
-      XP_OPT_CUSTOM_SIZE=0
-      XP_OPT_PRESET_LAYOUT=1
+      XP_OPT_USE_PRESET_LAYOUT=1
       XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
@@ -1824,7 +1817,6 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*C ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*C([0-9]+)"
-    XP_OPT_CUSTOM_SIZE=1
     if [[ "$1" =~ $_pattern ]]; then
       XP_OPT_CUSTOM_SIZE_COLS="${BASH_REMATCH[1]}"
       return 0
@@ -1837,7 +1829,6 @@ xpns_load_arg_options() {
     fi
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*R ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*R([0-9]+)"
-    XP_OPT_CUSTOM_SIZE=1
     if [[ "$1" =~ $_pattern ]]; then
       XP_OPT_CUSTOM_SIZE_ROWS="${BASH_REMATCH[1]}"
       return 0
@@ -1886,11 +1877,9 @@ xpns_load_long_options() {
     XP_OPT_ATTACH=0
     return 1
   elif [[ "$1" =~ ^--cols=[0-9]+$ ]]; then
-    XP_OPT_CUSTOM_SIZE=1
     XP_OPT_CUSTOM_SIZE_COLS="${1#--cols=}"
     return 1
   elif [[ "$1" =~ ^--rows=[0-9]+$ ]]; then
-    XP_OPT_CUSTOM_SIZE=1
     XP_OPT_CUSTOM_SIZE_ROWS="${1#--rows=}"
     return 1
   elif [[ "$1" =~ ^--bulk-cols=[0-9,]*[0-9]+$ ]]; then
@@ -2001,17 +1990,15 @@ xpns_parse_options() {
     exit ${XP_EINVAL}
   fi
 
-  if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
-      && [[ "$XP_OPT_EXTRA" -eq 1 ]]; then
-    XP_OPT_CUSTOM_SIZE=0
-    xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
-  fi
-
-  # TODO: Prioritize the either option
-  if { [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; } \
-      && [[ "${XP_OPT_PRESET_LAYOUT}" -eq 1 ]]; then
-    xpns_msg_error "Combination columns/rows option (-C, --cols, -R, --rows) and -l option is not allowed."
-    exit ${XP_ELAYOUT}
+  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; then
+    if [[ "$XP_OPT_EXTRA" -eq 1 ]]; then
+      xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
+    elif [[ "$XP_OPT_EXTRA" -eq 0 ]] && [[ "${XP_OPT_USE_PRESET_LAYOUT}" -eq 1 ]]; then
+      # This part is required to keep backward compatibility.
+      ## Users can simulate xpanes v3.x to set : alias xpanes="xpanes -lt"
+      xpns_msg_debug "Columns/rows option (-C, --cols, -R, --rows) and -l option are provided. Disable -l. "
+      XP_OPT_USE_PRESET_LAYOUT=0
+    fi
   fi
 
   # Set default value in case of empty.
