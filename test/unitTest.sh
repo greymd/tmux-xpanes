@@ -190,7 +190,7 @@ test_xpns_clean_session() {
   # echo "Keep ${XP_CACHE_HOME}/socket.$$"
   [[ -e "${XP_CACHE_HOME}/socket.$$" ]]
   actual=$?
-  expected=0
+  expected=1
   assertEquals "$expected" "$actual"
 
   # echo "Remove ${XP_CACHE_HOME}/socket.01234"
