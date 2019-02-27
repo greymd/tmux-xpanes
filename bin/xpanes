@@ -1044,7 +1044,7 @@ xpns_clean_session() {
       rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
     fi
   fi
-  for _socket in "${XP_CACHE_HOME}"/* ;do
+  for _socket in "${XP_CACHE_HOME}"/socket.* ;do
     xpns_msg_debug "file = ${_socket}"
     if ! xpns_is_session_running "${_socket}" ;then
       xpns_msg_debug "socket(${_socket}) is not running. Remove it"
