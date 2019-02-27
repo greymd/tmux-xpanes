@@ -1026,31 +1026,31 @@ xpns_prepare_window () {
   done
 }
 
+xpns_is_session_running() {
+  local _socket="$1"
+  ${TMUX_XPANES_EXEC} -S "${_socket}" list-session > /dev/null 2>&1
+}
+
 # Remove unnecessary session files as much as possible
 # to let xpanes avoids to load old .tmux.conf.
 xpns_clean_session() {
-  local _xpns_pid=
-  local _pattern=
   if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
     return
   fi
   # Delete old socket file (xpanes v3.1.0 or before).
   if [[ -e "${XP_DEFAULT_SOCKET_PATH_BASE}" ]]; then
-    xpns_msg_debug "Remove ${XP_DEFAULT_SOCKET_PATH_BASE}"
-    rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+    if ! xpns_is_session_running "${XP_DEFAULT_SOCKET_PATH_BASE}" ;then
+      xpns_msg_debug "socket(${XP_DEFAULT_SOCKET_PATH_BASE}) is not running. Remove it"
+      rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+    fi
   fi
   for _socket in "${XP_CACHE_HOME}"/* ;do
     xpns_msg_debug "file = ${_socket}"
-    _pattern="socket.([0-9]+)$"
-    if [[ "${_socket}" =~  $_pattern ]]; then
-      _xpns_pid="${BASH_REMATCH[1]}"
-      # Check whether the process is running or not
-      if ! builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
-        xpns_msg_debug "pid(${_xpns_pid}) is not running. Remove ${_socket}"
-        rm -f "${_socket}"
-      else
-        xpns_msg_debug "pid(${_xpns_pid}) is running. Keep ${_socket}"
-      fi
+    if ! xpns_is_session_running "${_socket}" ;then
+      xpns_msg_debug "socket(${_socket}) is not running. Remove it"
+      rm -f "${_socket}"
+    else
+      xpns_msg_debug "socket(${_socket}) is running. Keep ${_socket}"
     fi
   done
 }
