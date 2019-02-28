@@ -112,7 +112,7 @@ zplug "greymd/tmux-xpanes"
 
 ```sh
 # Download with wget
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v3.1.1/bin/xpanes -O ./xpanes
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.0.0/bin/xpanes -O ./xpanes
 
 # Put it under PATH and make it executable.
 $ sudo install -m 0755 xpanes /usr/local/bin/xpanes
