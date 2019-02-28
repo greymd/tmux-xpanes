@@ -5,7 +5,9 @@ readonly XP_SHELL="/bin/bash"
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="3.1.1"
+readonly XP_VERSION="4.0.0-beta"
+
+## trap might be updated in 'xpns_pre_execution' function
 trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
 
 ## --------------------------------
@@ -22,6 +24,9 @@ readonly XP_ETTY=5
 
 # Invalid layout.
 readonly XP_ELAYOUT=6
+
+# Impossible layout: Small pane
+readonly XP_ESMLPANE=7
 
 # Log related exit status is 2x.
 ## Could not create a directory.
@@ -70,7 +75,7 @@ readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press 
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs`, `sleep`, `mkfifo` are omitted because minimum functions can work without them.
-readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd}"
+readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch printf cat sort pwd cd mkfifo}"
 
 ## --------------------------------
 # User customizable shell variables
@@ -89,7 +94,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # options which work individually.
 readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
-readonly XP_ARG_OPTIONS="[IScln]"
+readonly XP_ARG_OPTIONS="[ISclnCR]"
 readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -116,7 +121,16 @@ XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
+XP_OPT_USE_PRESET_LAYOUT=0
+XP_OPT_CUSTOM_SIZE_COLS=
+XP_OPT_CUSTOM_SIZE_ROWS=
+XP_OPT_BULK_COLS=
+XP_WINDOW_WIDTH=
+XP_WINDOW_HEIGHT=
+XP_COLS=
+XP_COLS_OFFSETS=
 XP_OPT_DEBUG=0
+XP_OPT_IGNORE_SIZE_LIMIT=0
 
 ## --------------------------------
 # Logger
@@ -146,7 +160,7 @@ xpns_msg_warning() {
 
 xpns_msg_debug() {
   if [[ $XP_OPT_DEBUG -eq 1 ]];then
-    xpns_msg "Debug" "$(date "+[%F_%T]") $1"
+    xpns_msg "Debug" "$(date "+[%F_%T]"):${FUNCNAME[1]}:$1"
   fi
 }
 
@@ -169,22 +183,25 @@ OPTIONS:
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
   -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
-  -l <layout>                  Specify a layout for a window. Recognized layout arguments are:
-                               t    tiled (default)
+  -C NUM,--cols=NUM            Number of columns of window layout.
+  -R NUM,--rows=NUM            Number of rows of window layout.
+  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+                               t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a login shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process ends.
+  -s                           Speedy mode: Run command without creating a interactive shell.
+  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
   -S <socket-path>             Specify a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
-  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or given <directory>.
-  --log-format=<FORMAT>        File name of log files follows given <FORMAT>.
+  --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
+  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
+  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 
 _EOS_
@@ -311,6 +328,116 @@ xpns_restore_allow_rename () {
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
     fi
   fi
+}
+
+# func "11" "2"
+#  => 6
+# 11 / 2 = 5.5 => ceiling => 6
+xpns_ceiling () {
+  local _divide="$1";shift
+  local _by="$1"
+  printf "%s\\n" $(( ( _divide + _by - 1 ) / _by ))
+}
+
+# func "10" "3"
+#  => 4 3 3
+# Divide 10 into 3 parts as equally as possible.
+xpns_divide_equally () {
+  local _number="$1";shift
+  local _count="$1"
+  local _upper _lower _upper_count _lower_count
+  _upper="$(xpns_ceiling "$_number" "$_count")"
+  _lower=$(( _upper - 1 ))
+  _lower_count=$(( _upper * _count - _number ))
+  _upper_count=$(( _count - _lower_count ))
+  eval "printf '${_upper} %.0s' {1..$_upper_count}"
+  (( _lower_count > 0 )) && eval "printf '${_lower} %.0s' {1..$_lower_count}"
+}
+
+# echo 3 3 3 3 | func
+# => 3 6 9 12
+xpns_nums_accumulate_sum () {
+  local s=0
+  while read -r n; do
+    ((s = s + n ))
+    printf "%s " "$s"
+  done < <( cat | tr ' ' '\n')
+}
+
+# func 3 2 2 2
+# => 4 4 1
+#
+# For example, "3 2 2 2" represents following cell positions
+#   1  2  3
+# 1 [] [] [] => 3 rows
+# 2 [] []    => 2 rows
+# 3 [] []    => 2 rows
+# 4 [] []    => 2 rows
+#
+# After the transposition, it must be "4 4 1" which represents below
+#   1  2  3  4
+# 1 [] [] [] [] => 4 rows
+# 2 [] [] [] [] => 4 rows
+# 3 []          => 1 rows
+xpns_nums_transpose () {
+  local _colnum="$1"
+  local _spaces=
+  local _result=
+  xpns_msg_debug "column num = $_colnum, input = $*"
+  _spaces="$(for i in "$@";do
+    printf "%${i}s\\n"
+  done)"
+
+  # 'for' statement does not work somehow
+  _result="$(while read -r i;
+  do
+    ## This part is depending on the following 'cut' behavior
+    ## $ echo 1234 | cut -c 5
+    ## => result is supposed to be empty
+    printf "%s\\n" "$_spaces" | cut -c "$i" | grep -c ' '
+  done < <(xpns_seq 1 "${_colnum}") | xargs)"
+  xpns_msg_debug "result = $_result"
+  printf "%s\\n" "$_result"
+}
+
+# Adjust size of columns and rows in accordance with given N
+# func <col> <row> <N>
+# i.e:
+#     func "" "" 20
+#       => returns 4 5
+#     func "6" 0 20
+#       => returns 6 4
+xpns_adjust_col_row() {
+  local col="${1:-0}" ;shift
+  local row="${1:-0}" ;shift
+  local N="$1"   ;shift
+  local fix_col_flg
+  local fix_row_flg
+  (( col != 0 )) && fix_col_flg=1 || fix_col_flg=0
+  (( row != 0 )) && fix_row_flg=1 || fix_row_flg=0
+
+  # This is just a author (@greymd)'s preference.
+  if (( fix_col_flg == 0 )) && (( fix_row_flg == 0 )) && (( N == 2)) ;then
+    col=2
+    row=1
+    printf "%d %d\\n" "${col}" "${row}"
+    return
+  fi
+
+  # If both valures are provided, col is used.
+  if (( fix_col_flg == 1 )) && (( fix_row_flg == 1 ));then
+    row=0
+    fix_row_flg=0
+  fi
+  # This algorhythm is almost same as tmux default
+  #   https://github.com/tmux/tmux/blob/2.8/layout-set.c#L436
+  while (( col * row < N )) ;do
+    (( fix_row_flg != 1 )) && (( row = row + 1 ))
+    if (( col * row < N ));then
+      (( fix_col_flg != 1 )) &&  (( col = col + 1 ))
+    fi
+  done
+  printf "%d %d\\n" "${col}" "${row}"
 }
 
 # Make each line unique by adding index number
@@ -505,7 +632,7 @@ xpns_enable_logging() {
   local _idx=0
   while read -r _logfile ; do
     # Start logging
-    xpns_msg_debug "xpns_enable_logging:Start logging pipe-pane(cat >> '${_log_dir}/${_logfile}')"
+    xpns_msg_debug "Start logging pipe-pane(cat >> '${_log_dir}/${_logfile}')"
     ${TMUX_XPANES_EXEC} \
       pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
       "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
@@ -519,11 +646,12 @@ xpns_enable_logging() {
   )
 }
 
+## Print "1" on the particular named pipe
 xpns_notify() {
   local _wait_id="$1" ; shift
-  local _fifo
+  local _fifo=
   _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
-  xpns_msg_debug "xpns_notify:Notify to $_fifo"
+  xpns_msg_debug "Notify to $_fifo"
   printf "%s\\n" 1 > "$_fifo" &
 }
 
@@ -535,11 +663,11 @@ xpns_notify_logging() {
   done
 }
 
-xpns_notify_title() {
+xpns_notify_sync() {
   local _window_name="$1" ; shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
-    xpns_notify "title_${_window_name}-${i}-$$"
+    xpns_notify "sync_${_window_name}-${i}-$$" &
   done
 }
 
@@ -560,16 +688,16 @@ xpns_is_window_alive() {
 xpns_inject_title() {
   local _target_pane="$1" ;shift
   local _message="$1"     ;shift
-  local _pane_tty
+  local _pane_tty=
   _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
   printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
-  xpns_msg_debug "xpns_inject_title:target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
+  xpns_msg_debug "target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
 }
 
 xpns_is_pane_title_required() {
   local _title_flag="$1"   ; shift
-  local _extra_flag="$1"  ; shift
-  local _pane_border_status
+  local _extra_flag="$1"   ; shift
+  local _pane_border_status=
   _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
   if [[ $_title_flag -eq 1 ]]; then
     return 0
@@ -590,7 +718,7 @@ xpns_set_titles() {
   local _window_name="$1"  ; shift
   local _index_offset="$1" ; shift
   local _index=0
-  local _pane_index
+  local _pane_index=
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
@@ -606,7 +734,7 @@ xpns_send_commands() {
   local _repstr="$1"       ; shift
   local _cmd="$1"          ; shift
   local _index=0
-  local _pane_index
+  local _pane_index=
   for arg in "$@"
   do
     _pane_index=$(( _index + _index_offset ))
@@ -616,7 +744,7 @@ xpns_send_commands() {
 }
 
 # Separate window vertically, when the number of panes is 1 or 2.
-xpns_arrange_pane_location() {
+xpns_organize_panes() {
   local _window_name="$1" ; shift
   local _args_num="$1"
   ## ----------------
@@ -657,9 +785,9 @@ xpns_wait_func() {
   local _arr=("$_fifo")
   local _fifo_arg=
   _fifo_arg=$(xpns_arr2args "${_arr[@]}")
-  xpns_msg_debug "xpns_wait_func: mkfifo $_fifo"
+  xpns_msg_debug "mkfifo $_fifo"
   mkfifo "${_fifo}"
-  xpns_msg_debug "xpns_wait_func: grep -q 1 ${_fifo_arg}"
+  xpns_msg_debug "grep -q 1 ${_fifo_arg}"
   printf "%s\\n" "grep -q 1 ${_fifo_arg}"
 }
 
@@ -669,12 +797,12 @@ xpns_split_window() {
   local _window_name="$1"     ; shift
   local _log_flag="$1"        ; shift
   local _title_flag="$1"      ; shift
-  local _cmd_exec_flag="$1"   ; shift
+  local _speedy_flag="$1"     ; shift
   local _await_flag="$1"      ; shift
   local _pane_base_index="$1" ; shift
   local _repstr="$1"          ; shift
   local _cmd_template="$1"    ; shift
-  local _exec_cmd
+  local _exec_cmd=
   local _sep_count=0
   local args=("$@")
   _last_idx=$(( ${#args[@]} - 1 ))
@@ -686,26 +814,9 @@ xpns_split_window() {
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
 
     ## Speedy mode
-    if [[ $_cmd_exec_flag -eq 1 ]]; then
+    if [[ $_speedy_flag -eq 1 ]]; then
 
-      ## Speedy mode + logging
-      if [[ ${_log_flag} -eq 1 ]];then
-        # Wait for start of logging
-        # Without this part, logging thread may start after new process is finished.
-        # Execute function to wait for logging start.
-        _exec_cmd="$(xpns_wait_func "log_${_window_name}-${i}-$$")"$'\n'"${_exec_cmd}"
-      fi
-
-      ## Speedy mode + pane title
-      if [[ ${_title_flag} -eq 1 ]];then
-        _exec_cmd="$(xpns_wait_func "title_${_window_name}-${i}-$$")"$'\n'${_exec_cmd}
-      fi
-
-      ## -ss: Speedy mode + nowait
-      if [[ $_await_flag -eq 1 ]]; then
-        _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
-      fi
-
+      _exec_cmd=$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flag}" "${_await_flag}" "$i" "${_exec_cmd}")
       # Execute command as a child process of default-shell.
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
     else
@@ -725,7 +836,7 @@ xpns_split_window() {
 # Usage:
 #    func <window name> <offset of index> <number of pane>
 #
-xpns_extra_panes_to_window() {
+xpns_prepare_extra_panes() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _log_flag="$1"        ; shift
@@ -748,34 +859,198 @@ xpns_extra_panes_to_window() {
     "$@"
 }
 
+xpns_inject_wait_command () {
+  local _log_flag="$1"    ; shift
+  local _title_flag="$1"  ; shift
+  local _speedy_flg="$1"  ; shift
+  local _await_flg="$1"   ; shift
+  local _idx="$1"         ; shift
+  local _exec_cmd="$1"    ; shift
+
+  ## Speedy mode + logging
+  if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
+    # Wait for start of logging
+    # Without this part, logging thread may start after new process is finished.
+    # Execute function to wait for logging start.
+    _exec_cmd="$(xpns_wait_func "log_${_window_name}-${_idx}-$$")"$'\n'"${_exec_cmd}"
+  fi
+
+  ## Speedy mode (Do not allow to close panes before the separation is finished).
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    _exec_cmd="$(xpns_wait_func "sync_${_window_name}-${_idx}-$$")"$'\n'${_exec_cmd}
+  fi
+
+  ## -s: Speedy mode (Not -ss: Speedy mode + nowait)
+  if [[ "${_await_flg}" -eq 1 ]]; then
+    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+  fi
+  printf "%s" "${_exec_cmd}"
+}
+
+xpns_new_window () {
+  local _window_name="$1" ; shift
+  local _attach_flg="$1"  ; shift
+  local _speedy_flg="$1"  ; shift
+  local _exec_cmd="$1"    ; shift
+  local _window_id=
+
+  # Create new window.
+  if [[ "${_attach_flg}" -eq 1 ]]; then
+    if [[ "${_speedy_flg}" -eq 1 ]]; then
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
+    else
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P )
+    fi
+  else
+    # Keep background
+    if [[ "${_speedy_flg}" -eq 1 ]]; then
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d "${_exec_cmd}")
+    else
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P -d)
+    fi
+  fi
+  printf "%s" "${_window_id}"
+}
+
+xpns_new_pane_vertical () {
+  local _window_id="$1"   ; shift
+  local _cell_height="$1" ; shift
+  local _speedy_flg="$1"  ; shift
+  local _exec_cmd="$1"    ; shift
+  local _pane_id=
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    _pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${_cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
+  else
+    _pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${_cell_height}" -F '#{pane_id}' -P)"
+  fi
+  printf "%s\\n" "${_pane_id}"
+}
+
+xpns_split_pane_horizontal () {
+  local _target_pane_id="$1" ; shift
+  local _cell_width="$1"     ; shift
+  local _speedy_flg="$1"     ; shift
+  local _exec_cmd="$1"       ; shift
+  if [[ "${_speedy_flg}" -eq 1 ]]; then
+    ${TMUX_XPANES_EXEC} split-window -t "$_target_pane_id" -h -d -l "$_cell_width" "${_exec_cmd}"
+  else
+    ${TMUX_XPANES_EXEC} split-window -t "$_target_pane_id" -h -d -l "$_cell_width"
+  fi
+}
+
+xpns_prepare_window () {
+  local _window_name="$1"     ; shift
+  local _log_flag="$1"        ; shift
+  local _title_flag="$1"      ; shift
+  local _attach_flg="$1"      ; shift
+  local _speedy_flg="$1"      ; shift
+  local _await_flg="$1"       ; shift
+  local _repstr="$1"          ; shift
+  local _cmd_template="$1"    ; shift
+  local _args=("$@")
+  local _window_height="$XP_WINDOW_HEIGHT"
+  local _window_width="$XP_WINDOW_WIDTH"
+  local _col="$XP_OPT_CUSTOM_SIZE_COLS"
+  local _row="$XP_OPT_CUSTOM_SIZE_ROWS"
+  local _cols=("${XP_COLS[@]}")
+  local _cols_offset=("${XP_COLS_OFFSETS[@]}")
+  local _exec_cmd=
+  local _pane_id=
+  local _first_pane_id=
+  local _window_id=
+  local _cell_height=
+  local _cell_width=
+  local _top_pane_height=
+  local _current_pane_width=
+  local i=
+  local j=
+  local _rest_col=
+  local _rest_row=
+  local _offset=
+
+  _cell_height=$(( ( _window_height - _row + 1 ) / _row ))
+  ## Insert first element
+  _exec_cmd="${_cmd_template//${_repstr}/${_args[0]}}"
+  _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" 0 "${_exec_cmd}")"
+  _window_id=$(xpns_new_window "${_window_name}" "${_attach_flg}" "${_speedy_flg}" "${_exec_cmd}")
+  _first_pane_id=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p -F '#{pane_id}' | head -n 1)
+
+  ## Start from last row
+  for (( i = _row - 1 ; i > 0 ; i-- ));do
+    _col="${_cols[i]}"
+    _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
+    xpns_msg_debug "_col=$_col"
+    (( _offset = _cols_offset[i] ))
+    for (( j = 0 ; j < _col ; j++ ));do
+      if (( j == 0 )) ;then
+        (( idx = _offset - _col ))
+        # Create new row
+        # Insert first element of the row first
+        _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
+        _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
+        _pane_id=$(xpns_new_pane_vertical "${_window_name}" "${_cell_height}" "${_speedy_flg}" "${_exec_cmd}")
+      fi
+      # Separate row into columns
+      if (( j != 0 )) ;then
+        (( idx = _offset - j ))
+        _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
+        _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
+        ## Separate row into columns
+        _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_pane_id" -p '#{pane_width}' | head -n 1)
+        _rest_col=$(( _col - j + 1 ))
+        _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+        xpns_split_pane_horizontal "$_pane_id" "$_cell_width" "${_speedy_flg}" "${_exec_cmd}"
+      fi
+    done
+
+    # Adjust height
+    _top_pane_height=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p '#{pane_height}' | head -n 1)
+    _rest_row=$(( i ))
+    xpns_msg_debug "_top_pane_height=$_top_pane_height _rest_row=$_rest_row"
+    _cell_height=$(( ( _top_pane_height - _rest_row + 1 ) / _rest_row ))
+  done
+
+  # Split first row into columns
+  _col="${_cols[0]}"
+  _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
+  for (( j = 1 ; j < _col ; j++ ));do
+    idx=$(( _cols_offset[0] - j ))
+    # Adjust width
+    _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_first_pane_id" -p '#{pane_width}' | head -n 1)
+    _rest_col=$(( _col - j + 1 ))
+    _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+    ## Split top row into columns
+    _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
+    _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
+    xpns_split_pane_horizontal "${_first_pane_id}" "${_cell_width}" "${_speedy_flg}" "${_exec_cmd}"
+  done
+}
+
+xpns_is_session_running() {
+  local _socket="$1"
+  ${TMUX_XPANES_EXEC} -S "${_socket}" list-session > /dev/null 2>&1
+}
+
 # Remove unnecessary session files as much as possible
 # to let xpanes avoids to load old .tmux.conf.
 xpns_clean_session() {
-  local _xpns_pid
-  local _pattern
-  if ! type ls > /dev/null 2>&1 ;then
-    return
-  fi
   if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
     return
   fi
   # Delete old socket file (xpanes v3.1.0 or before).
   if [[ -e "${XP_DEFAULT_SOCKET_PATH_BASE}" ]]; then
-    xpns_msg_debug "xpns_clean_session: Remove ${XP_DEFAULT_SOCKET_PATH_BASE}"
-    rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+    if ! xpns_is_session_running "${XP_DEFAULT_SOCKET_PATH_BASE}" ;then
+      xpns_msg_debug "socket(${XP_DEFAULT_SOCKET_PATH_BASE}) is not running. Remove it"
+      rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
+    fi
   fi
-  for _socket in "${XP_CACHE_HOME}"/* ;do
-    xpns_msg_debug "xpns_clean_session: file = ${_socket}"
-    _pattern="socket.([0-9]+)$"
-    if [[ "${_socket}" =~  $_pattern ]]; then
-      _xpns_pid="${BASH_REMATCH[1]}"
-      # Check whether the process is running or not
-      if ! builtin kill -0 "${_xpns_pid}" > /dev/null 2>&1 ;then
-        xpns_msg_debug "xpns_clean_session: pid(${_xpns_pid}) is not running. Remove ${_socket}"
-        rm -f "${_socket}"
-      else
-        xpns_msg_debug "xpns_clean_session: pid(${_xpns_pid}) is running. Keep ${_socket}"
-      fi
+  for _socket in "${XP_CACHE_HOME}"/socket.* ;do
+    xpns_msg_debug "file = ${_socket}"
+    if ! xpns_is_session_running "${_socket}" ;then
+      xpns_msg_debug "socket(${_socket}) is not running. Remove it"
+      rm -f "${_socket}"
+    else
+      xpns_msg_debug "socket(${_socket}) is running. Keep ${_socket}"
     fi
   done
 }
@@ -783,9 +1058,9 @@ xpns_clean_session() {
 #
 # Split a new window which was created by tmux into multiple panes.
 # Usage:
-#    xpns_prepare_window <window name> <offset of index> <number of pane> <attach or not>
+#    xpns_prepare_preset_layout_window <window name> <offset of index> <number of pane> <attach or not>
 #
-xpns_prepare_window() {
+xpns_prepare_preset_layout_window() {
   local _window_name="$1"     ; shift
   local _pane_base_index="$1" ; shift
   local _log_flag="$1"        ; shift
@@ -879,6 +1154,149 @@ xpns_set_args_per_pane() {
   XP_ARGS=("${_filtered_args[@]}")
 }
 
+xpns_get_window_height_width() {
+  local _height=
+  local _width=
+  local _result=
+  local _dev=
+  local _pattern='^([0-9]+)[ \t]+([0-9]+)$'
+
+  if ! type stty > /dev/null 2>&1; then
+    xpns_msg_debug "'stty' does not exist: Failed to get window height and size. Skip checking"
+    return 1
+  fi
+
+  ## This condition is used for unit testing
+  if [[ -z "${XP_IS_PIPE_MODE-}" ]]; then
+    if [[ ! -t 0 ]]; then
+      XP_IS_PIPE_MODE=1
+    fi
+  fi
+  if [[ $XP_IS_PIPE_MODE -eq 0 ]]; then
+    if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _height="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "window height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
+      return 0
+    fi
+  else
+    if ! type ps > /dev/null 2>&1 ;then
+      xpns_msg_debug "'ps' does not exist: Failed to get window height and size. Skip checking"
+      return 1
+    fi
+    { read -r; read -r _dev; } < <(ps -o tty -p $$)
+    ## If it's Linux, -F option is used
+    if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _height="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "window height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
+      return 0
+    fi
+    ## If it's BSD, macOS, -F option is used
+    if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+      _height="${BASH_REMATCH[1]}"
+      _width="${BASH_REMATCH[2]}"
+      xpns_msg_debug "window height: $_height, width: $_width"
+      printf "%s\\n" "$_height $_width"
+      return 0
+    fi
+    return 1
+  fi
+  return 1
+}
+
+xpns_check_cell_size_bulk() {
+  local _cell_num="$1"    ; shift
+  local _bulk_cols="$1"   ; shift
+  local _win_height="$1"  ; shift
+  local _win_width="$1"   ; shift
+  local _ignore_flag="$1" ; shift
+  local _all_cols=()
+  # shellcheck disable=SC2178
+  local _cols=0
+  local _rows=0
+  local _sum_cell=0
+  IFS="," read -r -a _all_cols <<< "${_bulk_cols}"
+  _rows="${#_all_cols[@]}"
+  for i in "${_all_cols[@]}"; do
+    (( i >= _cols )) && (( _cols = i ))
+    (( _sum_cell = _sum_cell + i ))
+  done
+  if (( _sum_cell != _cell_num )) ;then
+    xpns_msg_error "Number of cols does not equals to the number of arguments."
+    xpns_msg_error "Expected (# of args) : $_cell_num, Actual (--bulk-cols) : $_sum_cell)."
+    return ${XP_ELAYOUT:-6}
+  fi
+  local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
+  local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
+
+  ## Display basic information
+  xpns_msg_debug "Window: { Height: $_win_height, Width: $_win_width }"
+  xpns_msg_debug "Cell: { Height: $cell_height, Width: $cell_width }"
+  xpns_msg_debug "# Of Panes: ${_cell_num}"
+  xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug "    Col[]| ${_all_cols[*]}"
+  xpns_msg_debug "    -----+------------------------..."
+
+  if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+    xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
+    return ${XP_ESMLPANE:-7}
+  fi
+  printf "%s\\n" "${_cols} ${_rows} ${_all_cols[*]}"
+}
+
+xpns_check_cell_size() {
+  local _cell_num="$1"    ; shift
+  local _cols="$1"        ; shift
+  local _rows="$1"        ; shift
+  local _win_height="$1"  ; shift
+  local _win_width="$1"   ; shift
+  local _ignore_flag="$1" ; shift
+  local _all_cols=
+  local _all_rows=()
+
+  if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]];then
+    xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
+  fi
+  ## if col is only defined
+  if [[ -n "${_cols-}" ]] ;then
+    read -r _cols _rows < <(xpns_adjust_col_row "${_cols-}" 0 "${_cell_num}")
+    IFS=" " read -r -a _all_rows <<< "$(xpns_divide_equally "${_cell_num}" "${_cols}")"
+    _all_cols="$(xpns_nums_transpose "${_all_rows[@]}")"
+
+  ## if row is only defined
+  elif [[ -n "${_rows-}" ]] ;then
+    read -r _cols _rows < <(xpns_adjust_col_row 0 "${_rows-}" "${_cell_num}")
+    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
+
+  ## if both are undefined
+  else
+    read -r _cols _rows < <(xpns_adjust_col_row 0 0 "${_cell_num}")
+    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
+  fi
+
+  local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
+  local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
+
+  ## Display basic information
+  xpns_msg_debug "Window: { Height: $_win_height, Width: $_win_width }"
+  xpns_msg_debug "Cell: { Height: $cell_height, Width: $cell_width }"
+  xpns_msg_debug "# Of Panes: ${_cell_num}"
+  xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
+  xpns_msg_debug "    -----+------------------------..."
+  xpns_msg_debug "    Col[]| ${_all_cols}"
+  xpns_msg_debug "    -----+------------------------..."
+
+  if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+    xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
+    return "${XP_ESMLPANE:-7}"
+  fi
+  printf "%s\\n" "${_cols} ${_rows} ${_all_cols}"
+}
+
 # Execute from Normal mode1
 xpns_pre_execution() {
   local _opts4args=""
@@ -888,6 +1306,45 @@ xpns_pre_execution() {
     xpns_msg_error "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
+
+  # Run as best effort.
+  # Because after the tmux session is created, cols and rows would be provided by tmux.
+  IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && {
+    local _arg_num="${#XP_ARGS[@]}"
+    local _cell_num _tmp_col_row_cols _tmp_cols
+    if [[ -n "$XP_MAX_PANE_ARGS" ]] && (( XP_MAX_PANE_ARGS > 1 ));then
+      _cell_num=$(( _arg_num / XP_MAX_PANE_ARGS ))
+    else
+      _cell_num="${_arg_num}"
+    fi
+    if [[ -n "${XP_OPT_BULK_COLS}" ]]; then
+      _tmp_col_row_cols="$(xpns_check_cell_size_bulk \
+        "${_cell_num}" \
+        "${XP_OPT_BULK_COLS}" \
+        "${XP_WINDOW_HEIGHT}" \
+        "${XP_WINDOW_WIDTH}" \
+        "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+      local _exit_status="$?"
+      [[ $_exit_status -eq ${XP_ELAYOUT} ]] && exit ${XP_ELAYOUT}
+      [[ $_exit_status -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
+    else
+      _tmp_col_row_cols="$(xpns_check_cell_size \
+        "${_cell_num}" \
+        "${XP_OPT_CUSTOM_SIZE_COLS-}" \
+        "${XP_OPT_CUSTOM_SIZE_ROWS-}" \
+        "${XP_WINDOW_HEIGHT}" \
+        "${XP_WINDOW_WIDTH}" \
+        "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+      [[ $? -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
+    fi
+
+    IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
+    IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
+      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+    xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+  }
 
   # Append -- flag.
   # Because any arguments may have `-`
@@ -914,6 +1371,9 @@ xpns_pre_execution() {
   if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
     if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
       && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
+      ## In recovery case, overwrite trap to keep socket file
+      trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$;' EXIT
+
       xpns_msg "Recovery" \
 "Execute below command line to re-attach the new session.
 
@@ -932,11 +1392,43 @@ xpns_execution() {
   local _last_args_idx=
   local _def_allow_rename=
   local _pane_count=0
-  local _is_pane_title_required=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
+
+  ## Fix window size and define pane size
+  {
+    local  _tmp_col_row_cols _tmp_cols
+    IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < \
+      <(${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}')
+    if [[ -n "${XP_OPT_BULK_COLS}" ]]; then
+      _tmp_col_row_cols="$(xpns_check_cell_size_bulk \
+        "${#XP_ARGS[@]}" \
+        "${XP_OPT_BULK_COLS}" \
+        "${XP_WINDOW_HEIGHT}" \
+        "${XP_WINDOW_WIDTH}" \
+        "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+      local _exit_status="$?"
+      [[ $_exit_status -eq ${XP_ELAYOUT} ]] && exit ${XP_ELAYOUT}
+      [[ $_exit_status -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
+    else
+      _tmp_col_row_cols="$(xpns_check_cell_size \
+        "${#XP_ARGS[@]}" \
+        "${XP_OPT_CUSTOM_SIZE_COLS-}" \
+        "${XP_OPT_CUSTOM_SIZE_ROWS-}" \
+        "${XP_WINDOW_HEIGHT}" \
+        "${XP_WINDOW_WIDTH}" \
+        "${XP_OPT_IGNORE_SIZE_LIMIT:-0}")"
+      [[ $? -eq ${XP_ESMLPANE} ]] && exit ${XP_ESMLPANE}
+    fi
+    IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
+    IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
+      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
+    xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
+  }
 
   _pane_base_index=$(xpns_get_global_tmux_conf 'pane-base-index')
   _last_args_idx=$((${#XP_ARGS[@]} - 1))
@@ -963,7 +1455,7 @@ xpns_execution() {
   # Prepare window and panes
   ## --------------------
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
-    xpns_extra_panes_to_window \
+    xpns_prepare_extra_panes \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_OPT_LOG_STORE}" \
@@ -973,10 +1465,21 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  else
-    xpns_prepare_window \
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]];then
+    xpns_prepare_preset_layout_window \
       "${_window_name}" \
       "${_pane_base_index}" \
+      "${XP_OPT_LOG_STORE}" \
+      "${XP_OPT_SET_TITLE}" \
+      "${XP_OPT_ATTACH}" \
+      "${XP_OPT_SPEEDY}" \
+      "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_REPSTR}" \
+      "${XP_CMD_UTILITY}" \
+      "${XP_ARGS[@]}"
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]];then
+    xpns_prepare_window \
+      "${_window_name}" \
       "${XP_OPT_LOG_STORE}" \
       "${XP_OPT_SET_TITLE}" \
       "${XP_OPT_ATTACH}" \
@@ -996,7 +1499,7 @@ xpns_execution() {
     # Set offset to avoid sending command to the original pane.
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
-    # in xpns_arrange_pane_location
+    # in xpns_organize_panes
     _last_args_idx=$((_last_args_idx + _pane_count))
     # Re-select the windown that was active before.
     ${TMUX_XPANES_EXEC} select-pane -t "${_window_name}.${_pane_active_pane_id}"
@@ -1021,21 +1524,18 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:2: After logging"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
-    _is_pane_title_required=1
-  fi
-
   # Set pane titles for each pane.
-  if [[ $_is_pane_title_required -eq 1 ]];then
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
     xpns_set_titles \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_ARGS[@]}"
-    if [[ $XP_OPT_SPEEDY -eq 1 ]];then
-      xpns_notify_title \
-        "${_window_name}" \
-        "${XP_ARGS[@]}"
-    fi
+  fi
+
+  if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+    xpns_notify_sync \
+      "${_window_name}" \
+      "${XP_ARGS[@]}"
   fi
 
   xpns_msg_debug "xpns_is_window_alive:3: After setting title"
@@ -1055,9 +1555,13 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:4: After sending commands"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  xpns_arrange_pane_location \
-    "${_window_name}" \
-    "${_last_args_idx}"
+  ## With -l <layout>, panes are organized.
+  ## As well as -x, they are re-organized.
+  if [[ $XP_OPT_USE_PRESET_LAYOUT -eq 1 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
+    xpns_organize_panes \
+      "${_window_name}" \
+      "${_last_args_idx}"
+  fi
 
   # Enable broadcasting
   if [[ ${XP_OPT_IS_SYNC} -eq 1 ]] && [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
@@ -1178,7 +1682,8 @@ xpns_is_valid_layout() {
 }
 
 xpns_warning_before_extra() {
-  local _ans _synchronized
+  local _ans=
+  local _synchronized=
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
   if [[ "on" == "${_synchronized}" ]];then
     xpns_msg_warning "Panes are now synchronized.
@@ -1203,6 +1708,7 @@ xpns_load_flag_options() {
   fi
   if [[ "$1" =~ x ]]; then
     XP_OPT_EXTRA=1
+    XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
     if ! xpns_warning_before_extra; then
       exit ${XP_EINTENT}
     fi
@@ -1235,7 +1741,7 @@ xpns_load_flag_options() {
 
 xpns_load_arg_options() {
   # Extract flag options only.
-  local _pattern
+  local _pattern=
   xpns_load_flag_options "$(xpns_extract_matched "$1" "^-${XP_FLAG_OPTIONS}+")" > /dev/null
   if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*I ]]; then
     # Behavior like this.
@@ -1258,10 +1764,12 @@ xpns_load_arg_options() {
   elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*l ]]; then
     _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
     if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_USE_PRESET_LAYOUT=1
       XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
+      XP_OPT_USE_PRESET_LAYOUT=1
       XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
@@ -1307,6 +1815,30 @@ xpns_load_arg_options() {
       xpns_msg_error "invalid argument '$2' for -S option"
       exit ${XP_EINVAL}
     fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*C ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*C([0-9]+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_CUSTOM_SIZE_COLS="${BASH_REMATCH[1]}"
+      return 0
+    elif [[ "$2" =~ ^[0-9]+$ ]];then
+      XP_OPT_CUSTOM_SIZE_COLS="$2"
+      return 0
+    else
+      xpns_msg_error "invalid argument '$2' for -C option"
+      exit ${XP_EINVAL}
+    fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*R ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*R([0-9]+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_OPT_CUSTOM_SIZE_ROWS="${BASH_REMATCH[1]}"
+      return 0
+    elif [[ "$2" =~ ^[0-9]+$ ]];then
+      XP_OPT_CUSTOM_SIZE_ROWS="$2"
+      return 0
+    else
+      xpns_msg_error "invalid argument '$2' for -R option"
+      exit ${XP_EINVAL}
+    fi
   fi
   return 0
 }
@@ -1341,15 +1873,26 @@ xpns_load_long_options() {
     XP_OPT_SPEEDY=1
     XP_OPT_SPEEDY_AWAIT=1
     return 1
-    # For unit testing
-  elif [[ "$1" =~ ^--dry-run$ ]]; then
-    XP_OPT_DRY_RUN=1
-    return 1
   elif [[ "$1" =~ ^--stay$ ]]; then
     XP_OPT_ATTACH=0
     return 1
+  elif [[ "$1" =~ ^--cols=[0-9]+$ ]]; then
+    XP_OPT_CUSTOM_SIZE_COLS="${1#--cols=}"
+    return 1
+  elif [[ "$1" =~ ^--rows=[0-9]+$ ]]; then
+    XP_OPT_CUSTOM_SIZE_ROWS="${1#--rows=}"
+    return 1
+  elif [[ "$1" =~ ^--bulk-cols=[0-9,]*[0-9]+$ ]]; then
+    XP_OPT_BULK_COLS="${1#--bulk-cols=}"
+    return 1
   elif [[ "$1" =~ ^--debug$ ]]; then
     XP_OPT_DEBUG=1
+    return 1
+  elif [[ "$1" =~ ^--dry-run$ ]]; then # For unit testing
+    XP_OPT_DRY_RUN=1
+    return 1
+  elif [[ "$1" =~ ^--ignore-size-limit$ ]]; then
+    XP_OPT_IGNORE_SIZE_LIMIT=1
     return 1
 
   ## ----------------
@@ -1447,6 +1990,17 @@ xpns_parse_options() {
     exit ${XP_EINVAL}
   fi
 
+  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; then
+    if [[ "$XP_OPT_EXTRA" -eq 1 ]]; then
+      xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
+    elif [[ "$XP_OPT_EXTRA" -eq 0 ]] && [[ "${XP_OPT_USE_PRESET_LAYOUT}" -eq 1 ]]; then
+      # This part is required to keep backward compatibility.
+      ## Users can simulate xpanes v3.x to set : alias xpanes="xpanes -lt"
+      xpns_msg_info "Columns/rows option (-C, --cols, -R, --rows) and -l option are provided. Disable -l. "
+      XP_OPT_USE_PRESET_LAYOUT=0
+    fi
+  fi
+
   # Set default value in case of empty.
   XP_CMD_UTILITY="${XP_CMD_UTILITY:-${XP_DEFAULT_CMD_UTILITY}}"
   XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
@@ -1456,8 +2010,6 @@ xpns_parse_options() {
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
 
-  xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
-  xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
 }
 
 ## --------------------------------

@@ -17,7 +17,7 @@ command ... | \fB\fCxpanes\fR [\fB\fCOPTIONS\fR] [<\fIutility\fP> ...]
 Split tmux window into multiple panes
 .RS
 .IP \(bu 2
-Build command lines from given arguments & execute them on the panes
+Build command lines & execute them on the panes
 .RE
 .IP \(bu 2
 Runnable from outside of tmux session
@@ -26,7 +26,13 @@ Runnable from inside of tmux session
 .IP \(bu 2
 Record operation log
 .IP \(bu 2
-Layout arrangement for panes
+Flexible layout arrangement for panes
+.RS
+.IP \(bu 2
+Select layout presets
+.IP \(bu 2
+Set columns or rows as you like
+.RE
 .IP \(bu 2
 Display pane title on each pane
 .IP \(bu 2
@@ -51,6 +57,12 @@ Execute given arguments as is.
 .TP
 \fB\fC\-I\fR <\fIrepstr\fP>
 Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by \-c option. Default value of <\fIrepstr\fP> is {}.
+.TP
+\fB\fC\-C\fR \fINUM\fP, \fB\fC\-\-cols=\fR\fINUM\fP
+Number of columns of window layout.
+.TP
+\fB\fC\-R\fR \fINUM\fP, \fB\fC\-\-rows=\fR\fINUM\fP
+Number of rows of window layout.
 .PP
 \fB\fC\-l\fR <\fIlayout\fP>
   Specify a layout for a window. Recognized layout arguments are:
@@ -61,7 +73,7 @@ Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by 
     \fB\fCmv\fR   main\-vertical
 .TP
 \fB\fC\-s\fR
-Speedy mode: Run command without creating a login shell. A pane is not going to be interactive.
+Speedy mode: Run command without creating a interactive shell.
 .TP
 \fB\fC\-ss\fR
 Speedy mode AND close the pane automatically at the same time as the process ends.
@@ -79,16 +91,19 @@ Display each argument on the each pane's border.
 Create extra panes on the current active window.
 .TP
 \fB\fC\-\-log\fR[\fB\fC=\fR<\fIdirectory\fP>]
-Enable logging and store log files to ~/.cache/xpanes/logs or given <\fIdirectory\fP>.
+Enable logging and store log files to ~/.cache/xpanes/logs or <\fIdirectory\fP>.
 .TP
 \fB\fC\-\-log\-format=\fR<\fIFORMAT\fP>
-File name of log files follows given <\fIFORMAT\fP>.
+File name of log files follows <\fIFORMAT\fP>.
 .TP
 \fB\fC\-\-ssh\fR
 Same as \fB\fC\-t \-s \-c 'ssh \-o StrictHostKeyChecking=no {}'\fR\&.
 .TP
 \fB\fC\-\-stay\fR
 Do not switch to new window.
+.TP
+\fB\fC\-\-bulk\-cols=\fR\fINUM1\fP[,\fINUM2\fP ...]
+Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
 .TP
 \fB\fC\-\-debug\fR
 Print debug message.
@@ -136,10 +151,10 @@ Default value is \fB\fCbottom\fR\&.
 .SH MODES
 .SS [Normal mode1] Outside of tmux session.
 .PP
-When the tmux is not opened and \fB\fCxpanes\fR command is executed on the normal terminal, the command's behavior is as follows:
+When the tmux is not open and \fB\fCxpanes\fR is executed on the normal terminal, the \fB\fCxpanes\fR\&'s behavior is as follows:
 .RS
 .IP \(bu 2
-The command newly creates a tmux session and new window on the session.
+It newly creates a tmux session and new window on the session.
 .IP \(bu 2
 In addition, it separates the window into multiple panes.
 .IP \(bu 2
@@ -147,26 +162,26 @@ Finally, the session will be attached.
 .RE
 .SS [Normal mode2] Inside of tmux session.
 .PP
-When the tmux is already opened and \fB\fCxpanes\fR command is executed from within the existing tmux session, the command's behavior is as follows:
+When the tmux is already open and \fB\fCxpanes\fR is executed on the existing tmux session, the command's behavior is as follows:
 .RS
 .IP \(bu 2
-The command newly creates a window \fBon the existing active session\fP\&.
+It newly creates a window \fBon the existing active session\fP\&.
 .IP \(bu 2
 In addition, it separates the window into multiple panes.
 .IP \(bu 2
-Finally, the window will be active window.
+Finally, the window will be active.
 .RE
 .SS [Pipe mode] Inside of tmux session & Accepting standard input.
 .PP
-When the tmux is already being opened and \fB\fCxpanes\fR command is executed on the tmux (Normal mode2)and the command is accepting standard input ( the command followed by any other commands and pipe \fB\fC|\fR), the command's behavior will be special one called "Pipe mode". Then, \fB\fCxpanes\fR behaves like UNIX \fB\fCxargs(1)\fR\&.
+When \fB\fCxpanes\fR accepts standard input (i.e, \fB\fCxpanes\fR follows another command and pipe \fB\fC|\fR) under \fBNormal mode2\fP , \fB\fCxpanes\fR\&'s behavior is going to be the special one called "Pipe mode".
 .PP
 Pipe mode has two features.
 .nr step0 0 1
 .RS
 .IP \n+[step0]
-\fB\fCxpanes\fR command's argument will be the common command line which will be used within all panes (this is corresponding to the \fB\fC\-c\fR option's argument in Normal mode).
+\fB\fCxpanes\fR\&'s argument will be the common command line which will be used within all panes (this is same as the \fB\fC\-c\fR option's argument in Normal mode).
 .IP \n+[step0]
-Single line given by standard input is corresponding to the single pane's command line (this is corresponding to normal argument of \fB\fCxpanes\fR in Normal mode).
+Each line provided by standard input is corresponding to the each pane's command line (this is corresponding to normal argument of \fB\fCxpanes\fR in Normal mode).
 .RE
 .SH EXAMPLES
 .SS Simple example
@@ -402,7 +417,7 @@ Single line given by standard input is corresponding to the single pane's comman
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
-.SS Change layout of panes
+.SS Change layout of panes (using presets)
 .PP
 \fB\fCxpanes\fR \-l ev \-c "{}" "top" "vmstat 1" "watch \-n 1 df"
 .PP
@@ -427,6 +442,31 @@ Single line given by standard input is corresponding to the single pane's comman
 |                                                             |
 |                                                             |
 +\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+.fi
+.RE
+.SS Change layout of panes (Fixed number of columns)
+.PP
+\fB\fCxpanes\fR \-C 2 AAA BBB CCC DDD EEE FFF GGG HHH III
+.PP
+.RS
+.nf
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo AAA                    |$ echo BBB                    |
+|                              |                              |
+|                              |                              |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo CCC                    |$ echo DDD                    |
+|                              |                              |
+|                              |                              |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo EEE                    |$ echo FFF                    |
+|                              |                              |
+|                              |                              |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ echo GGG                    |$ echo HHH                    |
+|                              |                              |
+|                              |                              |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
 .SS Pipe mode

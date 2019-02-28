@@ -190,7 +190,7 @@ test_xpns_clean_session() {
   # echo "Keep ${XP_CACHE_HOME}/socket.$$"
   [[ -e "${XP_CACHE_HOME}/socket.$$" ]]
   actual=$?
-  expected=0
+  expected=1
   assertEquals "$expected" "$actual"
 
   # echo "Remove ${XP_CACHE_HOME}/socket.01234"
@@ -200,6 +200,105 @@ test_xpns_clean_session() {
   assertEquals "$expected" "$actual"
 }
 
+test_xpns_adjust_col_row () {
+  actual=$(xpns_adjust_col_row "" "" 20)
+  expected="4 5"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row "" "" 1)
+  expected="1 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row "" "" 2)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row 6 0 20)
+  expected="6 4"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row 5 5 20)
+  expected="5 4"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_adjust_col_row 2 0 20)
+  expected="2 10"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_ceiling () {
+  actual=$(xpns_ceiling 11 2)
+  expected="6"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_ceiling 100 10)
+  expected="10"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_divide_equally () {
+  actual=$(xpns_divide_equally 10 3)
+  expected="4 3 3 "
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_divide_equally 12 3)
+  expected="4 4 4 "
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_nums_transpose () {
+  actual=$(xpns_nums_transpose 3 2 2 2)
+  expected="4 4 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 3 1 1 1)
+  expected="4 1 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 2)
+  expected="2 2"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 1)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 2 1)
+  expected="2 1"
+  assertEquals "$expected" "$actual"
+
+  actual=$(xpns_nums_transpose 9)
+  expected="1 1 1 1 1 1 1 1 1"
+  assertEquals "$expected" "$actual"
+}
+
+test_xpns_get_window_height_width () {
+  export XP_OPT_DEBUG=1
+
+  # Run with parent process
+  actual_output=$(xpns_get_window_height_width)
+  actual=$?
+  ideal_output="^[0-9]+ [0-9]+$"
+  if [[ "$actual_output" =~ $ideal_output ]]; then
+    expected=0
+    assertEquals "$expected" "$actual"
+  else
+    expected=1
+    assertEquals "$expected" "$actual"
+  fi
+
+  # Run with pipe
+  actual_output=$(seq 10 | cat | cat | xpns_get_window_height_width)
+  actual=$?
+  ideal_output="^[0-9]+ [0-9]+$"
+  if [[ "$actual_output" =~ $ideal_output ]]; then
+    expected=0
+    assertEquals "$expected" "$actual"
+  else
+    expected=1
+    assertEquals "$expected" "$actual"
+  fi
+}
 
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
