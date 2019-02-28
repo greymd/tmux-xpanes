@@ -6,9 +6,12 @@
   <a href="https://github.com/greymd/tmux-xpanes/releases/latest"><img src="https://img.shields.io/github/release/greymd/tmux-xpanes.svg" alt="Latest version" /></a>
   <a href="https://travis-ci.org/greymd/tmux-xpanes"><img src="https://travis-ci.org/greymd/tmux-xpanes.svg?branch=master" alt="Build Status" /></a>
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
+  <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A7ZRLWLDKHK36&source=url"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donation" /></a>
 </p>
+
+
 <p align="center">
-  <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie_v3.gif" alt="Introduction Git Animation" />
+  <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie_v4.gif" alt="Introduction Git Animation" />
 </p>
 
 ## TL;DR
@@ -78,7 +81,7 @@ $ brew install tmux-xpanes
 ## With `yum` (For CentOS, RHEL users)
 
 ```sh
-$ sudo yum install https://github.com/greymd/tmux-xpanes/releases/download/v3.1.1/tmux-xpanes_v3.1.1.rpm
+$ sudo yum install https://github.com/greymd/tmux-xpanes/releases/download/v4.0.0/tmux-xpanes_v4.0.0.rpm
 ```
 
 ## With `apt` (For Ubuntu users)
@@ -109,7 +112,7 @@ zplug "greymd/tmux-xpanes"
 
 ```sh
 # Download with wget
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v3.1.1/bin/xpanes -O ./xpanes
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.0.0/bin/xpanes -O ./xpanes
 
 # Put it under PATH and make it executable.
 $ sudo install -m 0755 xpanes /usr/local/bin/xpanes
@@ -1032,3 +1035,10 @@ $ bash test/cases_smoke.sh
 # License
 
 The scripts is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+
+
+# Donation
+
+If this project help you reduce time, you can give me a cup of coffee :)
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A7ZRLWLDKHK36&source=url" target="_blank" rel="noopener"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donation" /></a>
