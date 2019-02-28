@@ -1035,3 +1035,10 @@ $ bash test/cases_smoke.sh
 # License
 
 The scripts is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+
+
+# Donation
+
+If this project help you reduce time, you can give me a cup of coffee :)
+
+<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A7ZRLWLDKHK36&source=url" target="_blank" rel="noopener"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donation" /></a>
