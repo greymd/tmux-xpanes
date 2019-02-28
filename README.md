@@ -8,7 +8,7 @@
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
 </p>
 <p align="center">
-  <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie_v3.gif" alt="Introduction Git Animation" />
+  <img src="https://raw.githubusercontent.com/wiki/greymd/tmux-xpanes/img/movie_v4.gif" alt="Introduction Git Animation" />
 </p>
 
 ## TL;DR
