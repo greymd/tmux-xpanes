@@ -868,10 +868,7 @@ xpns_get_joined_begin_commands () {
     printf "%s" ""
     return
   fi
-  for cmd in "${XP_BEGIN_ARGS[@]}"; do
-    _commands="${cmd}"$'\n'"${_commands}"
-  done
-  printf "%s\\n" "${_commands}"
+  printf "%s\\n" "${XP_BEGIN_ARGS[@]}" "${_commands}"
 }
 
 xpns_inject_wait_command () {
