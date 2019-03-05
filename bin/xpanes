@@ -94,7 +94,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # options which work individually.
 readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
-readonly XP_ARG_OPTIONS="[ISclnCR]"
+readonly XP_ARG_OPTIONS="[ISclnCRB]"
 readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -102,6 +102,7 @@ readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
 XP_OPTIONS=()
 XP_ARGS=()
 XP_STDIN=()
+XP_BEGIN_ARGS=()
 XP_IS_PIPE_MODE=0
 XP_OPT_IS_SYNC=1
 XP_OPT_DRY_RUN=0
@@ -735,10 +736,12 @@ xpns_send_commands() {
   local _cmd="$1"          ; shift
   local _index=0
   local _pane_index=
+  local _exec_cmd=
   for arg in "$@"
   do
+    _exec_cmd="${_cmd//${_repstr}/${arg}}"
     _pane_index=$(( _index + _index_offset ))
-    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
     _index=$(( _index + 1 ))
   done
 }
@@ -857,6 +860,18 @@ xpns_prepare_extra_panes() {
     "${_await_flg}" \
     "${_pane_base_index}" \
     "$@"
+}
+
+xpns_get_joined_begin_commands () {
+  local _commands="$1"
+  if [[ "${#XP_BEGIN_ARGS[*]}" -lt 1 ]]; then
+    printf "%s" ""
+    return
+  fi
+  for cmd in "${XP_BEGIN_ARGS[@]}"; do
+    _commands="${cmd}"$'\n'"${_commands}"
+  done
+  printf "%s\\n" "${_commands}"
 }
 
 xpns_inject_wait_command () {
@@ -1340,8 +1355,7 @@ xpns_pre_execution() {
 
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
-      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
     xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
     xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
   }
@@ -1424,8 +1438,7 @@ xpns_execution() {
     fi
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
-      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
     xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
     xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
   }
@@ -1435,6 +1448,7 @@ xpns_execution() {
   _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
+  XP_CMD_UTILITY="$(xpns_get_joined_begin_commands "${XP_CMD_UTILITY}")"
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     # Reuse existing window name
@@ -1838,6 +1852,15 @@ xpns_load_arg_options() {
     else
       xpns_msg_error "invalid argument '$2' for -R option"
       exit ${XP_EINVAL}
+    fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*B ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*B(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_BEGIN_ARGS+=("${BASH_REMATCH[1]}")
+      return 0
+    else
+      XP_BEGIN_ARGS+=("$2")
+      return 0
     fi
   fi
   return 0
