@@ -865,7 +865,7 @@ xpns_prepare_extra_panes() {
 xpns_get_joined_begin_commands () {
   local _commands="$1"
   if [[ "${#XP_BEGIN_ARGS[*]}" -lt 1 ]]; then
-    printf "%s" ""
+    printf "%s" "${_commands}"
     return
   fi
   printf "%s\\n" "${XP_BEGIN_ARGS[@]}" "${_commands}"
