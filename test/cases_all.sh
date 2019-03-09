@@ -4350,6 +4350,109 @@ test_multiple_recovery_session() {
   close_tmux_session "$_recovery_socket"
 }
 
+# @case: 83
+# @skip:
+test_b_option () {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}/test_b_option"
+  mkdir -p "${_tmpdir}"
+
+  _cmd="${EXEC} -S ${_socket_file} -B 'echo {} > ${_tmpdir}/{}' -c '${TMUX_EXEC} detach-client' AAA BBB CCC"
+  echo $'\n'" $ $_cmd"$'\n'
+  eval "$_cmd"
+
+  # Check created files
+  wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+  for f in AAA BBB CCC ;do
+    grep -q "${f}" < "${_tmpdir}/${f}"
+    assertEquals 0 $?
+    rm -f "${_tmpdir}/${f}"
+  done
+
+  : "Normal mode2" && {
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    # Check created files
+    wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+    for f in AAA BBB CCC ;do
+    grep -q "${f}" < "${_tmpdir}/${f}"
+    assertEquals 0 $?
+    rm -f "${_tmpdir}/${f}"
+    done
+  }
+
+  : "Pipe mode" && {
+    _cmd=" echo AAA BBB CCC | xargs -n 1 | ${EXEC} -S ${_socket_file} -B 'echo {} > ${_tmpdir}/{}' -c '${TMUX_EXEC} detach-client'"
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    # Check created files
+    wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+    for f in AAA BBB CCC ;do
+    grep -q "${f}" < "${_tmpdir}/${f}"
+    assertEquals 0 $?
+    rm -f "${_tmpdir}/${f}"
+    done
+  }
+}
+
+# @case: 84
+# @skip:
+test_multi_b_option () {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}/test_multi_b_option"
+  mkdir -p "${_tmpdir}"
+
+  _cmd="${EXEC} -S ${_socket_file} -sB 'set {}' -n 2 -B 'echo \$1-\$2 > ${_tmpdir}/\$1' -c '${TMUX_EXEC} detach-client' AAA 1 BBB 2 CCC 3"
+  echo $'\n'" $ $_cmd"$'\n'
+  eval "$_cmd"
+
+  # Check created files
+  wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+  while read -r f i;do
+    grep -q "${f}-${i}" < "${_tmpdir}/${f}"
+    assertEquals 0 $?
+    rm -f "${_tmpdir}/${f}"
+  done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+
+  : "Normal mode2" && {
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    # Check created files
+    wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+    while read -r f i;do
+      grep -q "${f}-${i}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
+    done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+  }
+
+  : "Pipe mode" && {
+    _cmd=" echo AAA 1 BBB 2 CCC 3 | ${EXEC} -n 2 -S ${_socket_file} -B 'set {}' -s -B 'echo \$1-\$2 > ${_tmpdir}/\$1' -c '${TMUX_EXEC} detach-client'"
+    echo $'\n'" $ TMUX($_cmd)"$'\n'
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+
+    # Check created files
+    wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
+    while read -r f i;do
+      grep -q "${f}-${i}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
+    done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+  }
+}
+
+# test_b_x_log_option () {
+# }
+# test_b_x_ss_log_option () {
+# }
+
 ###:-:-:END_TESTING:-:-:###
 
 ###:-:-:INSERT_TESTING:-:-:###
