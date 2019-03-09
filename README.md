@@ -506,6 +506,53 @@ As you can see, each pane starts from command's result, not shell's prompt like 
 Confirmation message like "Pane is dead..." is displayed when every process ends.
 To suppress the message, use `-ss` instead of `-s`.
 
+
+#### Wait every seconds
+
+`-c` option accepts Bourne Shel script with `-s` option.
+For example, semicolon `;` can be used to run multiple commands on a pane.
+
+```sh
+$ xpanes -c 'commandA; commandB; commandC; ...'
+```
+
+Off course, `tmux` is available if `tmux` is in the `PATH`.
+Here is the example to display the every pane's index number.
+
+```sh
+$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; echo $INDEX' _ _ _ _
+```
+
+```
+    +-----------------------------------+------------------------------------+
+    │$ INDEX=$(...); echo $INDEX        │$ INDEX=$(...); echo $INDEX         │
+    │0                                  │1                                   │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    +-----------------------------------+------------------------------------+
+    │$ INDEX=$(...); echo $INDEX        │$ INDEX=$(...); echo $INDEX         │
+    │2                                  │3                                   │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    │                                   │                                    │
+    +-----------------------------------+------------------------------------+
+```
+
+This technique is helpful to avoid that all the commands start simultaneously.
+Here is the example to let each command start every second.
+
+```sh
+$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; sleep $INDEX; command {}' argA argB argC ...
+```
+
+
 #### Display host always
 
 ```sh
