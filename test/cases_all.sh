@@ -4571,9 +4571,6 @@ test_b_x_log_option () {
   }
 }
 
-# test_b_x_ss_log_option () {
-# }
-
 ###:-:-:END_TESTING:-:-:###
 
 ###:-:-:INSERT_TESTING:-:-:###
