@@ -175,16 +175,16 @@ Usage:
   ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
 Usage(pipe mode):
-  command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<utility> ...]
+  command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<command> ...]
 
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
-  -c <utility>                 Specify <utility> which is executed as a command in each panes. Default is \`echo {}\`.
-  -B <begin_command>           Run <begin_command> before processing <utility> in each pane. Multiple options are allowed.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  -e                           Execute given arguments as is.
-  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c or -B option. Default is \`{}\`.
+  -c <command>                 Set <command> to be executed in each pane. Default is \`echo {}\`.
+  -B <begin_command>           Run <begin_command> before processing <command> in each pane. Multiple options are allowed.
+  -d,--desync                  Make synchronize-panes option off in new window.
+  -e                           Execute given arguments as is. Same as \`-c '{}'\`
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is \`{}\`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
   -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
@@ -193,17 +193,17 @@ OPTIONS:
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
-  -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a interactive shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
-  -S <socket-path>             Specify a full alternative path to the server socket.
+  -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -s                           Speedy mode: Run command without an interactive shell.
+  -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
+  -S <socket-path>             Set a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
+  --log-format=<FORMAT>        Make file name of log files follow <FORMAT>.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
-  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
+  --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 
 _EOS_
@@ -1607,13 +1607,13 @@ xpns_execution() {
 
 ## ----------------
 # Arrange options for pipe mode
-#  * argument -> command utility
+#  * argument -> command
 #  * stdin -> argument
 ## ----------------
 xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
-    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
+    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <command> are given."
     exit ${XP_EINVAL}
   fi
 
@@ -1648,14 +1648,14 @@ xpns_switch_pipe_mode() {
     xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}")
 
 
-  # Merge them into utility.
+  # Merge them into command.
   if [[ ! -z "${XP_ARGS[*]-}" ]]; then
     # Attention: It might be wrong result if IFS is changed.
     XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
 
   # If there is empty -I option or user does not assign the <repstr>,
-  # Append the space and <repstr> at the end of the <utility>
+  # Append the space and <repstr> at the end of the <command>
   # This is same as the xargs command of GNU.
   # i.e,
   #   $ echo 10 | xargs seq
@@ -2026,7 +2026,7 @@ xpns_parse_options() {
   XP_CMD_UTILITY="${XP_CMD_UTILITY:-${XP_DEFAULT_CMD_UTILITY}}"
   XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
 
-  # To set utility on pre_execution, set -c option manually.
+  # To set command on pre_execution, set -c option manually.
   if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
