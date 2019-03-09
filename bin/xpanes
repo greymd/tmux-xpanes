@@ -180,11 +180,11 @@ Usage(pipe mode):
 OPTIONS:
   -h,--help                    Show this screen.
   -V,--version                 Show version.
-  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
-  -B <begin_code>              Run <begin_code> before processing <utility> in each pane. Multiple options are allowed.
+  -c <utility>                 Specify <utility> which is executed as a command in each panes. Default is \`echo {}\`.
+  -B <begin_command>           Run <begin_command> before processing <utility> in each pane. Multiple options are allowed.
   -d,--desync                  Make synchronize-panes option off on new window.
   -e                           Execute given arguments as is.
-  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c or -B option. Default is \`{}\`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
   -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
