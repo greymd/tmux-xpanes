@@ -169,19 +169,31 @@ xpns_msg_error() {
   xpns_msg "Error" "$1"
 }
 
+xpns_usage_warn() {
+  xpns_usage_short >&2
+  echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+}
+
+xpns_usage_short() {
+  cat << _EOS_
+Usage: ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
+Usage(Pipe mode): command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<command> ...]
+_EOS_
+}
+
 xpns_usage() {
   cat << _EOS_
 Usage:
   ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
-Usage(pipe mode):
+Usage(Pipe mode):
   command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<command> ...]
 
 OPTIONS:
-  -h,--help                    Show this screen.
-  -V,--version                 Show version.
+  -h,--help                    Display this help and exit.
+  -V,--version                 Output version information and exit.
   -c <command>                 Set <command> to be executed in each pane. Default is \`echo {}\`.
-  -B <begin_command>           Run <begin_command> before processing <command> in each pane. Multiple options are allowed.
+  -B <begin-command>           Run <begin-command> before processing <command> in each pane. Multiple options are allowed.
   -d,--desync                  Make synchronize-panes option off in new window.
   -e                           Execute given arguments as is. Same as \`-c '{}'\`
   -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is \`{}\`.
@@ -200,31 +212,11 @@ OPTIONS:
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        Make file name of log files follow <FORMAT>.
+  --log-format=<FORMAT>        Make file name of log files follow <FORMAT>. Default is \`${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}\`.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
-
-_EOS_
-}
-
-xpns_usage_verbose() {
-  cat << _EOS_
-FORMAT:
-    Default value is "${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}"
-    Interpreted sequences are:
-    [:PID:]   Process id of the tmux session. (e.g, 41531)
-    [:ARG:]   Argument name
-
-    In addition, sequences same as date(1) command are available.
-
-    For example:
-    %Y   year  (e.g, 1960)
-    %m   month (e.g, 01)
-    %d   date  (e.g, 31)
-    And etc.
-    Other sequences are available. Please refer to date(1) manual.
 
 Copyright (c) 2019 Yamada, Yasuhiro
 Released under the MIT License.
@@ -1711,7 +1703,6 @@ xpns_warning_before_extra() {
 xpns_load_flag_options() {
   if [[ "$1" =~ h ]]; then
     xpns_usage
-    xpns_usage_verbose
     exit 0
   fi
   if [[ "$1" =~ V ]]; then
@@ -1867,7 +1858,6 @@ xpns_load_arg_options() {
 xpns_load_long_options() {
   if [[ "$1" =~ ^--help$ ]]; then
     xpns_usage
-    xpns_usage_verbose
     exit 0
   elif [[ "$1" =~ ^--version$ ]]; then
     xpns_version
@@ -1921,8 +1911,7 @@ xpns_load_long_options() {
   ## ----------------
   else
     xpns_msg_error "invalid option -- '${1#--}'"
-    xpns_usage
-    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    xpns_usage_warn
     exit ${XP_EINVAL}
   fi
 }
@@ -1979,8 +1968,7 @@ xpns_parse_options() {
         ## ----------------
         else
           xpns_msg_error "Invalid option -- '${1#-}'"
-          xpns_usage
-          echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+          xpns_usage_warn
           exit ${XP_EINVAL}
         fi
       fi
@@ -2005,9 +1993,8 @@ xpns_parse_options() {
 
   # When no argument arr given, exit.
   if [[ -z "${XP_ARGS[*]-}" ]]; then
-    xpns_msg_error "No arguments are given."
-    xpns_usage
-    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    xpns_msg_error "No arguments."
+    xpns_usage_warn
     exit ${XP_EINVAL}
   fi
 
