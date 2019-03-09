@@ -507,7 +507,7 @@ Confirmation message like "Pane is dead..." is displayed when every process ends
 To suppress the message, use `-ss` instead of `-s`.
 
 
-#### Wait every seconds
+#### Get index number
 
 `-c` option accepts Bourne Shel script with `-s` option.
 For example, semicolon `;` can be used to run multiple commands on a pane.
@@ -525,7 +525,7 @@ $ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; echo $I
 
 ```
     +-----------------------------------+------------------------------------+
-    │$ INDEX=$(...); echo $INDEX        │$ INDEX=$(...); echo $INDEX         │
+    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
     │0                                  │1                                   │
     │                                   │                                    │
     │                                   │                                    │
@@ -534,7 +534,7 @@ $ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; echo $I
     │                                   │                                    │
     │                                   │                                    │
     +-----------------------------------+------------------------------------+
-    │$ INDEX=$(...); echo $INDEX        │$ INDEX=$(...); echo $INDEX         │
+    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
     │2                                  │3                                   │
     │                                   │                                    │
     │                                   │                                    │
