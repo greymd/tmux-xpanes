@@ -23,7 +23,7 @@ DESCRIPTION
 `xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes
-  * Build command lines & execute them on the panes
+  * Construct command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log

@@ -49,7 +49,7 @@ $ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 
 # Features
 * Split tmux window into multiple panes
-  + Build command lines & execute them on the panes
+  + Construct command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log
@@ -511,7 +511,7 @@ To suppress the message, use `-ss` instead of `-s`.
 
 #### Preprocessing for each pane
 
-`-B` option allow to run another command before processing `-c` option's command.
+`-B` option allows to run another command before processing `-c` option.
 
 ```sh
 $ xpanes -B 'echo Preprocessing' -c 'echo Test' _
@@ -529,7 +529,7 @@ $ xpanes -B 'echo Preprocessing' -c 'echo Test' _
     +-------------------------------+
 ```
 
-`-B` and `-c` are similar.
+`-B` and `-c` are similar options.
 However, `-B` can be used multiple times.
 
 ```sh
