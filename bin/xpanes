@@ -199,20 +199,20 @@ OPTIONS:
   -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is \`{}\`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
-  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+  -l <layout>                  Set the preset of window layout. Recognized layout arguments are:
                                t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of <argument> taken for each pane.
-  -s                           Speedy mode: Run command without an interactive shell.
+  -s                           Speedy mode: Run command without opening an interactive shell.
   -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
   -S <socket-path>             Set a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        Make file name of log files follow <FORMAT>. Default is \`${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}\`.
+  --log-format=<FORMAT>        Make name of log files follow <FORMAT>. Default is \`${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}\`.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).

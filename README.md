@@ -125,35 +125,36 @@ Two commands `xpanes` and `tmux-xpanes` will be installed. They are actually sam
 Usage:
   xpanes [OPTIONS] [argument ...]
 
-Usage(pipe mode):
-  command ... | xpanes [OPTIONS] [<utility> ...]
+Usage(Pipe mode):
+  command ... | xpanes [OPTIONS] [<command> ...]
 
 OPTIONS:
-  -h,--help                    Show this screen.
-  -V,--version                 Show version.
-  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  -e                           Execute given arguments as is.
-  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
+  -h,--help                    Display this help and exit.
+  -V,--version                 Output version information and exit.
+  -c <command>                 Set <command> to be executed in each pane. Default is `echo {}`.
+  -B <begin-command>           Run <begin-command> before processing <command> in each pane. Multiple options are allowed.
+  -d,--desync                  Make synchronize-panes option off in new window.
+  -e                           Execute given arguments as is. Same as `-c '{}'`
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is `{}`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
-  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+  -l <layout>                  Set the layout presets for window layout. Recognized layout arguments are:
                                t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
-  -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a interactive shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
-  -S <socket-path>             Specify a full alternative path to the server socket.
+  -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -s                           Speedy mode: Run command without opening an interactive shell.
+  -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
+  -S <socket-path>             Set a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
+  --log-format=<FORMAT>        Make name of log files follow <FORMAT>. Default is `[:ARG:].log.%Y-%m-%d_%H-%M-%S`.
   --ssh                        Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
   --stay                       Do not switch to new window.
-  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
+  --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 ```
 
@@ -878,7 +879,7 @@ However, giving both `-c` and any arguments causes error. Because the command ca
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
-xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <utility> are given.
+xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <command> are given.
 ```
 
 ### Connecting to multiple hosts given by `~/.ssh/config`
