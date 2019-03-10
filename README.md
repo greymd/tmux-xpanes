@@ -508,49 +508,135 @@ Confirmation message like "Pane is dead..." is displayed when every process ends
 To suppress the message, use `-ss` instead of `-s`.
 
 
+#### Preprocessing for each pane
+
+`-B` option allow to run another command before processing `-c` option's command.
+
+```sh
+$ xpanes -B 'echo Preprocessing' -c 'echo Test' _
+```
+
+```
+    +-------------------------------+
+    │$ echo Preprocessing           │
+    │Preprocessing                  │
+    │$ echo Test                    │
+    │Test                           │
+    │                               │
+    │                               │
+    │                               │
+    +-------------------------------+
+```
+
+`-B` and `-c` are similar.
+However, `-B` can be used multiple times.
+
+```sh
+$ xpanes -B 'echo Pre1' -B 'echo Pre2' -B 'echo Pre3' -c 'echo {}' A B C D
+```
+
+```
+    +-------------------------------+------------------------------+
+    │$ echo Pre1                    │$ echo Pre1                   │
+    │Pre1                           │Pre1                          │
+    │$ echo Pre2                    │$ echo Pre2                   │
+    │Pre2                           │Pre2                          │
+    │$ echo Pre3                    │$ echo Pre3                   │
+    │Pre3                           │Pre3                          │
+    │$ echo A                       │$ echo B                      │
+    +-------------------------------+------------------------------+
+    │$ echo Pre1                    │$ echo Pre1                   │
+    │Pre1                           │Pre1                          │
+    │$ echo Pre2                    │$ echo Pre2                   │
+    │Pre2                           │Pre2                          │
+    │$ echo Pre3                    │$ echo Pre3                   │
+    │Pre3                           │Pre3                          │
+    │$ echo C                       │$ echo D                      │
+    +-------------------------------+------------------------------+
+```
+
+It is helpful to customize default `xpanes` behavior with `alias`.
+
+Here is the useful example.
+Define the alias on your shell's startup file file (i.e `~/.bashrc`) like this.
+
+```sh
+alias xpanes='xpanes -B "set {}"'
+```
+
+After that, execute this command.
+
+```sh
+$ xpanes -c 'echo $1-$2-$3' 'A B C' 'E F G' 'H I J' 'L M N'
+## Same as:
+##    xpanes -B "set {}" -c 'echo $1-$2-$3' 'A B C' 'E F G'
+```
+
+```
+    +-------------------------------+------------------------------+
+    │$ set A B C                    │$ set E F G                   │
+    │$ echo $1-$2-$3                │$ echo $1-$2-$3               │
+    │A-B-C                          │E-F-G                         │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ set H I J                    │$ set L M N                   │
+    │$ echo $1-$2-$3                │$ echo $1-$2-$3               │
+    │H-I-J                          │L-M-N                         │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+```
+
+`A` is assigned to `$1`, and `B` is `$2` as same ... due to `set` command (see [Positional parameters](https://www.gnu.org/software/bash/manual/html_node/Positional-Parameters.html)).
+Finally, `$N` variables can be refered by `-c`.
+
 #### Get index number
 
-`-c` option accepts Bourne Shel script with `-s` option.
-For example, semicolon `;` can be used to run multiple commands on a pane.
+Here is one more example of `-B`.
 
+Alias:
 ```sh
-$ xpanes -c 'commandA; commandB; commandC; ...'
+_opt='INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`'
+alias xpanes="xpanes -B '${_opt}'"
 ```
 
-Off course, `tmux` is available if `tmux` is in the `PATH`.
-Here is the example to display the every pane's index number.
-
+Command:
 ```sh
-$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; echo $INDEX' _ _ _ _
+$ xpanes -sc 'echo $INDEX' _ _ _ _
 ```
 
+Result:
 ```
-    +-----------------------------------+------------------------------------+
-    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
-    │0                                  │1                                   │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    +-----------------------------------+------------------------------------+
-    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
-    │2                                  │3                                   │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    +-----------------------------------+------------------------------------+
+    +-------------------------------+------------------------------+
+    │$ INDEX=`...`;                 │$ INDEX=`...`;                │
+    │$ echo $INDEX                  │$ echo $INDEX                 │
+    │0                              │1                             │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ INDEX=`...`;                 │$ INDEX=`...`;                │
+    │$ echo $INDEX                  │$ echo $INDEX                 │
+    │2                              │3                             │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
 ```
 
+As shown above, `$INDEX` has the index number of pane.
 This technique is helpful to avoid that all the commands start simultaneously.
-Here is the example to let each command start every second.
+To wait each command start every second, just do it with the above alias.
 
 ```sh
-$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; sleep $INDEX; command {}' argA argB argC ...
+$ xpanes -B 'sleep $INDEX' -c 'command {}' argA argB argC ...
 ```
 
 
@@ -982,8 +1068,6 @@ Importing this socket file, different users can share their screens each other.
 ```
 
 ... then, user1 and user2 can share their screen each other.
-
-
 
 ## Shell variables
 
