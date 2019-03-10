@@ -43,6 +43,9 @@ OPTIONS
 `-V`, `--version`
   Output version information and exit.
 
+`-B` <*begin-command*>
+  Run <*begin-command*> before processing <*command*> in each pane. Multiple options are allowed.
+
 `-c` <*command*>
   Set <*command*> to be executed in each pane. Default is `echo {}`.
 

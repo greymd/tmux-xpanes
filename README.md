@@ -131,14 +131,14 @@ Usage(Pipe mode):
 OPTIONS:
   -h,--help                    Display this help and exit.
   -V,--version                 Output version information and exit.
-  -c <command>                 Set <command> to be executed in each pane. Default is `echo {}`.
   -B <begin-command>           Run <begin-command> before processing <command> in each pane. Multiple options are allowed.
+  -c <command>                 Set <command> to be executed in each pane. Default is `echo {}`.
   -d,--desync                  Make synchronize-panes option off in new window.
   -e                           Execute given arguments as is. Same as `-c '{}'`
   -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is `{}`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
-  -l <layout>                  Set the layout presets for window layout. Recognized layout arguments are:
+  -l <layout>                  Set the preset of window layout. Recognized layout arguments are:
                                t    tiled
                                eh   even-horizontal
                                ev   even-vertical
