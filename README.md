@@ -558,7 +558,7 @@ $ xpanes -B 'echo Pre1' -B 'echo Pre2' -B 'echo Pre3' -c 'echo {}' A B C D
 It is helpful to customize default `xpanes` behavior with `alias`.
 
 Here is the useful example.
-Define the alias on your shell's startup file file (i.e `~/.bashrc`) like this.
+Define the alias on your shell's startup file (i.e `~/.bashrc`) like this.
 
 ```sh
 alias xpanes='xpanes -B "set {}"'
@@ -574,7 +574,6 @@ $ xpanes -c 'echo $1-$2-$3' 'A B C' 'E F G' 'H I J' 'L M N'
 
 ```
     +-------------------------------+------------------------------+
-    │$ set A B C                    │$ set E F G                   │
     │$ echo $1-$2-$3                │$ echo $1-$2-$3               │
     │A-B-C                          │E-F-G                         │
     │                               │                              │
@@ -582,7 +581,6 @@ $ xpanes -c 'echo $1-$2-$3' 'A B C' 'E F G' 'H I J' 'L M N'
     │                               │                              │
     │                               │                              │
     +-------------------------------+------------------------------+
-    │$ set H I J                    │$ set L M N                   │
     │$ echo $1-$2-$3                │$ echo $1-$2-$3               │
     │H-I-J                          │L-M-N                         │
     │                               │                              │
@@ -613,17 +611,17 @@ $ xpanes -sc 'echo $INDEX' _ _ _ _
 Result:
 ```
     +-------------------------------+------------------------------+
-    │$ INDEX=`...`;                 │$ INDEX=`...`;                │
     │$ echo $INDEX                  │$ echo $INDEX                 │
     │0                              │1                             │
     │                               │                              │
     │                               │                              │
     │                               │                              │
     │                               │                              │
+    │                               │                              │
     +-------------------------------+------------------------------+
-    │$ INDEX=`...`;                 │$ INDEX=`...`;                │
     │$ echo $INDEX                  │$ echo $INDEX                 │
     │2                              │3                             │
+    │                               │                              │
     │                               │                              │
     │                               │                              │
     │                               │                              │
@@ -1029,7 +1027,7 @@ The results would be like this.
     +------------------------------+------------------------------+
 ```
 
-## Session
+## Operate session
 
 ### Recover disconnected session
 
@@ -1073,7 +1071,7 @@ Importing this socket file, different users can share their screens each other.
 
 `xpanes` refers to following shell variables.
 Add the statement to your default shell's
-configure file (i.e `.bashrc`, `.zshrc`) to change them as you like.
+startup file file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 
 ### `TMUX_XPANES_EXEC`
 
