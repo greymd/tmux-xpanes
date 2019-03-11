@@ -1487,7 +1487,7 @@ test_argument_and_utility_pipe() {
 # @case: 23
 # @skip:
 test_unsupported_version() {
-  XP_HOST_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
+  TMUX_XPANES_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
   assertEquals "0" "$?"
 }
 

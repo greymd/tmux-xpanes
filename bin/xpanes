@@ -1125,10 +1125,10 @@ xpns_check_env() {
   fi
 
   # Do not omit this part, this is used by testing.
-  XP_HOST_TMUX_VERSION="${XP_HOST_TMUX_VERSION:-$(xpns_get_tmux_version)}"
+  TMUX_XPANES_TMUX_VERSION="${TMUX_XPANES_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
     "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
-    "${XP_HOST_TMUX_VERSION}" ) ;then
+    "${TMUX_XPANES_TMUX_VERSION}" ) ;then
     : "Supported tmux version"
   else
     xpns_msg_warning \
