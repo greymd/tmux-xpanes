@@ -23,7 +23,7 @@ DESCRIPTION
 `xpanes` and `tmux-xpanes` (alias of `xpanes`) commands have following features.
 
 * Split tmux window into multiple panes
-  * Build command lines & execute them on the panes
+  * Construct command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log
@@ -38,22 +38,25 @@ OPTIONS
 -------
 
 `-h`, `--help`
-  Show this screen.
+  Display the help and exit.
 
 `-V`, `--version`
-  Show version.
+  Output version information and exit.
 
-`-c` <*utility*>
-  Specify <*utility*> which is executed as a command in each panes. If <*utility*> is omitted, `echo(1)` is used.
+`-B` <*begin-command*>
+  Run <*begin-command*> before processing <*command*> in each pane. Multiple options are allowed.
+
+`-c` <*command*>
+  Set <*command*> to be executed in each pane. Default is `echo {}`.
 
 `-d`, `--desync`
-  Make synchronize-panes option off on new window.
+  Make synchronize-panes option off in new window.
 
 `-e`
-  Execute given arguments as is.
+  Execute given arguments as is. Same as `-c '{}'`
 
 `-I` <*repstr*>
-  Replacing one or more occurrences of <*repstr*> in <*utility*> given by -c option. Default value of <*repstr*> is {}.
+  Replacing one or more occurrences of <*repstr*> in command provided by -c or -B. Default is `{}`.
 
 `-C` *NUM*, `--cols=`*NUM*
   Number of columns of window layout.
@@ -62,7 +65,7 @@ OPTIONS
   Number of rows of window layout.
 
 `-l` <*layout*>
-  Specify a layout for a window. Recognized layout arguments are:
+  Set the preset of window layout. Recognized layout arguments are:
     `t`    tiled (default)
     `eh`   even-horizontal
     `ev`   even-vertical
@@ -70,28 +73,28 @@ OPTIONS
     `mv`   main-vertical
 
 `-s`
-  Speedy mode: Run command without creating a interactive shell.
+  Speedy mode: Run command without opening an interactive shell.
 
 `-ss`
-  Speedy mode AND close the pane automatically at the same time as the process ends.
+  Speedy mode AND close a pane automatically at the same time as process exiting.
 
 `-n` <*number*>
-  Set the maximum number of arguments taken for each pane of <*utility*>.
+  Set the maximum number of <*argument*> taken for each pane.
 
 `-S` <*socket-path*>
-  Specify a full alternative path to the server socket.
+  Set a full alternative path to the server socket.
 
 `-t`
-  Display each argument on the each pane's border.
+  Display each argument on the each pane's border as their title.
 
 `-x`
-  Create extra panes on the current active window.
+  Create extra panes in the current active window.
 
 `--log`[`=`<*directory*>]
   Enable logging and store log files to ~/.cache/xpanes/logs or <*directory*>.
 
 `--log-format=`<*FORMAT*>
-  File name of log files follows <*FORMAT*>.
+  Make name of log files follow <*FORMAT*>.
 
 `--ssh`
   Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.

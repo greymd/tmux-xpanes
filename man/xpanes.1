@@ -17,7 +17,7 @@ command ... | \fB\fCxpanes\fR [\fB\fCOPTIONS\fR] [<\fIutility\fP> ...]
 Split tmux window into multiple panes
 .RS
 .IP \(bu 2
-Build command lines & execute them on the panes
+Construct command lines & execute them on the panes
 .RE
 .IP \(bu 2
 Runnable from outside of tmux session
@@ -41,22 +41,25 @@ Generate command lines from standard input (Pipe mode)
 .SH OPTIONS
 .TP
 \fB\fC\-h\fR, \fB\fC\-\-help\fR
-Show this screen.
+Display the help and exit.
 .TP
 \fB\fC\-V\fR, \fB\fC\-\-version\fR
-Show version.
+Output version information and exit.
 .TP
-\fB\fC\-c\fR <\fIutility\fP>
-Specify <\fIutility\fP> which is executed as a command in each panes. If <\fIutility\fP> is omitted, \fB\fCecho(1)\fR is used.
+\fB\fC\-B\fR <\fIbegin\-command\fP>
+Run <\fIbegin\-command\fP> before processing <\fIcommand\fP> in each pane. Multiple options are allowed.
+.TP
+\fB\fC\-c\fR <\fIcommand\fP>
+Set <\fIcommand\fP> to be executed in each pane. Default is \fB\fCecho {}\fR\&.
 .TP
 \fB\fC\-d\fR, \fB\fC\-\-desync\fR
-Make synchronize\-panes option off on new window.
+Make synchronize\-panes option off in new window.
 .TP
 \fB\fC\-e\fR
-Execute given arguments as is.
+Execute given arguments as is. Same as \fB\fC\-c '{}'\fR
 .TP
 \fB\fC\-I\fR <\fIrepstr\fP>
-Replacing one or more occurrences of <\fIrepstr\fP> in <\fIutility\fP> given by \-c option. Default value of <\fIrepstr\fP> is {}.
+Replacing one or more occurrences of <\fIrepstr\fP> in command provided by \-c or \-B. Default is \fB\fC{}\fR\&.
 .TP
 \fB\fC\-C\fR \fINUM\fP, \fB\fC\-\-cols=\fR\fINUM\fP
 Number of columns of window layout.
@@ -65,7 +68,7 @@ Number of columns of window layout.
 Number of rows of window layout.
 .PP
 \fB\fC\-l\fR <\fIlayout\fP>
-  Specify a layout for a window. Recognized layout arguments are:
+  Set the preset of window layout. Recognized layout arguments are:
     \fB\fCt\fR    tiled (default)
     \fB\fCeh\fR   even\-horizontal
     \fB\fCev\fR   even\-vertical
@@ -73,28 +76,28 @@ Number of rows of window layout.
     \fB\fCmv\fR   main\-vertical
 .TP
 \fB\fC\-s\fR
-Speedy mode: Run command without creating a interactive shell.
+Speedy mode: Run command without opening an interactive shell.
 .TP
 \fB\fC\-ss\fR
-Speedy mode AND close the pane automatically at the same time as the process ends.
+Speedy mode AND close a pane automatically at the same time as process exiting.
 .TP
 \fB\fC\-n\fR <\fInumber\fP>
-Set the maximum number of arguments taken for each pane of <\fIutility\fP>.
+Set the maximum number of <\fIargument\fP> taken for each pane.
 .TP
 \fB\fC\-S\fR <\fIsocket\-path\fP>
-Specify a full alternative path to the server socket.
+Set a full alternative path to the server socket.
 .TP
 \fB\fC\-t\fR
-Display each argument on the each pane's border.
+Display each argument on the each pane's border as their title.
 .TP
 \fB\fC\-x\fR
-Create extra panes on the current active window.
+Create extra panes in the current active window.
 .TP
 \fB\fC\-\-log\fR[\fB\fC=\fR<\fIdirectory\fP>]
 Enable logging and store log files to ~/.cache/xpanes/logs or <\fIdirectory\fP>.
 .TP
 \fB\fC\-\-log\-format=\fR<\fIFORMAT\fP>
-File name of log files follows <\fIFORMAT\fP>.
+Make name of log files follow <\fIFORMAT\fP>.
 .TP
 \fB\fC\-\-ssh\fR
 Same as \fB\fC\-t \-s \-c 'ssh \-o StrictHostKeyChecking=no {}'\fR\&.

@@ -49,7 +49,7 @@ $ docker ps -q | xpanes -s -c "docker exec -it {} sh"
 
 # Features
 * Split tmux window into multiple panes
-  + Build command lines & execute them on the panes
+  + Construct command lines & execute them on the panes
 * Runnable from outside of tmux session
 * Runnable from inside of tmux session
 * Record operation log
@@ -125,35 +125,36 @@ Two commands `xpanes` and `tmux-xpanes` will be installed. They are actually sam
 Usage:
   xpanes [OPTIONS] [argument ...]
 
-Usage(pipe mode):
-  command ... | xpanes [OPTIONS] [<utility> ...]
+Usage(Pipe mode):
+  command ... | xpanes [OPTIONS] [<command> ...]
 
 OPTIONS:
-  -h,--help                    Show this screen.
-  -V,--version                 Show version.
-  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  -e                           Execute given arguments as is.
-  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
+  -h,--help                    Display this help and exit.
+  -V,--version                 Output version information and exit.
+  -B <begin-command>           Run <begin-command> before processing <command> in each pane. Multiple options are allowed.
+  -c <command>                 Set <command> to be executed in each pane. Default is `echo {}`.
+  -d,--desync                  Make synchronize-panes option off in new window.
+  -e                           Execute given arguments as is. Same as `-c '{}'`
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is `{}`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
-  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+  -l <layout>                  Set the preset of window layout. Recognized layout arguments are:
                                t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
-  -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a interactive shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
-  -S <socket-path>             Specify a full alternative path to the server socket.
+  -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -s                           Speedy mode: Run command without opening an interactive shell.
+  -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
+  -S <socket-path>             Set a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
+  --log-format=<FORMAT>        Make name of log files follow <FORMAT>. Default is `[:ARG:].log.%Y-%m-%d_%H-%M-%S`.
   --ssh                        Same as `-t -s -c 'ssh -o StrictHostKeyChecking=no {}'`.
   --stay                       Do not switch to new window.
-  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
+  --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 ```
 
@@ -423,7 +424,8 @@ user1@host1-1.log.2017-03-15_21-30-07
 user2@host2-1.log.2017-03-15_21-30-07
 ```
 
-File name format for log file can be specified with `--log-format` option. Please refer to `xpanes --help`.
+File name format for log file can be specified with `--log-format` option.
+Please refer to [FORMAT](#format) for more information.
 
 **Attention:** Logging feature does not work properly with particular tmux versions. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
@@ -505,52 +507,6 @@ As you can see, each pane starts from command's result, not shell's prompt like 
 
 Confirmation message like "Pane is dead..." is displayed when every process ends.
 To suppress the message, use `-ss` instead of `-s`.
-
-
-#### Get index number
-
-`-c` option accepts Bourne Shel script with `-s` option.
-For example, semicolon `;` can be used to run multiple commands on a pane.
-
-```sh
-$ xpanes -c 'commandA; commandB; commandC; ...'
-```
-
-Off course, `tmux` is available if `tmux` is in the `PATH`.
-Here is the example to display the every pane's index number.
-
-```sh
-$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; echo $INDEX' _ _ _ _
-```
-
-```
-    +-----------------------------------+------------------------------------+
-    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
-    │0                                  │1                                   │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    +-----------------------------------+------------------------------------+
-    │$ INDEX=`...`; echo $INDEX         │$ INDEX=`...`; echo $INDEX          │
-    │2                                  │3                                   │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    │                                   │                                    │
-    +-----------------------------------+------------------------------------+
-```
-
-This technique is helpful to avoid that all the commands start simultaneously.
-Here is the example to let each command start every second.
-
-```sh
-$ xpanes -s -c 'INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`; sleep $INDEX; command {}' argA argB argC ...
-```
 
 
 #### Display host always
@@ -655,6 +611,56 @@ You will get the same result with this command line.
 ```sh
 $ xpanes -I@ -c "@" "top" "vmstat 1" "watch -n 1 free"
 ```
+
+#### Preprocessing for each pane
+
+`-B` option allows to run another command before processing `-c` option.
+
+```sh
+$ xpanes -B 'echo Preprocessing' -c 'echo Test' _
+```
+
+```
+    +-------------------------------+
+    │$ echo Preprocessing           │
+    │Preprocessing                  │
+    │$ echo Test                    │
+    │Test                           │
+    │                               │
+    │                               │
+    │                               │
+    +-------------------------------+
+```
+
+`-B` and `-c` are similar options.
+However, `-B` can be used multiple times.
+
+```sh
+$ xpanes -B 'echo Pre1' -B 'echo Pre2' -B 'echo Pre3' -c 'echo {}' A B C D
+```
+
+```
+    +-------------------------------+------------------------------+
+    │$ echo Pre1                    │$ echo Pre1                   │
+    │Pre1                           │Pre1                          │
+    │$ echo Pre2                    │$ echo Pre2                   │
+    │Pre2                           │Pre2                          │
+    │$ echo Pre3                    │$ echo Pre3                   │
+    │Pre3                           │Pre3                          │
+    │$ echo A                       │$ echo B                      │
+    +-------------------------------+------------------------------+
+    │$ echo Pre1                    │$ echo Pre1                   │
+    │Pre1                           │Pre1                          │
+    │$ echo Pre2                    │$ echo Pre2                   │
+    │Pre2                           │Pre2                          │
+    │$ echo Pre3                    │$ echo Pre3                   │
+    │Pre3                           │Pre3                          │
+    │$ echo C                       │$ echo D                      │
+    +-------------------------------+------------------------------+
+```
+
+It is helpful to customize default `xpanes` behavior with `alias`.
+See [Use alias](#use-alias).
 
 ## Layout of panes
 
@@ -878,7 +884,7 @@ However, giving both `-c` and any arguments causes error. Because the command ca
 
 ```bash:tmux_session
 $ echo test | xpanes -c 'echo {}' echo
-xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <utility> are given.
+xpanes:Error: Both arguments and other options (like '-c', '-e') which updates <command> are given.
 ```
 
 ### Connecting to multiple hosts given by `~/.ssh/config`
@@ -942,7 +948,7 @@ The results would be like this.
     +------------------------------+------------------------------+
 ```
 
-## Session
+## Operate session
 
 ### Recover disconnected session
 
@@ -980,15 +986,86 @@ Importing this socket file, different users can share their screens each other.
 [user2@host] $ tmux -S /home/user1/mysocket attach
 ```
 
-... then, user1 and user2 can share their screen each other.
+... then, user1 and user2 can share their screen.
 
+## FORMAT
 
+File name of log file generated by `--log` option can be changed by `--log-format=FORMAT`.
+
+Default value of `FORMAT` is `[:ARG:].log.%Y-%m-%d_%H-%M-%S`.
+
+Interpreted sequences are:
+
+* `[:PID:]` --  Process id of the tmux session
+* `[:ARG:]` --  Argument name
+
+In addition, sequences same as `date(1)` are available.
+
+For example:
+
+* `%Y` --  year  (e.g, 1960)
+* `%m` --  month (e.g, 01)
+* `%d` --  date  (e.g, 31)
+
+And etc.
+
+Other sequences are also available.
+Refer to `date(1)` manual.
+
+## Use alias
+
+### Get index number
+
+As mentioned before, `-B` option is helpful to improve your xpanes with `alias`.
+For example, define the alias like this.
+
+Alias:
+```sh
+_tmp='INDEX=`tmux display -pt "${TMUX_PANE}" "#{pane_index}"`'
+alias xpanes="xpanes -B '${_tmp}'"
+```
+
+After that, execute this command.
+
+```sh
+$ xpanes -sc 'echo $INDEX' _ _ _ _
+```
+
+```
+    +-------------------------------+------------------------------+
+    │$ echo $INDEX                  │$ echo $INDEX                 │
+    │0                              │1                             │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+    │$ echo $INDEX                  │$ echo $INDEX                 │
+    │2                              │3                             │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    │                               │                              │
+    +-------------------------------+------------------------------+
+```
+
+As shown above, `$INDEX` has the index number of pane.
+This technique is helpful to avoid that all the commands start simultaneously.
+To wait each command start every second, just do it with the above alias.
+
+```sh
+$ xpanes -B 'sleep $INDEX' -c 'command {}' argA argB argC ...
+```
+
+See [wiki > Alias examples](https://github.com/greymd/tmux-xpanes/wiki/Alias-examples) for more useful examples.
 
 ## Shell variables
 
 `xpanes` refers to following shell variables.
 Add the statement to your default shell's
-configure file (i.e `.bashrc`, `.zshrc`) to change them as you like.
+startup file file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 
 ### `TMUX_XPANES_EXEC`
 

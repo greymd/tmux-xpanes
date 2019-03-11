@@ -5,7 +5,7 @@ readonly XP_SHELL="/bin/bash"
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="4.0.0"
+readonly XP_VERSION="4.1.0-beta"
 
 ## trap might be updated in 'xpns_pre_execution' function
 trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
@@ -94,7 +94,7 @@ TMUX_XPANES_LOG_DIRECTORY="${TMUX_XPANES_LOG_DIRECTORY:-${XP_DEFAULT_TMUX_XPANES
 # options which work individually.
 readonly XP_FLAG_OPTIONS="[hVdetxs]"
 # options which need arguments.
-readonly XP_ARG_OPTIONS="[ISclnCR]"
+readonly XP_ARG_OPTIONS="[ISclnCRB]"
 readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
@@ -102,6 +102,7 @@ readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
 XP_OPTIONS=()
 XP_ARGS=()
 XP_STDIN=()
+XP_BEGIN_ARGS=()
 XP_IS_PIPE_MODE=0
 XP_OPT_IS_SYNC=1
 XP_OPT_DRY_RUN=0
@@ -168,61 +169,54 @@ xpns_msg_error() {
   xpns_msg "Error" "$1"
 }
 
+xpns_usage_warn() {
+  xpns_usage_short >&2
+  echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+}
+
+xpns_usage_short() {
+  cat << _EOS_
+Usage: ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
+Usage(Pipe mode): command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<command> ...]
+_EOS_
+}
+
 xpns_usage() {
   cat << _EOS_
 Usage:
   ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
-Usage(pipe mode):
-  command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<utility> ...]
+Usage(Pipe mode):
+  command ... | ${XP_THIS_FILE_NAME} [OPTIONS] [<command> ...]
 
 OPTIONS:
-  -h,--help                    Show this screen.
-  -V,--version                 Show version.
-  -c <utility>                 Specify <utility> which is executed as a command in each panes. If <utility> is omitted, echo(1) is used.
-  -d,--desync                  Make synchronize-panes option off on new window.
-  -e                           Execute given arguments as is.
-  -I <repstr>                  Replacing one or more occurrences of <repstr> in <utility> given by -c option. Default value of <repstr> is {}.
+  -h,--help                    Display this help and exit.
+  -V,--version                 Output version information and exit.
+  -B <begin-command>           Run <begin-command> before processing <command> in each pane. Multiple options are allowed.
+  -c <command>                 Set <command> to be executed in each pane. Default is \`echo {}\`.
+  -d,--desync                  Make synchronize-panes option off in new window.
+  -e                           Execute given arguments as is. Same as \`-c '{}'\`
+  -I <repstr>                  Replacing one or more occurrences of <repstr> in command provided by -c or -B. Default is \`{}\`.
   -C NUM,--cols=NUM            Number of columns of window layout.
   -R NUM,--rows=NUM            Number of rows of window layout.
-  -l <layout>                  Name of the layout presets for window layout. Recognized layout arguments are:
+  -l <layout>                  Set the preset of window layout. Recognized layout arguments are:
                                t    tiled
                                eh   even-horizontal
                                ev   even-vertical
                                mh   main-horizontal
                                mv   main-vertical
-  -n <number>                  Set the maximum number of arguments taken for each pane of <utility>.
-  -s                           Speedy mode: Run command without creating a interactive shell.
-  -ss                          Speedy mode AND close the pane automatically at the same time as the process end.
-  -S <socket-path>             Specify a full alternative path to the server socket.
+  -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -s                           Speedy mode: Run command without opening an interactive shell.
+  -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
+  -S <socket-path>             Set a full alternative path to the server socket.
   -t                           Display each argument on the each pane's border as their title.
   -x                           Create extra panes in the current active window.
   --log[=<directory>]          Enable logging and store log files to ~/.cache/xpanes/logs or <directory>.
-  --log-format=<FORMAT>        File name of log files follows <FORMAT>.
+  --log-format=<FORMAT>        Make name of log files follow <FORMAT>. Default is \`${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}\`.
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
-  --bulk-cols=NUM1[,NUM2 ...]  Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
+  --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
-
-_EOS_
-}
-
-xpns_usage_verbose() {
-  cat << _EOS_
-FORMAT:
-    Default value is "${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}"
-    Interpreted sequences are:
-    [:PID:]   Process id of the tmux session. (e.g, 41531)
-    [:ARG:]   Argument name
-
-    In addition, sequences same as date(1) command are available.
-
-    For example:
-    %Y   year  (e.g, 1960)
-    %m   month (e.g, 01)
-    %d   date  (e.g, 31)
-    And etc.
-    Other sequences are available. Please refer to date(1) manual.
 
 Copyright (c) 2019 Yamada, Yasuhiro
 Released under the MIT License.
@@ -735,10 +729,12 @@ xpns_send_commands() {
   local _cmd="$1"          ; shift
   local _index=0
   local _pane_index=
+  local _exec_cmd=
   for arg in "$@"
   do
+    _exec_cmd="${_cmd//${_repstr}/${arg}}"
     _pane_index=$(( _index + _index_offset ))
-    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
     _index=$(( _index + 1 ))
   done
 }
@@ -857,6 +853,15 @@ xpns_prepare_extra_panes() {
     "${_await_flg}" \
     "${_pane_base_index}" \
     "$@"
+}
+
+xpns_get_joined_begin_commands () {
+  local _commands="$1"
+  if [[ "${#XP_BEGIN_ARGS[*]}" -lt 1 ]]; then
+    printf "%s" "${_commands}"
+    return
+  fi
+  printf "%s\\n" "${XP_BEGIN_ARGS[@]}" "${_commands}"
 }
 
 xpns_inject_wait_command () {
@@ -1340,8 +1345,7 @@ xpns_pre_execution() {
 
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
-      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
     xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
     xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
   }
@@ -1424,8 +1428,7 @@ xpns_execution() {
     fi
     IFS=" " read -r XP_OPT_CUSTOM_SIZE_COLS XP_OPT_CUSTOM_SIZE_ROWS _tmp_cols <<< "$_tmp_col_row_cols"
     IFS=" " read -r -a XP_COLS <<< "${_tmp_cols}"
-    IFS=" " read -r -a XP_COLS_OFFSETS <<< \
-      "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
+    IFS=" " read -r -a XP_COLS_OFFSETS <<< "$(printf "%s\\n" "${XP_COLS[*]}" | xpns_nums_accumulate_sum)"
     xpns_msg_debug "Options: $(xpns_arr2args "${XP_OPTIONS[@]}")"
     xpns_msg_debug "Arguments: $(xpns_arr2args "${XP_ARGS[@]}")"
   }
@@ -1435,6 +1438,7 @@ xpns_execution() {
   _def_allow_rename="$(xpns_get_global_tmux_conf 'allow-rename')"
 
   xpns_suppress_allow_rename "${_def_allow_rename-}"
+  XP_CMD_UTILITY="$(xpns_get_joined_begin_commands "${XP_CMD_UTILITY}")"
 
   if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
     # Reuse existing window name
@@ -1595,13 +1599,13 @@ xpns_execution() {
 
 ## ----------------
 # Arrange options for pipe mode
-#  * argument -> command utility
+#  * argument -> command
 #  * stdin -> argument
 ## ----------------
 xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
   if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
-    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <utility> are given."
+    xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <command> are given."
     exit ${XP_EINVAL}
   fi
 
@@ -1636,14 +1640,14 @@ xpns_switch_pipe_mode() {
     xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}")
 
 
-  # Merge them into utility.
+  # Merge them into command.
   if [[ ! -z "${XP_ARGS[*]-}" ]]; then
     # Attention: It might be wrong result if IFS is changed.
     XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
 
   # If there is empty -I option or user does not assign the <repstr>,
-  # Append the space and <repstr> at the end of the <utility>
+  # Append the space and <repstr> at the end of the <command>
   # This is same as the xargs command of GNU.
   # i.e,
   #   $ echo 10 | xargs seq
@@ -1699,7 +1703,6 @@ xpns_warning_before_extra() {
 xpns_load_flag_options() {
   if [[ "$1" =~ h ]]; then
     xpns_usage
-    xpns_usage_verbose
     exit 0
   fi
   if [[ "$1" =~ V ]]; then
@@ -1839,6 +1842,15 @@ xpns_load_arg_options() {
       xpns_msg_error "invalid argument '$2' for -R option"
       exit ${XP_EINVAL}
     fi
+  elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*B ]]; then
+    _pattern="^-${XP_FLAG_OPTIONS}*B(.+)"
+    if [[ "$1" =~ $_pattern ]]; then
+      XP_BEGIN_ARGS+=("${BASH_REMATCH[1]}")
+      return 0
+    else
+      XP_BEGIN_ARGS+=("$2")
+      return 0
+    fi
   fi
   return 0
 }
@@ -1846,7 +1858,6 @@ xpns_load_arg_options() {
 xpns_load_long_options() {
   if [[ "$1" =~ ^--help$ ]]; then
     xpns_usage
-    xpns_usage_verbose
     exit 0
   elif [[ "$1" =~ ^--version$ ]]; then
     xpns_version
@@ -1900,8 +1911,7 @@ xpns_load_long_options() {
   ## ----------------
   else
     xpns_msg_error "invalid option -- '${1#--}'"
-    xpns_usage
-    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    xpns_usage_warn
     exit ${XP_EINVAL}
   fi
 }
@@ -1958,8 +1968,7 @@ xpns_parse_options() {
         ## ----------------
         else
           xpns_msg_error "Invalid option -- '${1#-}'"
-          xpns_usage
-          echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+          xpns_usage_warn
           exit ${XP_EINVAL}
         fi
       fi
@@ -1984,9 +1993,8 @@ xpns_parse_options() {
 
   # When no argument arr given, exit.
   if [[ -z "${XP_ARGS[*]-}" ]]; then
-    xpns_msg_error "No arguments are given."
-    xpns_usage
-    echo "Try '${XP_THIS_FILE_NAME} --help' for more information." >&2
+    xpns_msg_error "No arguments."
+    xpns_usage_warn
     exit ${XP_EINVAL}
   fi
 
@@ -2005,7 +2013,7 @@ xpns_parse_options() {
   XP_CMD_UTILITY="${XP_CMD_UTILITY:-${XP_DEFAULT_CMD_UTILITY}}"
   XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
 
-  # To set utility on pre_execution, set -c option manually.
+  # To set command on pre_execution, set -c option manually.
   if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
