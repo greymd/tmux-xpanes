@@ -4498,7 +4498,6 @@ test_b_x_log_option () {
   printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
   assertEquals 0 $?
   _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-  cat "$_log_file"
   assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
 
   printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
