@@ -4369,6 +4369,8 @@ test_b_option () {
     assertEquals 0 $?
     rm -f "${_tmpdir}/${f}"
   done
+  close_tmux_session "$_socket_file"
+  rm -f "${_tmpdir}"/*
 
   : "Normal mode2" && {
     echo $'\n'" $ TMUX($_cmd)"$'\n'
@@ -4378,10 +4380,12 @@ test_b_option () {
     # Check created files
     wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
     for f in AAA BBB CCC ;do
-    grep -q "${f}" < "${_tmpdir}/${f}"
-    assertEquals 0 $?
-    rm -f "${_tmpdir}/${f}"
+      grep -q "${f}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
     done
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 
   : "Pipe mode" && {
@@ -4393,10 +4397,12 @@ test_b_option () {
     # Check created files
     wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
     for f in AAA BBB CCC ;do
-    grep -q "${f}" < "${_tmpdir}/${f}"
-    assertEquals 0 $?
-    rm -f "${_tmpdir}/${f}"
+      grep -q "${f}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
     done
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 }
 
@@ -4418,6 +4424,8 @@ test_multi_b_option () {
     assertEquals 0 $?
     rm -f "${_tmpdir}/${f}"
   done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+  close_tmux_session "$_socket_file"
+  rm -f "${_tmpdir}"/*
 
   : "Normal mode2" && {
     echo $'\n'" $ TMUX($_cmd)"$'\n'
@@ -4431,6 +4439,8 @@ test_multi_b_option () {
       assertEquals 0 $?
       rm -f "${_tmpdir}/${f}"
     done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 
   : "Pipe mode" && {
@@ -4446,6 +4456,8 @@ test_multi_b_option () {
       assertEquals 0 $?
       rm -f "${_tmpdir}/${f}"
     done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 }
 
@@ -4487,7 +4499,7 @@ test_b_x_log_option () {
   wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
   # Append two more panes with log setting
-  _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" -B '_str=HOGE' CCCC DDDD"
+  _cmd="${EXEC} --log=\"${_logdir}\" -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" -B '_str=HOGE' CCCC DDDD"
   exec_tmux_session "$_socket_file" "$_cmd"
 
   wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -4534,7 +4546,7 @@ test_b_x_log_option () {
     wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
     # Append two more panes with log setting
-    _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} -x --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+    _cmd="${EXEC} -x --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
     exec_tmux_session "$_socket_file" "$_cmd"
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
