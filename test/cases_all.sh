@@ -4479,7 +4479,7 @@ test_b_x_log_option () {
 
   # Remove single quotation for --log-format.
   # shellcheck disable=SC2016
-  _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+  _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
   echo $'\n'" $ $_cmd"$'\n'
   # Execute command
   eval "$_cmd"
@@ -4524,7 +4524,7 @@ test_b_x_log_option () {
 
   : "In TMUX session" && {
     # shellcheck disable=SC2016
-    _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+    _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
     echo $'\n'" $ TMUX($_cmd)"$'\n'
     mkdir -p "${_tmpdir}/fin"
 
