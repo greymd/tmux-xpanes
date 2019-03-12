@@ -210,6 +210,26 @@ matrix:
           env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
         - os: linux
           env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
+        - os: linux
+          env: SH=bash SH_VERSION=5.0 TMUX_VERSION=2.8 CASES=85
 
 before_script:
   - export TMPDIR=$TRAVIS_BUILD_DIR/tmp
