@@ -4487,7 +4487,7 @@ test_b_x_log_option () {
   wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
   # Append two more panes with log setting
-  _cmd="${EXEC} --log=\"${_logdir}\" -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" -B '_str=HOGE' CCCC DDDD"
+  _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" -x --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" -B '_str=HOGE' CCCC DDDD"
   exec_tmux_session "$_socket_file" "$_cmd"
 
   wait_panes_separation "$_socket_file" "AAAA" "4"
@@ -4534,7 +4534,7 @@ test_b_x_log_option () {
     wait_existing_file_number "${_tmpdir}/fin" "2" # AAAA BBBB
 
     # Append two more panes with log setting
-    _cmd="${EXEC} -x --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
+    _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} -x --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -B '_str=HOGE' -c \"echo \${_str}_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@\" CCCC DDDD"
     exec_tmux_session "$_socket_file" "$_cmd"
 
     wait_panes_separation "$_socket_file" "AAAA" "4"
