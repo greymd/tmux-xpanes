@@ -601,11 +601,10 @@ setUp(){
   export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/cache"
   cd "${BIN_DIR}" || exit
   mkdir -p "${TEST_TMP}"
+  ## This part is related to unresolved bug: https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
   # set_tmux_exec_randomly
-  ## reproduce https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
-  _exec="$(get_tmux_full_path)"
-  export TMUX_XPANES_EXEC="${_exec} -2"
-  switch_tmux_path 0
+  unset TMUX_XPANES_EXEC
+  switch_tmux_path 1
   echo ">>>>>>>>>>" >&2
   echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
 }
