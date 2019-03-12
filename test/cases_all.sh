@@ -602,9 +602,7 @@ setUp(){
   cd "${BIN_DIR}" || exit
   mkdir -p "${TEST_TMP}"
   ## This part is related to unresolved bug: https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
-  # set_tmux_exec_randomly
-  unset TMUX_XPANES_EXEC
-  switch_tmux_path 1
+  set_tmux_exec_randomly
   echo ">>>>>>>>>>" >&2
   echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
 }
