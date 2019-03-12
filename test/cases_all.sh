@@ -603,6 +603,7 @@ setUp(){
   mkdir -p "${TEST_TMP}"
   # set_tmux_exec_randomly
   ## reproduce https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
+  _exec="$(get_tmux_full_path)"
   export TMUX_XPANES_EXEC="${_exec} -2"
   switch_tmux_path 0
   echo ">>>>>>>>>>" >&2
