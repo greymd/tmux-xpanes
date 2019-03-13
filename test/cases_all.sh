@@ -601,6 +601,7 @@ setUp(){
   export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/cache"
   cd "${BIN_DIR}" || exit
   mkdir -p "${TEST_TMP}"
+  ## This part is related to unresolved bug: https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
   set_tmux_exec_randomly
   echo ">>>>>>>>>>" >&2
   echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
@@ -1487,7 +1488,7 @@ test_argument_and_utility_pipe() {
 # @case: 23
 # @skip:
 test_unsupported_version() {
-  XP_HOST_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
+  TMUX_XPANES_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
   assertEquals "0" "$?"
 }
 
@@ -4368,6 +4369,8 @@ test_b_option () {
     assertEquals 0 $?
     rm -f "${_tmpdir}/${f}"
   done
+  close_tmux_session "$_socket_file"
+  rm -f "${_tmpdir}"/*
 
   : "Normal mode2" && {
     echo $'\n'" $ TMUX($_cmd)"$'\n'
@@ -4377,10 +4380,12 @@ test_b_option () {
     # Check created files
     wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
     for f in AAA BBB CCC ;do
-    grep -q "${f}" < "${_tmpdir}/${f}"
-    assertEquals 0 $?
-    rm -f "${_tmpdir}/${f}"
+      grep -q "${f}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
     done
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 
   : "Pipe mode" && {
@@ -4392,10 +4397,12 @@ test_b_option () {
     # Check created files
     wait_all_files_creation "${_tmpdir}/"{AAA,BBB,CCC}
     for f in AAA BBB CCC ;do
-    grep -q "${f}" < "${_tmpdir}/${f}"
-    assertEquals 0 $?
-    rm -f "${_tmpdir}/${f}"
+      grep -q "${f}" < "${_tmpdir}/${f}"
+      assertEquals 0 $?
+      rm -f "${_tmpdir}/${f}"
     done
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 }
 
@@ -4417,6 +4424,8 @@ test_multi_b_option () {
     assertEquals 0 $?
     rm -f "${_tmpdir}/${f}"
   done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+  close_tmux_session "$_socket_file"
+  rm -f "${_tmpdir}"/*
 
   : "Normal mode2" && {
     echo $'\n'" $ TMUX($_cmd)"$'\n'
@@ -4430,6 +4439,8 @@ test_multi_b_option () {
       assertEquals 0 $?
       rm -f "${_tmpdir}/${f}"
     done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 
   : "Pipe mode" && {
@@ -4445,6 +4456,8 @@ test_multi_b_option () {
       assertEquals 0 $?
       rm -f "${_tmpdir}/${f}"
     done < <(echo AAA 1 BBB 2 CCC 3 | xargs -n 2)
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/*
   }
 }
 
@@ -4478,7 +4491,7 @@ test_b_x_log_option () {
 
   # Remove single quotation for --log-format.
   # shellcheck disable=SC2016
-  _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+  _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
   echo $'\n'" $ $_cmd"$'\n'
   # Execute command
   eval "$_cmd"
@@ -4498,7 +4511,6 @@ test_b_x_log_option () {
   printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$"
   assertEquals 0 $?
   _log_file=$(printf "%s\\n" "${_logdir}"/* | grep -E "AAAA-1_${_year}_AAAA-1$")
-  cat "$_log_file"
   assertEquals 1 "$(grep -ac 'GEGE_AAAA_' < "${_log_file}")"
 
   printf "%s\\n" "${_logdir}"/* | grep -E "BBBB-1_${_year}_BBBB-1$"
@@ -4524,7 +4536,7 @@ test_b_x_log_option () {
 
   : "In TMUX session" && {
     # shellcheck disable=SC2016
-    _cmd="${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
+    _cmd="TMUX_XPANES_EXEC=\"${TMUX_XPANES_EXEC}\" ${EXEC} --log=\"${_logdir}\" --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -B '_str=HOGE' -c \"echo "'\${_str}'"_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
     echo $'\n'" $ TMUX($_cmd)"$'\n'
     mkdir -p "${_tmpdir}/fin"
 
