@@ -69,9 +69,6 @@ readonly XP_EMPTY_STR="EMPTY"
 
 readonly XP_SUPPORT_TMUX_VERSION_LOWER="1.8"
 
-# This command might not be executed in bash. Use /bin/bash explicitly.
-readonly XP_AWAIT_CMD=$'\n'${XP_SHELL}$' -c \'printf "%s " "Pane is dead: Press [Enter] to exit..." >&2 && read\''
-
 # Check dependencies just in case.
 # Even POSIX compliant commands are only used in this program.
 # `xargs`, `sleep`, `mkfifo` are omitted because minimum functions can work without them.
@@ -83,6 +80,7 @@ readonly XP_DEPENDENCIES="${XP_DEPENDENCIES:-tmux grep sed tr od echo touch prin
 TMUX_XPANES_EXEC=${TMUX_XPANES_EXEC:-tmux}
 TMUX_XPANES_PANE_BORDER_FORMAT="${TMUX_XPANES_PANE_BORDER_FORMAT:-#[bg=green,fg=black] #T #[default]}"
 TMUX_XPANES_PANE_BORDER_STATUS="${TMUX_XPANES_PANE_BORDER_STATUS:-bottom}"
+TMUX_XPANES_PANE_DEAD_MESSAGE=${TMUX_XPANES_PANE_DEAD_MESSAGE:-'\033[41m\033[4m\033[30m Pane is dead: Press [Enter] to exit... \033[0m\033[39m\033[49m'}
 XP_DEFAULT_TMUX_XPANES_LOG_FORMAT="[:ARG:].log.%Y-%m-%d_%H-%M-%S"
 TMUX_XPANES_LOG_FORMAT="${TMUX_XPANES_LOG_FORMAT:-${XP_DEFAULT_TMUX_XPANES_LOG_FORMAT}}"
 XP_DEFAULT_TMUX_XPANES_LOG_DIRECTORY="${XP_CACHE_HOME}/logs"
@@ -887,7 +885,8 @@ xpns_inject_wait_command () {
 
   ## -s: Speedy mode (Not -ss: Speedy mode + nowait)
   if [[ "${_await_flg}" -eq 1 ]]; then
-    _exec_cmd="${_exec_cmd}${XP_AWAIT_CMD}"
+    local _msg="$(xpns_arr2args "${TMUX_XPANES_PANE_DEAD_MESSAGE}" | sed 's/"/\\"/g')"
+    _exec_cmd="${_exec_cmd}"$'\n'"${XP_SHELL} -c \"printf -- ${_msg} >&2 && read\""
   fi
   printf "%s" "${_exec_cmd}"
 }
