@@ -4,7 +4,7 @@
 ## $ pict travis.pict | sed 1d | sort -k1,2 -k3n | awk '{a[$1" "$2]=a[$1" "$2]" "$3}END{for(k in a){print k"    "a[k]}}' | sort -k1,1 | perl -anle 'print "- os: linux\n  env: SH=bash SH_VERSION=$F[0] TMUX_VERSION=$F[1] CASES=@{[join \",\", @F[2..$#F]]}"' | sed 's/^/        /'
 
 bash:3.2,4.0,4.1,4.2,4.3,4.4,5.0
-tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8
+tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,2.9a
 
 ## Create test cases
 # cat cases_all.sh | grep '@case:' | awk '{print $NF}' | xargs | tr ' ' ',' | awk '{print "case:"$0}'
