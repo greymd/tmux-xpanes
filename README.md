@@ -1125,6 +1125,21 @@ Example:
 export TMUX_XPANES_PANE_BORDER_STATUS="top"
 ```
 
+### `TMUX_XPANES_PANE_DEAD_MESSAGE`
+
+**DEFAULT VALUE:** `\033[41m\033[4m\033[30m Pane is dead: Press [Enter] to exit... \033[0m\033[39m\033[49m`
+
+It defines the message that displayed when a process exits with `-s` option enabled.
+
+The message is underlined black character on the red background (see [Ansi escape codes](http://ascii-table.com/ansi-escape-sequences.php)) by default.
+
+Example:
+
+```sh
+## Set green color
+export TMUX_XPANES_PANE_DEAD_MESSAGE='\033[32m=== EXIT ==='
+```
+
 ## ... and [let's play!](https://github.com/greymd/tmux-xpanes/wiki/Let's-play!)
 
 # Contributing
