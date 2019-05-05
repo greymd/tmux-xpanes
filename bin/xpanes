@@ -885,7 +885,8 @@ xpns_inject_wait_command () {
 
   ## -s: Speedy mode (Not -ss: Speedy mode + nowait)
   if [[ "${_await_flg}" -eq 1 ]]; then
-    local _msg="$(xpns_arr2args "${TMUX_XPANES_PANE_DEAD_MESSAGE}" | sed 's/"/\\"/g')"
+    local _msg
+    _msg="$(xpns_arr2args "${TMUX_XPANES_PANE_DEAD_MESSAGE}" | sed 's/"/\\"/g')"
     _exec_cmd="${_exec_cmd}"$'\n'"${XP_SHELL} -c \"printf -- ${_msg} >&2 && read\""
   fi
   printf "%s" "${_exec_cmd}"
@@ -1259,7 +1260,7 @@ xpns_check_cell_size() {
   local _win_height="$1"  ; shift
   local _win_width="$1"   ; shift
   local _ignore_flag="$1" ; shift
-  local _all_cols=
+  local _all_cols_num=
   local _all_rows=()
 
   if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]];then
@@ -1269,17 +1270,17 @@ xpns_check_cell_size() {
   if [[ -n "${_cols-}" ]] ;then
     read -r _cols _rows < <(xpns_adjust_col_row "${_cols-}" 0 "${_cell_num}")
     IFS=" " read -r -a _all_rows <<< "$(xpns_divide_equally "${_cell_num}" "${_cols}")"
-    _all_cols="$(xpns_nums_transpose "${_all_rows[@]}")"
+    _all_cols_num="$(xpns_nums_transpose "${_all_rows[@]}")"
 
   ## if row is only defined
   elif [[ -n "${_rows-}" ]] ;then
     read -r _cols _rows < <(xpns_adjust_col_row 0 "${_rows-}" "${_cell_num}")
-    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
+    _all_cols_num="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
 
   ## if both are undefined
   else
     read -r _cols _rows < <(xpns_adjust_col_row 0 0 "${_cell_num}")
-    _all_cols="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
+    _all_cols_num="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
   fi
 
   local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
@@ -1291,14 +1292,14 @@ xpns_check_cell_size() {
   xpns_msg_debug "# Of Panes: ${_cell_num}"
   xpns_msg_debug "         | Row[0] --...--> Row[MAX]"
   xpns_msg_debug "    -----+------------------------..."
-  xpns_msg_debug "    Col[]| ${_all_cols}"
+  xpns_msg_debug "    Col[]| ${_all_cols_num}"
   xpns_msg_debug "    -----+------------------------..."
 
   if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
     return "${XP_ESMLPANE:-7}"
   fi
-  printf "%s\\n" "${_cols} ${_rows} ${_all_cols}"
+  printf "%s\\n" "${_cols} ${_rows} ${_all_cols_num}"
 }
 
 # Execute from Normal mode1
@@ -1356,7 +1357,7 @@ xpns_pre_execution() {
   fi
 
   # If there is any options, escape them.
-  if [[ ! -z "${XP_OPTIONS[*]-}" ]]; then
+  if [[ -n "${XP_OPTIONS[*]-}" ]]; then
     _opts4args=$(xpns_arr2args "${XP_OPTIONS[@]}")
   fi
   _args4args=$(xpns_arr2args "${XP_ARGS[@]}")
@@ -1603,7 +1604,7 @@ xpns_execution() {
 ## ----------------
 xpns_switch_pipe_mode() {
   local _pane_num4new_term=""
-  if [[ ! -z "${XP_ARGS[*]-}" ]] && [[ ! -z "${XP_CMD_UTILITY-}" ]]; then
+  if [[ -n "${XP_ARGS[*]-}" ]] && [[ -n "${XP_CMD_UTILITY-}" ]]; then
     xpns_msg_error "Both arguments and other options (like '-c', '-e') which updates <command> are given."
     exit ${XP_EINVAL}
   fi
@@ -1640,7 +1641,7 @@ xpns_switch_pipe_mode() {
 
 
   # Merge them into command.
-  if [[ ! -z "${XP_ARGS[*]-}" ]]; then
+  if [[ -n "${XP_ARGS[*]-}" ]]; then
     # Attention: It might be wrong result if IFS is changed.
     XP_CMD_UTILITY="${XP_ARGS[*]}"
   fi
@@ -1656,7 +1657,7 @@ xpns_switch_pipe_mode() {
   #     => seq 10
   if [[ -z "${XP_REPSTR}" ]]; then
     XP_REPSTR="${XP_DEFAULT_REPSTR}"
-    if [[ ! -z "${XP_ARGS[*]-}" ]]; then
+    if [[ -n "${XP_ARGS[*]-}" ]]; then
       XP_CMD_UTILITY="${XP_ARGS[*]-} ${XP_REPSTR}"
     fi
   fi
