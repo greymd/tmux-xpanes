@@ -2023,7 +2023,7 @@ xpns_parse_options() {
 # Main function
 ## --------------------------------
 xpns_main() {
-  xpns_parse_options "${1+"$@"}"
+  xpns_parse_options ${1+"$@"}
   xpns_check_env "${XP_DEPENDENCIES}"
   ## --------------------------------
   # Parameter validation
@@ -2055,4 +2055,4 @@ xpns_main() {
 ## --------------------------------
 # Entry Point
 ## --------------------------------
-xpns_main "${1+"$@"}"
+xpns_main ${1+"$@"}
