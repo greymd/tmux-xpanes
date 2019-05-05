@@ -180,7 +180,7 @@ _EOS_
 }
 
 xpns_usage() {
-  cat << _EOS_
+  cat <<USAGE
 Usage:
   ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
@@ -219,7 +219,7 @@ OPTIONS:
 Copyright (c) 2019 Yamada, Yasuhiro
 Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
-_EOS_
+USAGE
 }
 
 # Show version number
@@ -381,8 +381,7 @@ xpns_nums_transpose () {
   done)"
 
   # 'for' statement does not work somehow
-  _result="$(while read -r i;
-  do
+  _result="$(while read -r i; do
     ## This part is depending on the following 'cut' behavior
     ## $ echo 1234 | cut -c 5
     ## => result is supposed to be empty
@@ -1917,8 +1916,7 @@ xpns_load_long_options() {
 }
 
 xpns_parse_options() {
-  while (( $# > 0 ))
-  do
+  while (( $# > 0 )); do
     case "$1" in
       --)
       if [[ ${XP_NO_OPT} -eq 1 ]]; then
