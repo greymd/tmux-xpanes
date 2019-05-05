@@ -1067,6 +1067,12 @@ See [wiki > Alias examples](https://github.com/greymd/tmux-xpanes/wiki/Alias-exa
 Add the statement to your default shell's
 startup file file (i.e `.bashrc`, `.zshrc`) to change them as you like.
 
+### `XDG_CACHE_HOME`
+
+tmux-xpanes follows [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html).
+`XDG_CACHE_HOME` is `$HOME/.cache` by default.
+Therefore, `$HOME/.cache/xpanes` directory is used to store temporary data by default.
+
 ### `TMUX_XPANES_EXEC`
 
 **DEFAULT VALUE:** `tmux`
