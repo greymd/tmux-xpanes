@@ -1,5 +1,5 @@
-#!/bin/bash
-readonly XP_SHELL="/bin/bash"
+#!/usr/bin/env bash
+readonly XP_SHELL="/usr/bin/env bash"
 
 # @Author Yamada, Yasuhiro
 # @Filename xpanes
