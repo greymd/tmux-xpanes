@@ -54,7 +54,7 @@ readonly XP_ABS_THIS_FILE_NAME="${XP_THIS_DIR}/${XP_THIS_FILE_NAME}"
 
 # Prevent cache directory being created under root / directory in any case.
 # This is quite rare case (but it can be happened).
-readonly XP_USER_HOME="${HOME:-/etc}"
+readonly XP_USER_HOME="${HOME:-/tmp}"
 
 # Basically xpanes follows XDG Base Direcotry Specification.
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.6.html

@@ -151,6 +151,12 @@ See \fIFORMATS\fP section in
 .BR tmux (1) 
 for further details.
 Default value is \fB\fCbottom\fR\&.
+.TP
+\fB\fCTMUX_XPANES_PANE_DEAD_MESSAGE\fR
+It defines the message that displayed when a process exits with \fB\fC\-s\fR option enabled.
+.IP
+Default value is
+\fB\fC\\033[41m\\033[4m\\033[30m Pane is dead: Press [Enter] to exit... \\033[0m\\033[39m\\033[49m\fR\&.
 .SH MODES
 .SS [Normal mode1] Outside of tmux session.
 .PP
@@ -332,22 +338,22 @@ Each line provided by standard input is corresponding to the each pane's command
 .PP
 .RS
 .nf
-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
-|$ ssh \-o StrictHostKeyChecking=no myuser@host1 | $ ssh \-o StrictHostKeyChecking=no myuser@host2 |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-|                                               |                                                |
-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
+|$ ssh \-o StrictHostKeyChecking |$ ssh \-o StrictHostKeyChecking |
+|=no myuser@host1               |=no myuser@host2               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
+|                               |                               |
++\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-+
 .fi
 .RE
 .SS Create new panes on existing window
