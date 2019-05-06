@@ -147,6 +147,12 @@ SHELL VARIABLES
   See *FORMATS* section in tmux(1) for further details.
   Default value is `bottom`.
 
+`TMUX_XPANES_PANE_DEAD_MESSAGE`
+  It defines the message that displayed when a process exits with `-s` option enabled.
+
+  Default value is
+  `\033[41m\033[4m\033[30m Pane is dead: Press [Enter] to exit... \033[0m\033[39m\033[49m`.
+
 MODES
 ------
 
@@ -307,22 +313,22 @@ EXAMPLES
 
 `xpanes` --ssh myuser1@host1 myuser2@host2
 
-    +-----------------------------------------------+------------------------------------------------+
-    │$ ssh -o StrictHostKeyChecking=no myuser@host1 │ $ ssh -o StrictHostKeyChecking=no myuser@host2 │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    │                                               │                                                │
-    +-----------------------------------------------+------------------------------------------------+
+    +-------------------------------+-------------------------------+
+    │$ ssh -o StrictHostKeyChecking │$ ssh -o StrictHostKeyChecking │
+    │=no myuser@host1               │=no myuser@host2               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    │                               │                               │
+    +-------------------------------+-------------------------------+
 
 #### Create new panes on existing window
 
