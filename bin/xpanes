@@ -13,9 +13,6 @@ trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EX
 ## --------------------------------
 # Error constants
 ## --------------------------------
-# Undefined or General errors
-readonly XP_EUNDEF=1
-
 # Invalid option/argument
 readonly XP_EINVAL=4
 
