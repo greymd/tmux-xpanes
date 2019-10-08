@@ -9,7 +9,7 @@ Source:     https://github.com/greymd/tmux-xpanes/archive/v%{version}.tar.gz
 BuildArch:  noarch
 Vendor:     Yamada, Yasuhiro <greengregson at gmail dot com>
 Requires:   tmux
-Provides:   tmux-xpanes
+Provides:   tmux-xpanes = %{version}-%{release}
 
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
