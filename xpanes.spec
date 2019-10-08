@@ -1,5 +1,4 @@
-
-Name:       tmux-xpanes
+Name:       xpanes
 Summary:    Awesome tmux-based terminal divider
 Version:    4.1.1
 Group:      Applications
@@ -10,7 +9,7 @@ Source:     https://github.com/greymd/tmux-xpanes/archive/v%{version}.tar.gz
 BuildArch:  noarch
 Vendor:     Yamada, Yasuhiro <greengregson at gmail dot com>
 Requires:   tmux
-Provides:   tmux-xpanes, xpanes
+Provides:   tmux-xpanes = %{version}-%{release}
 
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
@@ -28,7 +27,7 @@ xpanes or tmux-xpanes (alias of xpanes) commands have following features:
 
 
 %prep
-%setup
+%setup -q -n tmux-xpanes-%{version}
 
 %install
 install -d -m 0755 %{buildroot}%{_mandir}/man1 %{buildroot}%{_bindir}
