@@ -77,7 +77,16 @@ Please refer to [wiki > Installation](https://github.com/greymd/tmux-xpanes/wiki
 $ brew install tmux-xpanes
 ```
 
-## With `yum` (For CentOS, RHEL users)
+## With `dnf` (For Fedora, CentOS, RHEL users)
+
+```sh
+## Enable EPEL8, if necessary
+$ sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+
+$ sudo dnf install xpanes
+```
+
+## With `yum` (For CentOS7, RHEL7 users)
 
 ```sh
 $ sudo yum install https://github.com/greymd/tmux-xpanes/releases/download/v4.1.1/tmux-xpanes_v4.1.1.rpm
