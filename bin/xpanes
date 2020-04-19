@@ -5,10 +5,10 @@ readonly XP_SHELL="/usr/bin/env bash"
 # @Filename xpanes
 
 set -u
-readonly XP_VERSION="4.1.1"
+readonly XP_VERSION="4.1.2-beta"
 
 ## trap might be updated in 'xpns_pre_execution' function
-trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; rm -f "${XP_DEFAULT_SOCKET_PATH}"' EXIT
+trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$; xpns_clean_session' EXIT
 
 ## --------------------------------
 # Error constants
