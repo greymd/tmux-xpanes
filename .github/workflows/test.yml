@@ -12,8 +12,6 @@ on:
       - opened
       - synchronize
       - reopened
-  schedule:
-    - cron: "0 8 * * 6" # UTC 08:00 (Sat)
 
 jobs:
   shellcheck:
@@ -31,22 +29,3 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run shfmt
       run: shfmt -i 2 -ci -sr -d ./bin/xpanes
-
-  unittest:
-    runs-on: ubuntu-latest
-    if: "! contains(github.event.head_commit.message, '[skip ci]')"
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            bash: [3.2,4.0,4.1,4.2,4.3,4.4,5.0]
-    container: bash:${{matrix.bash}}
-
-    steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Unit testing
-      run: |
-        git clone -b v2.1.8 https://github.com/kward/shunit2.git test/shunit2
-        bash ./test/unitTest.sh
