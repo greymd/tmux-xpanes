@@ -4,10 +4,9 @@ on:
   push:
     branches:
       - master
-      - develop
-      - /^develop-.*/
-      - /^bugfix.*/
-      - /^feature.*/
+      - 'develop-**'
+      - 'bugfix/**'
+      - 'feature/**'
   pull_request:
     types:
       - opened
@@ -17,25 +16,57 @@ on:
     - cron: "0 8 * * 6" # UTC 08:00 (Sat)
 
 jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    container: koalaman/shellcheck-alpine:v0.6.0
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run shellcheck
+      run: shellcheck -s bash -f tty ./bin/xpanes
+
+  shfmt:
+    runs-on: ubuntu-latest
+    container: mvdan/shfmt:v3.1.0-alpine
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run shfmt
+      run: shfmt -i 2 -ci -sr -d ./bin/xpanes
 
   linux-test:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
-
+    if: "! contains(github.event.head_commit.message, '[skip ci]')"
+    container:
+      image: bash:${{matrix.bash}}
+      options: -t
     strategy:
       matrix:
-        shell: [3.2,4.0,4.1,4.2,4.3,4.4,5.0]
-        tmux: [1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,2.9a,3.0,3.0a]
-
-
+        include:
+          - os: ubuntu-latest
+            bash: 3.2
+            tmux: 1.8
+        #        shell: [3.2,4.0,4.1,4.2,4.3,4.4,5.0]
+        #        tmux: [1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,2.9a,3.0,3.0a]
     steps:
     - uses: actions/checkout@v2
-      #     - name: Checkout submodules
-      #       run:  git submodule update --init --recursive
-
-    - name: Install dependency
+    - name: Install utilities
       run: |
-        echo shell=${{matrix.shell}}
-        echo tmux=${{matrix.tmux}}
-        #    - name: Run tests
-        #      run: ./test.sh
+        apk add make curl gcc musl-dev libevent-dev ncurses-dev perl git
+        apk add lsof util-linux
+
+    - name: Install tmux
+      run: |
+        curl -L "https://github.com/tmux/tmux/releases/download/${{matrix.tmux}}/tmux-${{matrix.tmux}}.tar.gz" | tar zxv
+        cd tmux-${{matrix.tmux}}
+        ./configure
+        make
+        make install
+        printf "set-window-option -g automatic-rename off\nset-option -g allow-rename off\n" >> "$HOME/.tmux.conf"
+
+    - name: Try tmux
+      run: |
+        script -e -c /bin/bash -c 'tmux -S socket new-session -d; tmux -S socket send-keys "seq 10 > hoge" C-m; sleep 1; cat hoge; tmux -S socket attach'
+
+    - name: Unit testing
+      run: |
+        git clone -b v2.1.8 https://github.com/kward/shunit2.git test/shunit2
+        bash ./test/unitTest.sh
