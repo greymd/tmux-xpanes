@@ -3,7 +3,6 @@ sudo: required
 addons:
   apt:
     packages:
-      - shellcheck
       - ncurses-dev
       - libevent-dev
       - gcc
@@ -228,9 +227,7 @@ before_script:
   - if [[ "$SH" == "bash" && "$SH_VERSION" != "default" ]];then (cd "$TMPDIR" && curl "http://ftp.gnu.org/gnu/bash/bash-${SH_VERSION}.tar.gz" | tar xvz && cd bash* && ./configure; make && sudo make install && sudo mv /bin/bash /bin/bash.old && sudo cp ./bash /bin/bash ) ;fi
   - printf "set-window-option -g automatic-rename off\nset-option -g allow-rename off\n" >> "$HOME/.tmux.conf"
   - $SH ./test/test_generator.sh "${CASES}" > ./test/cases_pairwise.sh
-  - docker pull koalaman/shellcheck:stable # Official docker container (v0.6.0 or later)
 
 script:
-  - docker run -v "$PWD:/mnt" koalaman/shellcheck ./bin/xpanes
   - PATH="${TMPDIR}/bin:${PATH}" $SH ./test/unitTest.sh
   - TRAVIS_BUILD_DIR="${TRAVIS_BUILD_DIR}" $SH ./test/cases_pairwise.sh
