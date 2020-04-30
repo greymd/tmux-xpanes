@@ -301,4 +301,4 @@ test_xpns_get_window_height_width () {
 }
 
 # shellcheck source=/dev/null
-. "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
+. "${THIS_DIR}/shunit2/shunit2"

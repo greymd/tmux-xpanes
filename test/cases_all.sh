@@ -613,6 +613,10 @@ tearDown(){
   echo >&2
 }
 
+oneTimeTearDown() {
+  echo "in oneTimeTearDown"
+}
+
 ###:-:-:START_TESTING:-:-:###
 
 # @case: 1
@@ -4636,4 +4640,4 @@ check_version
 
 # Test start
 # shellcheck source=/dev/null
-. "${THIS_DIR}/shunit2/source/2.1/src/shunit2"
+. "${THIS_DIR}/shunit2/shunit2"
