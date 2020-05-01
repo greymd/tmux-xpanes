@@ -692,9 +692,9 @@ test_hyphen_and_option1() {
   local _cmd=""
   local _tmpdir="${SHUNIT_TMPDIR}"
 
-  _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
+  _cmd="${EXEC} -I@ -S $_socket_file -c \"printf '%s\\n' @ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
   printf "\\n$ %s\\n" "${_cmd}"
-  ${EXEC} -I@ -S "${_socket_file}" -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
+  ${EXEC} -I@ -S "${_socket_file}" -c "printf '%s\\n' @ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
   wait_panes_separation "$_socket_file" "-l" "4"
   wait_all_files_creation "${_tmpdir}"/{-l,-V,-h,-Z}.result
   diff "${_tmpdir}/-l.result" <(cat <<<-l)
