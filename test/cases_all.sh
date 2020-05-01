@@ -1108,7 +1108,7 @@ test_no_more_options() {
   local _cmd=""
   local _tmpdir="${SHUNIT_TMPDIR}"
 
-  _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay AA -l ev --help"
+  _cmd="${EXEC} -I@ -S $_socket_file -c \"printf '%s\\n' @ > ${_tmpdir}/@.result\" --stay AA -l ev --help"
   printf "\\n$ %s\\n" "${_cmd}"
   eval "${_cmd}"
 
@@ -1580,9 +1580,9 @@ test_hyphen_and_option1() {
   local _cmd=""
   local _tmpdir="${SHUNIT_TMPDIR}"
 
-  _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
+  _cmd="${EXEC} -I@ -S $_socket_file -c \"printf '%s\\n' @ > ${_tmpdir}/@.result\" --stay -- -l -V -h -Z"
   printf "\\n$ %s\\n" "${_cmd}"
-  ${EXEC} -I@ -S "${_socket_file}" -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
+  ${EXEC} -I@ -S "${_socket_file}" -c "printf '%s\\n' @ > ${_tmpdir}/@.result" --stay -- -l -V -h -Z
   wait_panes_separation "$_socket_file" "-l" "4"
   wait_all_files_creation "${_tmpdir}"/{-l,-V,-h,-Z}.result
   diff "${_tmpdir}/-l.result" <(cat <<<-l)
@@ -1622,9 +1622,9 @@ test_hyphen_and_option2() {
   local _cmd=""
   local _tmpdir="${SHUNIT_TMPDIR}"
 
-  _cmd="${EXEC} -I@ -S $_socket_file -c \"cat <<<@ > ${_tmpdir}/@.result\" --stay -- -- AA --Z BB"
+  _cmd="${EXEC} -I@ -S $_socket_file -c \"printf '%s\\n' @ > ${_tmpdir}/@.result\" --stay -- -- AA --Z BB"
   printf "\\n$ %s\\n" "${_cmd}"
-  ${EXEC} -I@ -S "${_socket_file}" -c "cat <<<@ > ${_tmpdir}/@.result" --stay -- -- AA --Z BB
+  ${EXEC} -I@ -S "${_socket_file}" -c "printf '%s\\n' @ > ${_tmpdir}/@.result" --stay -- -- AA --Z BB
   wait_panes_separation "$_socket_file" "--" "4"
   wait_all_files_creation "${_tmpdir}"/{--,AA,--Z,BB}.result
   diff "${_tmpdir}/--.result" <(cat <<<--)
@@ -2814,7 +2814,7 @@ test_x_option_abort() {
   assertEquals 4 $?
 
   : "In TMUX session" && {
-    _cmd="${_cmd} <<<n; echo \$? > ${_tmpdir}/status"
+    _cmd="echo n | ${_cmd}; echo \$? > ${_tmpdir}/status"
     echo $'\n'" $ TMUX($_cmd)"$'\n'
 
     create_tmux_session "$_socket_file"
