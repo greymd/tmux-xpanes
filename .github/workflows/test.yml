@@ -336,7 +336,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install dependency
       run: |
-        apk add make curl gcc musl-dev libevent-dev ncurses-dev perl git util-linux
+        apk add make curl gcc musl-dev libevent-dev ncurses-dev perl git util-linux bsd-compat-headers
         git clone -b v2.1.8 https://github.com/kward/shunit2.git test/shunit2
 
     - name: Install tmux
