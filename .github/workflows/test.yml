@@ -350,7 +350,7 @@ jobs:
 
     - name: Run tests
       run: |
-        script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_all.sh'
-        # bash ./test/test_generator.sh ${{matrix.cases}} > ./test/cases_pairwise.sh
+        # script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_all.sh'
         # script -e -c /bin/bash -c 'TERM=xterm bash ./test/unit.sh'
-        # script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_pairwise.sh'
+        bash ./test/test_generator.sh ${{matrix.cases}} > ./test/cases_pairwise.sh
+        script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_pairwise.sh'

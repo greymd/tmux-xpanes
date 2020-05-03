@@ -4218,7 +4218,8 @@ test_rows_log_ss_t_option() {
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _tmpdir="${SHUNIT_TMPDIR}"
-  _cmd="${EXEC}  -S $_socket_file --stay {1..500}; echo \$? > ${_tmpdir}/status"
+  ## Blace expansion does not work if default shell is not bash
+  _cmd="${EXEC}  -S $_socket_file --stay $(seq 1 500 | xargs); echo \$? > ${_tmpdir}/status"
   printf "\\n$ %s\\n" "${_cmd}"
 
   change_terminal_size
@@ -4245,7 +4246,7 @@ test_too_small_panes_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _tmpdir="${SHUNIT_TMPDIR}"
   ## In terminal size rows=40, cols=80, 13 arguments is the maximum
-  _cmd="${EXEC} -sC 1 -S $_socket_file --stay {1..14}; echo \$? > ${_tmpdir}/status"
+  _cmd="${EXEC} -sC 1 -S $_socket_file --stay $(seq 1 14 | xargs); echo \$? > ${_tmpdir}/status"
   printf "\\n$ %s\\n" "${_cmd}"
 
   change_terminal_size || {
@@ -4275,7 +4276,7 @@ test_too_small_panes_cols() {
 test_too_small_panes_avoided_by_n() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   ## In terminal size rows=40, cols=80, 13 arguments is the maximum
-  _cmd="${EXEC} -sC 1 -n 2 -S $_socket_file --stay AAAA {2..14}"
+  _cmd="${EXEC} -sC 1 -n 2 -S $_socket_file --stay AAAA $(seq 2 14 | xargs)"
   printf "\\n$ %s\\n" "${_cmd}"
 
   change_terminal_size || {
@@ -4321,7 +4322,7 @@ test_too_small_panes_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _tmpdir="${SHUNIT_TMPDIR}"
   ## In terminal size rows=40, cols=80, 13 arguments is the maximum
-  _cmd="${EXEC} --bulk-cols=1,1,1,1,1,1,1,1,1,1,1,1,1,1 -S $_socket_file --stay {1..14}; echo \$? > ${_tmpdir}/status"
+  _cmd="${EXEC} --bulk-cols=1,1,1,1,1,1,1,1,1,1,1,1,1,1 -S $_socket_file --stay $(seq 1 14 | xargs); echo \$? > ${_tmpdir}/status"
   printf "\\n$ %s\\n" "${_cmd}"
 
   change_terminal_size || {
@@ -4350,7 +4351,7 @@ test_too_small_panes_bulk_cols() {
 test_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _cmd=""
-  _cmd="${EXEC} --bulk-cols=3,2,1,2,2 -S $_socket_file --stay AAAA {2..10}"
+  _cmd="${EXEC} --bulk-cols=3,2,1,2,2 -S $_socket_file --stay AAAA $(seq 2 10 | xargs)"
   printf "\\n$ %s\\n" "${_cmd}"
   eval "$_cmd"
 
