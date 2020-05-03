@@ -355,6 +355,5 @@ jobs:
 
     - name: Scenario test
       run: |
-        script -e -c /bin/bash -c 'stty size; stty rows 40 cols 80'
         bash ./test/test_generator.sh ${{matrix.cases}} > ./test/cases_pairwise.sh
-        script -e -c /bin/bash -c 'stty size; stty rows 40 cols 80;TERM=xterm bash ./test/cases_pairwise.sh'
+        script -e -c /bin/bash -c 'stty rows 40 cols 80;TERM=xterm bash ./test/cases_pairwise.sh'
