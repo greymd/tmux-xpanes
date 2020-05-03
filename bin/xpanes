@@ -233,10 +233,8 @@ xpns_get_tmux_version() {
   else
     _tmux_version="$( ${TMUX_XPANES_EXEC} -V)"
   fi
-  ( 
-    read -r _ _ver
-    echo                 "${_ver}" 
-  )                                  <<< "${_tmux_version}"
+  read -r _ _ver <<< "${_tmux_version}"
+  echo "${_ver}"
 }
 
 # Check whether the prefered tmux version is greater than host's tmux version.
@@ -256,10 +254,7 @@ xpns_tmux_is_greater_equals() {
   local _check_version="$1"
   local _tmux_version="${2:-$(xpns_get_tmux_version)}"
   # Simple numerical comparison does not work because there is the version like "1.9a".
-  if [[ "$( (
-    echo          "${_tmux_version}"
-    echo                                   "${_check_version}"
-  )                                                             | sort -n | head -n 1)" != "${_check_version}" ]]; then
+  if [[ "$( printf "%s\\n%s" "${_tmux_version}" "${_check_version}" | sort -n | head -n 1)" != "${_check_version}" ]]; then
     return 1
   else
     return 0
@@ -276,10 +271,10 @@ xpns_get_local_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
   } | grep "^${_conf_name}" |
-    (   
-      read   -r _ _v
-      printf                 "%s\\n" "${_v}" 
-    )
+    {
+      read -r _ _v
+      printf "%s\\n" "${_v}"
+    }
 }
 
 xpns_get_global_tmux_conf() {
@@ -292,10 +287,10 @@ xpns_get_global_tmux_conf() {
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
   } | grep "^${_conf_name}" |
-    (   
-      read   -r _ _v
-      printf                 "%s\\n" "${_v}" 
-    )
+    {
+      read -r _ _v
+      printf "%s\\n" "${_v}"
+    }
 }
 
 # Disable allow-rename because
@@ -602,8 +597,8 @@ xpns_key2value() {
 xpns_rm_empty_line() {
   {
     cat
-    printf      "\\n"
-  }                     | while IFS= read -r line; do
+    printf "\\n"
+  } | while IFS= read -r line; do
     # shellcheck disable=SC2086
     set -- ${line-}
     if [[ $# != 0 ]]; then
@@ -865,7 +860,7 @@ xpns_split_window() {
 }
 
 #
-# Create new panes to the  existing window.
+# Create new panes on existing window.
 # Usage:
 #    func <window name> <offset of index> <number of pane>
 #
@@ -1132,7 +1127,7 @@ xpns_clean_session() {
 }
 
 #
-# Split a new window which was created by tmux into multiple panes.
+# Split a new window into multiple panes.
 # Usage:
 #    xpns_prepare_preset_layout_window <window name> <offset of index> <number of pane> <attach or not>
 #
@@ -1270,9 +1265,9 @@ xpns_get_window_height_width() {
       return 1
     fi
     {
-      read -r
-      read          -r _dev
-    }                          < <(ps -o tty -p $$)
+      read -r       # Remove first line
+      read -r _dev
+    } < <(ps -o tty -p $$)
     ## If it's Linux, -F option is used
     if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
