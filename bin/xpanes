@@ -46,7 +46,7 @@ readonly XP_ENOCMD=127
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
-readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-${(%):-%N}}")" && pwd)"
+readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly XP_ABS_THIS_FILE_NAME="${XP_THIS_DIR}/${XP_THIS_FILE_NAME}"
 
 # Prevent cache directory being created under root / directory in any case.
@@ -155,7 +155,7 @@ xpns_msg_warning() {
 }
 
 xpns_msg_debug() {
-  if [[ $XP_OPT_DEBUG -eq 1 ]];then
+  if [[ $XP_OPT_DEBUG -eq 1 ]]; then
     xpns_msg "Debug" "$(date "+[%F_%T]"):${FUNCNAME[1]}:$1"
   fi
 }
@@ -177,7 +177,7 @@ _EOS_
 }
 
 xpns_usage() {
-  cat <<USAGE
+  cat << USAGE
 Usage:
   ${XP_THIS_FILE_NAME} [OPTIONS] [argument ...]
 
@@ -231,9 +231,12 @@ xpns_get_tmux_version() {
     # From tmux 0.9 to 1.3, there is no -V option.
     _tmux_version="tmux 0.9-1.3"
   else
-    _tmux_version="$( ${TMUX_XPANES_EXEC} -V )"
+    _tmux_version="$( ${TMUX_XPANES_EXEC} -V)"
   fi
-  ( read -r _ _ver; echo "${_ver}" ) <<<"${_tmux_version}"
+  ( 
+    read -r _ _ver
+    echo                 "${_ver}" 
+  )                                  <<< "${_tmux_version}"
 }
 
 # Check whether the prefered tmux version is greater than host's tmux version.
@@ -253,7 +256,10 @@ xpns_tmux_is_greater_equals() {
   local _check_version="$1"
   local _tmux_version="${2:-$(xpns_get_tmux_version)}"
   # Simple numerical comparison does not work because there is the version like "1.9a".
-  if [[ "$( (echo "${_tmux_version}"; echo "${_check_version}") | sort -n | head -n 1)" != "${_check_version}" ]];then
+  if [[ "$( (
+    echo          "${_tmux_version}"
+    echo                                   "${_check_version}"
+  )                                                             | sort -n | head -n 1)" != "${_check_version}" ]]; then
     return 1
   else
     return 0
@@ -264,38 +270,44 @@ xpns_get_local_tmux_conf() {
   local _conf_name="$1"
   local _session="${2-}"
   {
-    if [[ -z "${_session-}" ]];then
+    if [[ -z "${_session-}" ]]; then
       ${TMUX_XPANES_EXEC} show-window-options
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options
     fi
-  } | grep "^${_conf_name}" \
-    | ( read -r _ _v; printf "%s\\n" "${_v}" )
+  } | grep "^${_conf_name}" |
+    (   
+      read   -r _ _v
+      printf                 "%s\\n" "${_v}" 
+    )
 }
 
 xpns_get_global_tmux_conf() {
   local _conf_name="$1"
   local _session="${2-}"
   {
-    if [[ -z "${_session-}" ]];then
+    if [[ -z "${_session-}" ]]; then
       ${TMUX_XPANES_EXEC} show-window-options -g
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" show-window-options -g
     fi
-  } | grep "^${_conf_name}" \
-    | ( read -r _ _v; printf "%s\\n" "${_v}" )
+  } | grep "^${_conf_name}" |
+    (   
+      read   -r _ _v
+      printf                 "%s\\n" "${_v}" 
+    )
 }
 
 # Disable allow-rename because
 # window separation does not work correctly
 # if "allow-rename" option is on
-xpns_suppress_allow_rename () {
+xpns_suppress_allow_rename()  {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     ## Temporary, disable "allow-rename"
     xpns_msg_debug "'allow-rename' option is 'off' temporarily."
-    if [[ -z "${_session-}" ]];then
+    if [[ -z "${_session-}" ]]; then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename off
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename off
@@ -306,12 +318,12 @@ xpns_suppress_allow_rename () {
 # Restore default "allow-rename"
 # Do not write like 'xpns_restore_allow_rename "some value" "some value" > /dev/null'
 # In tmux 1.6, 'tmux set-window-option' might be stopped in case of redirection.
-xpns_restore_allow_rename () {
+xpns_restore_allow_rename()  {
   local _default_allow_rename="$1"
   local _session="${2-}"
   if [[ "${_default_allow_rename-}" == "on"  ]]; then
     xpns_msg_debug "Restore original value of 'allow-rename' option."
-    if [[ -z "${_session-}" ]];then
+    if [[ -z "${_session-}" ]]; then
       ${TMUX_XPANES_EXEC} set-window-option -g allow-rename on
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
@@ -322,33 +334,35 @@ xpns_restore_allow_rename () {
 # func "11" "2"
 #  => 6
 # 11 / 2 = 5.5 => ceiling => 6
-xpns_ceiling () {
-  local _divide="$1";shift
+xpns_ceiling()  {
+  local _divide="$1"
+  shift
   local _by="$1"
-  printf "%s\\n" $(( ( _divide + _by - 1 ) / _by ))
+  printf "%s\\n" $(((_divide + _by - 1) / _by))
 }
 
 # func "10" "3"
 #  => 4 3 3
 # Divide 10 into 3 parts as equally as possible.
-xpns_divide_equally () {
-  local _number="$1";shift
+xpns_divide_equally()  {
+  local _number="$1"
+  shift
   local _count="$1"
   local _upper _lower _upper_count _lower_count
   _upper="$(xpns_ceiling "$_number" "$_count")"
-  _lower=$(( _upper - 1 ))
-  _lower_count=$(( _upper * _count - _number ))
-  _upper_count=$(( _count - _lower_count ))
+  _lower=$((_upper - 1))
+  _lower_count=$((_upper * _count - _number))
+  _upper_count=$((_count - _lower_count))
   eval "printf '${_upper} %.0s' {1..$_upper_count}"
-  (( _lower_count > 0 )) && eval "printf '${_lower} %.0s' {1..$_lower_count}"
+  ((_lower_count > 0))   && eval "printf '${_lower} %.0s' {1..$_lower_count}"
 }
 
 # echo 3 3 3 3 | func
 # => 3 6 9 12
-xpns_nums_accumulate_sum () {
+xpns_nums_accumulate_sum()  {
   local s=0
   while read -r n; do
-    ((s = s + n ))
+    ((s = s + n))
     printf "%s " "$s"
   done < <( cat | tr ' ' '\n')
 }
@@ -368,12 +382,12 @@ xpns_nums_accumulate_sum () {
 # 1 [] [] [] [] => 4 rows
 # 2 [] [] [] [] => 4 rows
 # 3 []          => 1 rows
-xpns_nums_transpose () {
+xpns_nums_transpose()  {
   local _colnum="$1"
   local _spaces=
   local _result=
   xpns_msg_debug "column num = $_colnum, input = $*"
-  _spaces="$(for i in "$@";do
+  _spaces="$(for i in "$@"; do
     printf "%${i}s\\n"
   done)"
 
@@ -396,16 +410,19 @@ xpns_nums_transpose () {
 #     func "6" 0 20
 #       => returns 6 4
 xpns_adjust_col_row() {
-  local col="${1:-0}" ;shift
-  local row="${1:-0}" ;shift
-  local N="$1"   ;shift
+  local col="${1:-0}"
+  shift
+  local row="${1:-0}"
+  shift
+  local N="$1"
+  shift
   local fix_col_flg
   local fix_row_flg
-  (( col != 0 )) && fix_col_flg=1 || fix_col_flg=0
-  (( row != 0 )) && fix_row_flg=1 || fix_row_flg=0
+  ((col != 0))   && fix_col_flg=1 || fix_col_flg=0
+  ((row != 0))   && fix_row_flg=1 || fix_row_flg=0
 
   # This is just a author (@greymd)'s preference.
-  if (( fix_col_flg == 0 )) && (( fix_row_flg == 0 )) && (( N == 2)) ;then
+  if ((fix_col_flg == 0))   && ((fix_row_flg == 0))   && ((N == 2)); then
     col=2
     row=1
     printf "%d %d\\n" "${col}" "${row}"
@@ -413,16 +430,16 @@ xpns_adjust_col_row() {
   fi
 
   # If both valures are provided, col is used.
-  if (( fix_col_flg == 1 )) && (( fix_row_flg == 1 ));then
+  if ((fix_col_flg == 1))   && ((fix_row_flg == 1)); then
     row=0
     fix_row_flg=0
   fi
   # This algorhythm is almost same as tmux default
   #   https://github.com/tmux/tmux/blob/2.8/layout-set.c#L436
-  while (( col * row < N )) ;do
-    (( fix_row_flg != 1 )) && (( row = row + 1 ))
-    if (( col * row < N ));then
-      (( fix_col_flg != 1 )) &&  (( col = col + 1 ))
+  while ((col * row < N)); do
+    ((fix_row_flg != 1))   && ((row = row + 1))
+    if ((col * row < N)); then
+      ((fix_col_flg != 1))   &&  ((col = col + 1))
     fi
   done
   printf "%d %d\\n" "${col}" "${row}"
@@ -438,7 +455,7 @@ xpns_adjust_col_row() {
 #  ccc-3
 #
 # Eval is used because associative array is not supported before bash 4.2
-xpns_unique_line () {
+xpns_unique_line()  {
   local _val_name
   while read -r line; do
     _val_name="__xpns_hash_$(printf "%s" "${line}" | xpns_value2key)"
@@ -465,19 +482,17 @@ xpns_unique_line () {
 #        ccc-2_1234_20160101.log
 #        ccc-3_1234_20160101.log
 #
-xpns_log_filenames () {
+xpns_log_filenames()  {
   local _arg_fmt="$1"
   local _full_fmt=
   _full_fmt="$(date "+${_arg_fmt}")"
-  cat \
-    | \
+  cat |
     # 1st argument + '-' + unique number (avoid same argument has same name)
-    xpns_unique_line \
-    | while read -r _arg
-    do
-      cat <<<"${_full_fmt}" \
-        | sed "s/\\[:ARG:\\]/${_arg}/g" \
-        | sed "s/\\[:PID:\\]/$$/g"
+    xpns_unique_line |
+    while   read -r _arg; do
+      cat <<< "${_full_fmt}" |
+        sed   "s/\\[:ARG:\\]/${_arg}/g" |
+        sed   "s/\\[:PID:\\]/$$/g"
     done
 }
 
@@ -544,18 +559,15 @@ xpns_arr2args() {
   if [[ $# -lt 1 ]]; then
     return 0
   fi
-  for i in "$@" ;do
+  for i in "$@"; do
     _arg="${i}"
     # Use 'cat <<<"input"' command instead of 'echo',
     # because such the command recognizes option like '-e'.
-    cat <<<"${_arg}" \
-      | \
+    cat <<< "${_arg}" |
       # Escaping single quotations.
-      sed "s/'/'\"'\"'/g" \
-      | \
+      sed "s/'/'\"'\"'/g" |
       # Surround argument with single quotations.
-      sed "s/^/'/;s/$/' /" \
-      | \
+      sed "s/^/'/;s/$/' /" |
       # Remove new lines
       tr -d '\n'
   done
@@ -565,11 +577,12 @@ xpns_arr2args() {
 # ex, $2     =  'aaa bbb ccc'
 #   return   =  aaa-12345(PID)
 xpns_generate_window_name() {
-  local _unprintable_str="${1-}"; shift
+  local _unprintable_str="${1-}"
+  shift
   # Leave first 200 characters to prevent
   # the name exceed the maximum length of tmux window name (2000 byte).
-  printf "%s\\n" "${1:-${_unprintable_str}}" \
-    | ( read -r _name _ && printf "%s\\n" "${_name:0:200}-$$" )
+  printf "%s\\n" "${1:-${_unprintable_str}}" |
+    (   read -r _name _ && printf "%s\\n" "${_name:0:200}-$$" )
 }
 
 # Convert string to another string which can be handled as tmux window name.
@@ -587,7 +600,10 @@ xpns_key2value() {
 # Remove empty lines
 # This function behaves like `awk NF`
 xpns_rm_empty_line() {
-  { cat; printf "\\n";} | while IFS= read -r line;do
+  {
+    cat
+    printf      "\\n"
+  }                     | while IFS= read -r line; do
     # shellcheck disable=SC2086
     set -- ${line-}
     if [[ $# != 0 ]]; then
@@ -600,43 +616,49 @@ xpns_rm_empty_line() {
 # $ xpns_extract_matched "aaa123bbb" "[0-9]{3}"
 # => "123"
 xpns_extract_matched() {
-  local _args="$1" ;shift
+  local _args="$1"
+  shift
   local _regex="($1)"
-  if [[ $_args =~ $_regex ]];then
+  if [[ $_args =~ $_regex ]]; then
     printf "%s" "${BASH_REMATCH[0]}"
   fi
 }
 
 # Enable logging feature to the all the panes in the target window.
 xpns_enable_logging() {
-  local _window_name="$1"     ; shift
-  local _index_offset="$1"    ; shift
-  local _log_dir="$1"         ; shift
-  local _log_format="$1"      ; shift
-  local _unprintable_str="$1" ; shift
+  local _window_name="$1"
+  shift
+  local _index_offset="$1"
+  shift
+  local _log_dir="$1"
+  shift
+  local _log_format="$1"
+  shift
+  local _unprintable_str="$1"
+  shift
   local _args=("$@")
   local _args_num=$(($# - 1))
   # Generate log files from arguments.
   local _idx=0
-  while read -r _logfile ; do
+  while read -r _logfile; do
     # Start logging
     xpns_msg_debug "Start logging pipe-pane(cat >> '${_log_dir}/${_logfile}')"
     ${TMUX_XPANES_EXEC} \
-      pipe-pane -t "${_window_name}.$(( _idx + _index_offset ))" \
+      pipe-pane -t "${_window_name}.$((_idx + _index_offset))" \
       "cat >> '${_log_dir}/${_logfile}'" # Tilde expansion does not work here.
-    _idx=$(( _idx + 1 ))
+    _idx=$((_idx + 1))
   done < <(
-  for i in $(xpns_seq 0 "${_args_num}")
-  do
-    # Replace empty string.
-    printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
-  done | xpns_log_filenames "${_log_format}"
+    for i in $(xpns_seq 0 "${_args_num}"); do
+      # Replace empty string.
+      printf "%s\\n" "${_args[i]:-${_unprintable_str}}"
+    done | xpns_log_filenames "${_log_format}"
   )
 }
 
 ## Print "1" on the particular named pipe
 xpns_notify() {
-  local _wait_id="$1" ; shift
+  local _wait_id="$1"
+  shift
   local _fifo=
   _fifo="${XP_CACHE_HOME}/__xpns_${_wait_id}"
   xpns_msg_debug "Notify to $_fifo"
@@ -644,7 +666,8 @@ xpns_notify() {
 }
 
 xpns_notify_logging() {
-  local _window_name="$1" ; shift
+  local _window_name="$1"
+  shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "log_${_window_name}-${i}-$$"
@@ -652,7 +675,8 @@ xpns_notify_logging() {
 }
 
 xpns_notify_sync() {
-  local _window_name="$1" ; shift
+  local _window_name="$1"
+  shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_notify "sync_${_window_name}-${i}-$$" &
@@ -660,12 +684,15 @@ xpns_notify_sync() {
 }
 
 xpns_is_window_alive() {
-  local _window_name="$1" ;shift
-  local _speedy_await_flag="$1" ;shift
-  local _def_allow_rename="$1" ;shift
-  if ! ${TMUX_XPANES_EXEC} display-message -t "$_window_name" -p > /dev/null 2>&1 ;then
+  local _window_name="$1"
+  shift
+  local _speedy_await_flag="$1"
+  shift
+  local _def_allow_rename="$1"
+  shift
+  if ! ${TMUX_XPANES_EXEC} display-message -t "$_window_name" -p > /dev/null 2>&1; then
     xpns_msg_info "All the panes are closed before displaying the result."
-    if [[ "${_speedy_await_flag}" -eq 0 ]] ;then
+    if [[ "${_speedy_await_flag}" -eq 0 ]]; then
       xpns_msg_info "Use '-s' option instead of '-ss' option to avoid this behavior."
     fi
     xpns_restore_allow_rename "${_def_allow_rename-}"
@@ -674,24 +701,28 @@ xpns_is_window_alive() {
 }
 
 xpns_inject_title() {
-  local _target_pane="$1" ;shift
-  local _message="$1"     ;shift
+  local _target_pane="$1"
+  shift
+  local _message="$1"
+  shift
   local _pane_tty=
-  _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}" )"
+  _pane_tty="$( ${TMUX_XPANES_EXEC} display-message -t "${_target_pane}" -p "#{pane_tty}")"
   printf "\\033]2;%s\\033\\\\" "${_message}" > "${_pane_tty}"
   xpns_msg_debug "target_pane=${_target_pane} pane_title=${_message} pane_tty=${_pane_tty}"
 }
 
 xpns_is_pane_title_required() {
-  local _title_flag="$1"   ; shift
-  local _extra_flag="$1"   ; shift
+  local _title_flag="$1"
+  shift
+  local _extra_flag="$1"
+  shift
   local _pane_border_status=
   _pane_border_status=$(xpns_get_local_tmux_conf "pane-border-status")
   if [[ $_title_flag -eq 1 ]]; then
     return 0
-  elif [[ ${_extra_flag} -eq 1 ]] && \
-       [[ "${_pane_border_status}" != "off" ]] && \
-       [[ -n "${_pane_border_status}" ]] ;then
+  elif [[ ${_extra_flag} -eq 1 ]] &&
+    [[ "${_pane_border_status}" != "off"    ]] &&
+    [[ -n "${_pane_border_status}"    ]]; then
     ## For -x option
     # Even the -t option is not specified, it is required to inject pane title here.
     # Because user expects the title is displayed on the pane if the original window is
@@ -703,39 +734,44 @@ xpns_is_pane_title_required() {
 
 # Set pane titles for each pane for -t option
 xpns_set_titles() {
-  local _window_name="$1"  ; shift
-  local _index_offset="$1" ; shift
+  local _window_name="$1"
+  shift
+  local _index_offset="$1"
+  shift
   local _index=0
   local _pane_index=
-  for arg in "$@"
-  do
-    _pane_index=$(( _index + _index_offset ))
+  for arg in "$@"; do
+    _pane_index=$((_index + _index_offset))
     xpns_inject_title "${_window_name}.${_pane_index}" "${arg}"
-    _index=$(( _index + 1 ))
+    _index=$((_index + 1))
   done
 }
 
 # Send command to the all the panes in the target window.
 xpns_send_commands() {
-  local _window_name="$1"  ; shift
-  local _index_offset="$1" ; shift
-  local _repstr="$1"       ; shift
-  local _cmd="$1"          ; shift
+  local _window_name="$1"
+  shift
+  local _index_offset="$1"
+  shift
+  local _repstr="$1"
+  shift
+  local _cmd="$1"
+  shift
   local _index=0
   local _pane_index=
   local _exec_cmd=
-  for arg in "$@"
-  do
+  for arg in "$@"; do
     _exec_cmd="${_cmd//${_repstr}/${arg}}"
-    _pane_index=$(( _index + _index_offset ))
+    _pane_index=$((_index + _index_offset))
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
-    _index=$(( _index + 1 ))
+    _index=$((_index + 1))
   done
 }
 
 # Separate window vertically, when the number of panes is 1 or 2.
 xpns_organize_panes() {
-  local _window_name="$1" ; shift
+  local _window_name="$1"
+  shift
   local _args_num="$1"
   ## ----------------
   # Default behavior
@@ -763,7 +799,7 @@ xpns_organize_panes() {
 # 1
 # 0
 #
-xpns_seq () {
+xpns_seq()  {
   local _num1="$1"
   local _num2="$2"
   eval "printf \"%d\\n\" {$_num1..$_num2}"
@@ -784,21 +820,28 @@ xpns_wait_func() {
 # Split a new window into multiple panes.
 #
 xpns_split_window() {
-  local _window_name="$1"     ; shift
-  local _log_flag="$1"        ; shift
-  local _title_flag="$1"      ; shift
-  local _speedy_flag="$1"     ; shift
-  local _await_flag="$1"      ; shift
-  local _pane_base_index="$1" ; shift
-  local _repstr="$1"          ; shift
-  local _cmd_template="$1"    ; shift
+  local _window_name="$1"
+  shift
+  local _log_flag="$1"
+  shift
+  local _title_flag="$1"
+  shift
+  local _speedy_flag="$1"
+  shift
+  local _await_flag="$1"
+  shift
+  local _pane_base_index="$1"
+  shift
+  local _repstr="$1"
+  shift
+  local _cmd_template="$1"
+  shift
   local _exec_cmd=
   local _sep_count=0
   local args=("$@")
-  _last_idx=$(( ${#args[@]} - 1 ))
+  _last_idx=$((${#args[@]} - 1))
 
-  for i in $(xpns_seq $_last_idx 0)
-  do
+  for i in $(xpns_seq $_last_idx 0); do
     xpns_msg_debug "Index:${i} Argument:${args[i]}"
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
@@ -827,12 +870,18 @@ xpns_split_window() {
 #    func <window name> <offset of index> <number of pane>
 #
 xpns_prepare_extra_panes() {
-  local _window_name="$1"     ; shift
-  local _pane_base_index="$1" ; shift
-  local _log_flag="$1"        ; shift
-  local _title_flag="$1"      ; shift
-  local _speedy_flg="$1"      ; shift
-  local _await_flg="$1"       ; shift
+  local _window_name="$1"
+  shift
+  local _pane_base_index="$1"
+  shift
+  local _log_flag="$1"
+  shift
+  local _title_flag="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _await_flg="$1"
+  shift
   # specify a pane which has the biggest index number.
   #   Because pane_id may not be immutable.
   #   If the small number of index is specified here, correspondance between pane_title and command can be slip off.
@@ -849,7 +898,7 @@ xpns_prepare_extra_panes() {
     "$@"
 }
 
-xpns_get_joined_begin_commands () {
+xpns_get_joined_begin_commands()  {
   local _commands="$1"
   if [[ "${#XP_BEGIN_ARGS[*]}" -lt 1 ]]; then
     printf "%s" "${_commands}"
@@ -858,13 +907,19 @@ xpns_get_joined_begin_commands () {
   printf "%s\\n" "${XP_BEGIN_ARGS[@]}" "${_commands}"
 }
 
-xpns_inject_wait_command () {
-  local _log_flag="$1"    ; shift
-  local _title_flag="$1"  ; shift
-  local _speedy_flg="$1"  ; shift
-  local _await_flg="$1"   ; shift
-  local _idx="$1"         ; shift
-  local _exec_cmd="$1"    ; shift
+xpns_inject_wait_command()  {
+  local _log_flag="$1"
+  shift
+  local _title_flag="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _await_flg="$1"
+  shift
+  local _idx="$1"
+  shift
+  local _exec_cmd="$1"
+  shift
 
   ## Speedy mode + logging
   if [[ "${_log_flag}" -eq 1 ]] && [[ "${_speedy_flg}" -eq 1 ]]; then
@@ -888,11 +943,15 @@ xpns_inject_wait_command () {
   printf "%s" "${_exec_cmd}"
 }
 
-xpns_new_window () {
-  local _window_name="$1" ; shift
-  local _attach_flg="$1"  ; shift
-  local _speedy_flg="$1"  ; shift
-  local _exec_cmd="$1"    ; shift
+xpns_new_window()  {
+  local _window_name="$1"
+  shift
+  local _attach_flg="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _exec_cmd="$1"
+  shift
   local _window_id=
 
   # Create new window.
@@ -900,7 +959,7 @@ xpns_new_window () {
     if [[ "${_speedy_flg}" -eq 1 ]]; then
       _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P "${_exec_cmd}")
     else
-      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P )
+      _window_id=$(${TMUX_XPANES_EXEC} new-window -n "${_window_name}" -F '#{window_id}' -P)
     fi
   else
     # Keep background
@@ -913,11 +972,15 @@ xpns_new_window () {
   printf "%s" "${_window_id}"
 }
 
-xpns_new_pane_vertical () {
-  local _window_id="$1"   ; shift
-  local _cell_height="$1" ; shift
-  local _speedy_flg="$1"  ; shift
-  local _exec_cmd="$1"    ; shift
+xpns_new_pane_vertical()  {
+  local _window_id="$1"
+  shift
+  local _cell_height="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _exec_cmd="$1"
+  shift
   local _pane_id=
   if [[ "${_speedy_flg}" -eq 1 ]]; then
     _pane_id="$(${TMUX_XPANES_EXEC} split-window -t "$_window_id" -v -d -l "${_cell_height}" -F '#{pane_id}' -P "${_exec_cmd}")"
@@ -927,11 +990,15 @@ xpns_new_pane_vertical () {
   printf "%s\\n" "${_pane_id}"
 }
 
-xpns_split_pane_horizontal () {
-  local _target_pane_id="$1" ; shift
-  local _cell_width="$1"     ; shift
-  local _speedy_flg="$1"     ; shift
-  local _exec_cmd="$1"       ; shift
+xpns_split_pane_horizontal()  {
+  local _target_pane_id="$1"
+  shift
+  local _cell_width="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _exec_cmd="$1"
+  shift
   if [[ "${_speedy_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} split-window -t "$_target_pane_id" -h -d -l "$_cell_width" "${_exec_cmd}"
   else
@@ -939,15 +1006,23 @@ xpns_split_pane_horizontal () {
   fi
 }
 
-xpns_prepare_window () {
-  local _window_name="$1"     ; shift
-  local _log_flag="$1"        ; shift
-  local _title_flag="$1"      ; shift
-  local _attach_flg="$1"      ; shift
-  local _speedy_flg="$1"      ; shift
-  local _await_flg="$1"       ; shift
-  local _repstr="$1"          ; shift
-  local _cmd_template="$1"    ; shift
+xpns_prepare_window()  {
+  local _window_name="$1"
+  shift
+  local _log_flag="$1"
+  shift
+  local _title_flag="$1"
+  shift
+  local _attach_flg="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _await_flg="$1"
+  shift
+  local _repstr="$1"
+  shift
+  local _cmd_template="$1"
+  shift
   local _args=("$@")
   local _window_height="$XP_WINDOW_HEIGHT"
   local _window_width="$XP_WINDOW_WIDTH"
@@ -969,7 +1044,7 @@ xpns_prepare_window () {
   local _rest_row=
   local _offset=
 
-  _cell_height=$(( ( _window_height - _row + 1 ) / _row ))
+  _cell_height=$(((_window_height - _row + 1) / _row))
   ## Insert first element
   _exec_cmd="${_cmd_template//${_repstr}/${_args[0]}}"
   _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" 0 "${_exec_cmd}")"
@@ -977,14 +1052,14 @@ xpns_prepare_window () {
   _first_pane_id=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p -F '#{pane_id}' | head -n 1)
 
   ## Start from last row
-  for (( i = _row - 1 ; i > 0 ; i-- ));do
+  for ((i = _row - 1; i > 0; i--)); do
     _col="${_cols[i]}"
-    _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
+    _cell_width=$(((_window_width - _col + 1) / _col))
     xpns_msg_debug "_col=$_col"
-    (( _offset = _cols_offset[i] ))
-    for (( j = 0 ; j < _col ; j++ ));do
-      if (( j == 0 )) ;then
-        (( idx = _offset - _col ))
+    ((_offset = _cols_offset[i]))
+    for ((j = 0; j < _col; j++)); do
+      if ((j == 0)); then
+        ((idx = _offset - _col))
         # Create new row
         # Insert first element of the row first
         _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
@@ -992,34 +1067,34 @@ xpns_prepare_window () {
         _pane_id=$(xpns_new_pane_vertical "${_window_name}" "${_cell_height}" "${_speedy_flg}" "${_exec_cmd}")
       fi
       # Separate row into columns
-      if (( j != 0 )) ;then
-        (( idx = _offset - j ))
+      if ((j != 0)); then
+        ((idx = _offset - j))
         _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
         _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
         ## Separate row into columns
         _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_pane_id" -p '#{pane_width}' | head -n 1)
-        _rest_col=$(( _col - j + 1 ))
-        _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+        _rest_col=$((_col - j + 1))
+        _cell_width=$(((_current_pane_width - _rest_col + 1) / _rest_col))
         xpns_split_pane_horizontal "$_pane_id" "$_cell_width" "${_speedy_flg}" "${_exec_cmd}"
       fi
     done
 
     # Adjust height
     _top_pane_height=$(${TMUX_XPANES_EXEC} display-message -t "$_window_id" -p '#{pane_height}' | head -n 1)
-    _rest_row=$(( i ))
+    _rest_row=$((i))
     xpns_msg_debug "_top_pane_height=$_top_pane_height _rest_row=$_rest_row"
-    _cell_height=$(( ( _top_pane_height - _rest_row + 1 ) / _rest_row ))
+    _cell_height=$(((_top_pane_height - _rest_row + 1) / _rest_row))
   done
 
   # Split first row into columns
   _col="${_cols[0]}"
-  _cell_width=$(( ( _window_width - _col + 1 ) / _col ))
-  for (( j = 1 ; j < _col ; j++ ));do
-    idx=$(( _cols_offset[0] - j ))
+  _cell_width=$(((_window_width - _col + 1) / _col))
+  for ((j = 1; j < _col; j++)); do
+    idx=$((_cols_offset[0] - j))
     # Adjust width
     _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_first_pane_id" -p '#{pane_width}' | head -n 1)
-    _rest_col=$(( _col - j + 1 ))
-    _cell_width=$(( ( _current_pane_width - _rest_col + 1 ) / _rest_col ))
+    _rest_col=$((_col - j + 1))
+    _cell_width=$(((_current_pane_width - _rest_col + 1) / _rest_col))
     ## Split top row into columns
     _exec_cmd="${_cmd_template//${_repstr}/${_args[idx]}}"
     _exec_cmd="$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flg}" "${_await_flg}" "${idx}" "${_exec_cmd}")"
@@ -1040,14 +1115,14 @@ xpns_clean_session() {
   fi
   # Delete old socket file (xpanes v3.1.0 or before).
   if [[ -e "${XP_DEFAULT_SOCKET_PATH_BASE}" ]]; then
-    if ! xpns_is_session_running "${XP_DEFAULT_SOCKET_PATH_BASE}" ;then
+    if ! xpns_is_session_running "${XP_DEFAULT_SOCKET_PATH_BASE}"; then
       xpns_msg_debug "socket(${XP_DEFAULT_SOCKET_PATH_BASE}) is not running. Remove it"
       rm -f "${XP_DEFAULT_SOCKET_PATH_BASE}"
     fi
   fi
-  for _socket in "${XP_CACHE_HOME}"/socket.* ;do
+  for _socket in "${XP_CACHE_HOME}"/socket.*; do
     xpns_msg_debug "file = ${_socket}"
-    if ! xpns_is_session_running "${_socket}" ;then
+    if ! xpns_is_session_running "${_socket}"; then
       xpns_msg_debug "socket(${_socket}) is not running. Remove it"
       rm -f "${_socket}"
     else
@@ -1062,13 +1137,20 @@ xpns_clean_session() {
 #    xpns_prepare_preset_layout_window <window name> <offset of index> <number of pane> <attach or not>
 #
 xpns_prepare_preset_layout_window() {
-  local _window_name="$1"     ; shift
-  local _pane_base_index="$1" ; shift
-  local _log_flag="$1"        ; shift
-  local _title_flag="$1"      ; shift
-  local _attach_flg="$1"      ; shift
-  local _speedy_flg="$1"      ; shift
-  local _await_flg="$1"       ; shift
+  local _window_name="$1"
+  shift
+  local _pane_base_index="$1"
+  shift
+  local _log_flag="$1"
+  shift
+  local _title_flag="$1"
+  shift
+  local _attach_flg="$1"
+  shift
+  local _speedy_flg="$1"
+  shift
+  local _await_flg="$1"
+  shift
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
@@ -1104,7 +1186,7 @@ xpns_prepare_preset_layout_window() {
 # Check whether given command is in the PATH or not.
 xpns_check_env() {
   local _cmds="$1"
-  while read -r cmd ; do
+  while read -r cmd; do
     if ! type "${cmd}" > /dev/null 2>&1; then
       if [[ "${cmd}" == "tmux" ]] && [[ "${TMUX_XPANES_EXEC}" == "tmux" ]]; then
         xpns_msg_error "${cmd} is required. Install ${cmd} or set TMUX_XPANES_EXEC variable."
@@ -1116,7 +1198,7 @@ xpns_check_env() {
     fi
   done < <(echo "${_cmds}" | tr ' ' '\n')
 
-  if ! mkdir -p "${XP_CACHE_HOME}";then
+  if ! mkdir -p "${XP_CACHE_HOME}"; then
     xpns_msg_warning "failed to create cache directory '${XP_CACHE_HOME}'."
   fi
 
@@ -1124,11 +1206,11 @@ xpns_check_env() {
   TMUX_XPANES_TMUX_VERSION="${TMUX_XPANES_TMUX_VERSION:-$(xpns_get_tmux_version)}"
   if ( xpns_tmux_is_greater_equals \
     "${XP_SUPPORT_TMUX_VERSION_LOWER}" \
-    "${TMUX_XPANES_TMUX_VERSION}" ) ;then
+    "${TMUX_XPANES_TMUX_VERSION}" ); then
     : "Supported tmux version"
   else
     xpns_msg_warning \
-"'${XP_THIS_FILE_NAME}' may not work correctly! Please check followings.
+      "'${XP_THIS_FILE_NAME}' may not work correctly! Please check followings.
 * tmux is installed correctly.
 * Supported tmux version is installed.
   Version ${XP_SUPPORT_TMUX_VERSION_LOWER} and over is officially supported."
@@ -1147,11 +1229,12 @@ xpns_pipe_filter() {
 }
 
 xpns_set_args_per_pane() {
-  local _pane_num="$1"; shift
+  local _pane_num="$1"
+  shift
   local _filtered_args=()
   while read -r _line; do
     _filtered_args+=("${_line}")
-  done < <(xargs -n "${_pane_num}" <<<"$(xpns_arr2args "${XP_ARGS[@]}")")
+  done < <(xargs -n "${_pane_num}" <<< "$(xpns_arr2args "${XP_ARGS[@]}")")
   XP_ARGS=("${_filtered_args[@]}")
 }
 
@@ -1174,7 +1257,7 @@ xpns_get_window_height_width() {
     fi
   fi
   if [[ $XP_IS_PIPE_MODE -eq 0 ]]; then
-    if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+    if _result=$(stty size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
       xpns_msg_debug "window height: $_height, width: $_width"
@@ -1182,13 +1265,16 @@ xpns_get_window_height_width() {
       return 0
     fi
   else
-    if ! type ps > /dev/null 2>&1 ;then
+    if ! type ps > /dev/null 2>&1; then
       xpns_msg_debug "'ps' does not exist: Failed to get window height and size. Skip checking"
       return 1
     fi
-    { read -r; read -r _dev; } < <(ps -o tty -p $$)
+    {
+      read -r
+      read          -r _dev
+    }                          < <(ps -o tty -p $$)
     ## If it's Linux, -F option is used
-    if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+    if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
       xpns_msg_debug "window height: $_height, width: $_width"
@@ -1196,7 +1282,7 @@ xpns_get_window_height_width() {
       return 0
     fi
     ## If it's BSD, macOS, -F option is used
-    if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]];then
+    if _result=$(stty -f "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
       _width="${BASH_REMATCH[2]}"
       xpns_msg_debug "window height: $_height, width: $_width"
@@ -1209,11 +1295,16 @@ xpns_get_window_height_width() {
 }
 
 xpns_check_cell_size_bulk() {
-  local _cell_num="$1"    ; shift
-  local _bulk_cols="$1"   ; shift
-  local _win_height="$1"  ; shift
-  local _win_width="$1"   ; shift
-  local _ignore_flag="$1" ; shift
+  local _cell_num="$1"
+  shift
+  local _bulk_cols="$1"
+  shift
+  local _win_height="$1"
+  shift
+  local _win_width="$1"
+  shift
+  local _ignore_flag="$1"
+  shift
   local _all_cols=()
   # shellcheck disable=SC2178
   local _cols=0
@@ -1222,16 +1313,16 @@ xpns_check_cell_size_bulk() {
   IFS="," read -r -a _all_cols <<< "${_bulk_cols}"
   _rows="${#_all_cols[@]}"
   for i in "${_all_cols[@]}"; do
-    (( i >= _cols )) && (( _cols = i ))
-    (( _sum_cell = _sum_cell + i ))
+    ((i >= _cols))   && ((_cols = i))
+    ((_sum_cell = _sum_cell + i))
   done
-  if (( _sum_cell != _cell_num )) ;then
+  if ((_sum_cell != _cell_num)); then
     xpns_msg_error "Number of cols does not equals to the number of arguments."
     xpns_msg_error "Expected (# of args) : $_cell_num, Actual (--bulk-cols) : $_sum_cell)."
     return ${XP_ELAYOUT:-6}
   fi
-  local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
-  local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
+  local cell_height=$(((_win_height - _rows + 1) / _rows))
+  local cell_width=$(((_win_width - _cols + 1) / _cols))
 
   ## Display basic information
   xpns_msg_debug "Window: { Height: $_win_height, Width: $_win_width }"
@@ -1242,7 +1333,7 @@ xpns_check_cell_size_bulk() {
   xpns_msg_debug "    Col[]| ${_all_cols[*]}"
   xpns_msg_debug "    -----+------------------------..."
 
-  if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+  if [[ "$_ignore_flag" -ne 1 ]] && ( ((cell_height < 2))   || ((cell_width < 2))   ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
     return ${XP_ESMLPANE:-7}
   fi
@@ -1250,26 +1341,32 @@ xpns_check_cell_size_bulk() {
 }
 
 xpns_check_cell_size() {
-  local _cell_num="$1"    ; shift
-  local _cols="$1"        ; shift
-  local _rows="$1"        ; shift
-  local _win_height="$1"  ; shift
-  local _win_width="$1"   ; shift
-  local _ignore_flag="$1" ; shift
+  local _cell_num="$1"
+  shift
+  local _cols="$1"
+  shift
+  local _rows="$1"
+  shift
+  local _win_height="$1"
+  shift
+  local _win_width="$1"
+  shift
+  local _ignore_flag="$1"
+  shift
   local _all_cols_num=
   local _all_rows=()
 
-  if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]];then
+  if [[ -n "${_cols-}" ]] && [[ -n "${_rows-}" ]]; then
     xpns_msg_warning "Both col size and row size are provided. Col size is preferentially going to be applied."
   fi
   ## if col is only defined
-  if [[ -n "${_cols-}" ]] ;then
+  if [[ -n "${_cols-}" ]]; then
     read -r _cols _rows < <(xpns_adjust_col_row "${_cols-}" 0 "${_cell_num}")
     IFS=" " read -r -a _all_rows <<< "$(xpns_divide_equally "${_cell_num}" "${_cols}")"
     _all_cols_num="$(xpns_nums_transpose "${_all_rows[@]}")"
 
   ## if row is only defined
-  elif [[ -n "${_rows-}" ]] ;then
+  elif [[ -n "${_rows-}" ]]; then
     read -r _cols _rows < <(xpns_adjust_col_row 0 "${_rows-}" "${_cell_num}")
     _all_cols_num="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
 
@@ -1279,8 +1376,8 @@ xpns_check_cell_size() {
     _all_cols_num="$(xpns_divide_equally "${_cell_num}" "${_rows}")"
   fi
 
-  local cell_height=$(( ( _win_height - _rows + 1 ) / _rows ))
-  local cell_width=$(( ( _win_width - _cols + 1 ) / _cols ))
+  local cell_height=$(((_win_height - _rows + 1) / _rows))
+  local cell_width=$(((_win_width - _cols + 1) / _cols))
 
   ## Display basic information
   xpns_msg_debug "Window: { Height: $_win_height, Width: $_win_width }"
@@ -1291,7 +1388,7 @@ xpns_check_cell_size() {
   xpns_msg_debug "    Col[]| ${_all_cols_num}"
   xpns_msg_debug "    -----+------------------------..."
 
-  if [[ "$_ignore_flag" -ne 1 ]] && ( (( cell_height < 2 )) || (( cell_width < 2 )) ); then
+  if [[ "$_ignore_flag" -ne 1 ]] && ( ((cell_height < 2))   || ((cell_width < 2))   ); then
     xpns_msg_error "Expected pane size is too small (height: $cell_height lines, width: $cell_width chars)"
     return "${XP_ESMLPANE:-7}"
   fi
@@ -1303,7 +1400,7 @@ xpns_pre_execution() {
   local _opts4args=""
   local _args4args=""
 
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     xpns_msg_error "'-x' must be used within the running tmux session."
     exit ${XP_EINVAL}
   fi
@@ -1313,8 +1410,8 @@ xpns_pre_execution() {
   IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(xpns_get_window_height_width) && {
     local _arg_num="${#XP_ARGS[@]}"
     local _cell_num _tmp_col_row_cols _tmp_cols
-    if [[ -n "$XP_MAX_PANE_ARGS" ]] && (( XP_MAX_PANE_ARGS > 1 ));then
-      _cell_num=$(( _arg_num / XP_MAX_PANE_ARGS ))
+    if [[ -n "$XP_MAX_PANE_ARGS" ]] && ((XP_MAX_PANE_ARGS > 1)); then
+      _cell_num=$((_arg_num / XP_MAX_PANE_ARGS))
     else
       _cell_num="${_arg_num}"
     fi
@@ -1369,13 +1466,13 @@ xpns_pre_execution() {
 
   # Avoid attaching (for unit testing).
   if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
-    if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" \
-      && [[ ${XP_IS_PIPE_MODE} -eq 1 ]]; then
+    if ! ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" attach-session -t "${XP_SESSION_NAME}" &&
+      [[ ${XP_IS_PIPE_MODE} -eq 1    ]]; then
       ## In recovery case, overwrite trap to keep socket file
       trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$;' EXIT
 
       xpns_msg "Recovery" \
-"Execute below command line to re-attach the new session.
+        "Execute below command line to re-attach the new session.
 
 ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
 
@@ -1393,7 +1490,7 @@ xpns_execution() {
   local _def_allow_rename=
   local _pane_count=0
 
-  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]];then
+  if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]]; then
     xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
   fi
 
@@ -1436,25 +1533,26 @@ xpns_execution() {
   xpns_suppress_allow_rename "${_def_allow_rename-}"
   XP_CMD_UTILITY="$(xpns_get_joined_begin_commands "${XP_CMD_UTILITY}")"
 
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     # Reuse existing window name
     # tmux 1.6 does not support -F option
-    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}" )"
-    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c . )"
-    _pane_base_index=$(( _pane_base_index + _pane_count - 1 ))
+    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}")"
+    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c .)"
+    _pane_base_index=$((_pane_base_index + _pane_count - 1))
     _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
   else
     _window_name=$(
       xpns_generate_window_name \
         "${XP_EMPTY_STR}" \
-        "${XP_ARGS[0]}" \
-        | xpns_value2key)
+        "${XP_ARGS[0]}" |
+        xpns_value2key
+    )
   fi
 
   ## --------------------
   # Prepare window and panes
   ## --------------------
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     xpns_prepare_extra_panes \
       "${_window_name}" \
       "${_pane_base_index}" \
@@ -1465,7 +1563,7 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]];then
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]]; then
     xpns_prepare_preset_layout_window \
       "${_window_name}" \
       "${_pane_base_index}" \
@@ -1477,7 +1575,7 @@ xpns_execution() {
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]];then
+  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]]; then
     xpns_prepare_window \
       "${_window_name}" \
       "${XP_OPT_LOG_STORE}" \
@@ -1495,7 +1593,7 @@ xpns_execution() {
   xpns_msg_debug "xpns_is_window_alive:1: After window separation"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     # Set offset to avoid sending command to the original pane.
     _pane_base_index=$((_pane_base_index + 1))
     # Avoid to make layout even-horizontal even if there are many panes.
@@ -1525,14 +1623,14 @@ xpns_execution() {
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
   # Set pane titles for each pane.
-  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}" ;then
+  if xpns_is_pane_title_required "${XP_OPT_SET_TITLE}" "${XP_OPT_EXTRA}"; then
     xpns_set_titles \
       "${_window_name}" \
       "${_pane_base_index}" \
       "${XP_ARGS[@]}"
   fi
 
-  if [[ $XP_OPT_SPEEDY -eq 1 ]];then
+  if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
     xpns_notify_sync \
       "${_window_name}" \
       "${XP_ARGS[@]}"
@@ -1583,7 +1681,7 @@ xpns_execution() {
   fi
 
   # In case of -x, this statement is skipped to keep the original window name
-  if [[ ${XP_OPT_EXTRA} -eq 0 ]];then
+  if [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
@@ -1629,12 +1727,10 @@ xpns_switch_pipe_mode() {
     fi
   fi
 
-  while read -r line;
-  do
+  while read -r line; do
     XP_STDIN+=("${line}")
-  done < <(cat | xpns_rm_empty_line | \
+  done < <(cat | xpns_rm_empty_line |
     xpns_pipe_filter "${_pane_num4new_term:-${XP_MAX_PANE_ARGS}}")
-
 
   # Merge them into command.
   if [[ -n "${XP_ARGS[*]-}" ]]; then
@@ -1675,7 +1771,7 @@ xpns_layout_short2long() {
 xpns_is_valid_layout() {
   local _layout="${1-}"
   local _pat='^(tiled|even-horizontal|even-vertical|main-horizontal|main-vertical)$'
-  if ! [[ $_layout =~ $_pat ]]  ; then
+  if ! [[ $_layout =~ $_pat ]]; then
     xpns_msg_error "Invalid layout '${_layout}'."
     exit ${XP_ELAYOUT}
   fi
@@ -1685,7 +1781,7 @@ xpns_warning_before_extra() {
   local _ans=
   local _synchronized=
   _synchronized="$(xpns_get_local_tmux_conf "synchronize-panes")"
-  if [[ "on" == "${_synchronized}" ]];then
+  if [[ "on" == "${_synchronized}" ]]; then
     xpns_msg_warning "Panes are now synchronized.
 '-x' option may cause unexpected behavior on the synchronized panes."
     printf "Are you really sure? [y/n]: "
@@ -1720,7 +1816,7 @@ xpns_load_flag_options() {
     XP_CMD_UTILITY="{}"
   fi
   if [[ "$1" =~ t ]]; then
-    if ( xpns_tmux_is_greater_equals 2.3 ) ; then
+    if ( xpns_tmux_is_greater_equals 2.3 ); then
       XP_OPT_SET_TITLE=1
       XP_OPT_CHANGE_BORDER=1
     else
@@ -1764,12 +1860,12 @@ xpns_load_arg_options() {
     _pattern="^-${XP_FLAG_OPTIONS}*l(.+)"
     if [[ "$1" =~ $_pattern ]]; then
       XP_OPT_USE_PRESET_LAYOUT=1
-      XP_LAYOUT="$(cat <<<"${BASH_REMATCH[1]}" | xpns_layout_short2long)"
+      XP_LAYOUT="$(cat <<< "${BASH_REMATCH[1]}" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     elif ! [[ "$2" =~ ^-.* ]]; then
       XP_OPT_USE_PRESET_LAYOUT=1
-      XP_LAYOUT="$(cat <<<"$2" |  xpns_layout_short2long )"
+      XP_LAYOUT="$(cat <<< "$2" | xpns_layout_short2long)"
       xpns_is_valid_layout "${XP_LAYOUT}"
       return 0
     else
@@ -1819,7 +1915,7 @@ xpns_load_arg_options() {
     if [[ "$1" =~ $_pattern ]]; then
       XP_OPT_CUSTOM_SIZE_COLS="${BASH_REMATCH[1]}"
       return 0
-    elif [[ "$2" =~ ^[0-9]+$ ]];then
+    elif [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_OPT_CUSTOM_SIZE_COLS="$2"
       return 0
     else
@@ -1831,7 +1927,7 @@ xpns_load_arg_options() {
     if [[ "$1" =~ $_pattern ]]; then
       XP_OPT_CUSTOM_SIZE_ROWS="${BASH_REMATCH[1]}"
       return 0
-    elif [[ "$2" =~ ^[0-9]+$ ]];then
+    elif [[ "$2" =~ ^[0-9]+$ ]]; then
       XP_OPT_CUSTOM_SIZE_ROWS="$2"
       return 0
     else
@@ -1913,69 +2009,69 @@ xpns_load_long_options() {
 }
 
 xpns_parse_options() {
-  while (( $# > 0 )); do
+  while (($# > 0)); do
     case "$1" in
       --)
-      if [[ ${XP_NO_OPT} -eq 1 ]]; then
-        XP_ARGS+=("$1")
-        shift
-      else
-        # Disable any more options
-        XP_NO_OPT=1
-        shift
-      fi
-      ;;
+        if [[ ${XP_NO_OPT} -eq 1 ]]; then
+          XP_ARGS+=("$1")
+          shift
+        else
+          # Disable any more options
+          XP_NO_OPT=1
+          shift
+        fi
+        ;;
       ## ----------------
       # Long options
       ## ----------------
       --*)
-      if [[ ${XP_NO_OPT} -eq 1 ]]; then
-        XP_ARGS+=("$1")
-        shift
-      else
-        local _shift_count="0"
-        xpns_load_long_options "$@"
-        _shift_count="$?"
-        [[ "${_shift_count}" = "1" ]] && XP_OPTIONS+=("$1") && shift
-      fi
-      ;;
+        if [[ ${XP_NO_OPT} -eq 1 ]]; then
+          XP_ARGS+=("$1")
+          shift
+        else
+          local _shift_count="0"
+          xpns_load_long_options "$@"
+          _shift_count="$?"
+          [[ "${_shift_count}" = "1" ]] && XP_OPTIONS+=("$1") && shift
+        fi
+        ;;
       ## ----------------
       # Short options
       ## ----------------
       -*)
-      if [[ ${XP_NO_OPT} -eq 1 ]]; then
-        XP_ARGS+=("$1")
-        shift
-      else
-        local _shift_count="0"
-        if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]];then
-          xpns_load_arg_options "$@"
-          XP_OPTIONS+=("$1") && shift
-        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [[ -n "${2-}" ]];then
-          xpns_load_arg_options "$@"
-          _shift_count="$?"
-          XP_OPTIONS+=("$1" "$2") && shift && shift
-        elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$  ]];then
-          xpns_load_flag_options "$1"
-          XP_OPTIONS+=("$1") && shift
-        ## ----------------
-        # Other options
-        ## ----------------
+        if [[ ${XP_NO_OPT} -eq 1 ]]; then
+          XP_ARGS+=("$1")
+          shift
         else
-          xpns_msg_error "Invalid option -- '${1#-}'"
-          xpns_usage_warn
-          exit ${XP_EINVAL}
+          local _shift_count="0"
+          if [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}. ]]; then
+            xpns_load_arg_options "$@"
+            XP_OPTIONS+=("$1") && shift
+          elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}*${XP_ARG_OPTIONS}$ ]] && [[ -n "${2-}" ]]; then
+            xpns_load_arg_options "$@"
+            _shift_count="$?"
+            XP_OPTIONS+=("$1" "$2") && shift && shift
+          elif [[ "$1" =~ ^-${XP_FLAG_OPTIONS}+$ ]]; then
+            xpns_load_flag_options "$1"
+            XP_OPTIONS+=("$1") && shift
+          ## ----------------
+          # Other options
+          ## ----------------
+          else
+            xpns_msg_error "Invalid option -- '${1#-}'"
+            xpns_usage_warn
+            exit ${XP_EINVAL}
+          fi
         fi
-      fi
-      ;;
+        ;;
       ## ----------------
       # Other arguments
       ## ----------------
       *)
-      XP_ARGS+=("$1")
-      XP_NO_OPT=1
-      shift
-      ;;
+        XP_ARGS+=("$1")
+        XP_NO_OPT=1
+        shift
+        ;;
     esac
   done
 
@@ -2009,7 +2105,7 @@ xpns_parse_options() {
   XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
 
   # To set command on pre_execution, set -c option manually.
-  if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]];then
+  if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]]; then
     XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
   fi
 
@@ -2031,8 +2127,8 @@ xpns_main() {
   # Validate log directory.
   if [[ ${XP_OPT_LOG_STORE} -eq 1 ]]; then
     TMUX_XPANES_LOG_DIRECTORY=$(xpns_normalize_directory "${TMUX_XPANES_LOG_DIRECTORY}")
-    xpns_is_valid_directory "${TMUX_XPANES_LOG_DIRECTORY}" && \
-    TMUX_XPANES_LOG_DIRECTORY=$(cd "${TMUX_XPANES_LOG_DIRECTORY}" && pwd)
+    xpns_is_valid_directory "${TMUX_XPANES_LOG_DIRECTORY}" &&
+      TMUX_XPANES_LOG_DIRECTORY=$(cd "${TMUX_XPANES_LOG_DIRECTORY}" && pwd)
   fi
   ## --------------------------------
   # If current shell is outside of tmux session.
