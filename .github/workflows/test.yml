@@ -348,7 +348,8 @@ jobs:
         make install
         printf "set-window-option -g automatic-rename off\nset-option -g allow-rename off\n" >> "$HOME/.tmux.conf"
 
-    - name: Unit testing
+    - name: Run tests
       run: |
         bash ./test/test_generator.sh ${{matrix.cases}} > ./test/cases_pairwise.sh
-        script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_smoke.sh'
+        script -e -c /bin/bash -c 'TERM=xterm bash ./test/unit.sh'
+        script -e -c /bin/bash -c 'TERM=xterm bash ./test/cases_pairwise.sh'

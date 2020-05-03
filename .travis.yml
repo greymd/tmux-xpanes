@@ -229,5 +229,5 @@ before_script:
   - $SH ./test/test_generator.sh "${CASES}" > ./test/cases_pairwise.sh
 
 script:
-  - PATH="${TMPDIR}/bin:${PATH}" $SH ./test/unitTest.sh
+  - PATH="${TMPDIR}/bin:${PATH}" $SH ./test/unit.sh
   - TRAVIS_BUILD_DIR="${TRAVIS_BUILD_DIR}" $SH ./test/cases_pairwise.sh
