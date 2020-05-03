@@ -310,11 +310,14 @@ test_xpns_set_args_per_pane () {
 }
 
 test_xpns_set_args_per_pane2 () {
-  XP_ARGS=(1 '' 2 '' 3 4)
+  XP_ARGS=(2 '' 4 '' 6 8 10)
+  set -x
   xpns_set_args_per_pane 2
-  assertEquals "1 " "${XP_ARGS[0]}"
-  assertEquals "2 " "${XP_ARGS[1]}"
-  assertEquals "3 4" "${XP_ARGS[2]}"
+  set +x
+  assertEquals "2 " "${XP_ARGS[0]}"
+  assertEquals "4 " "${XP_ARGS[1]}"
+  assertEquals "6 8" "${XP_ARGS[2]}"
+  assertEquals "10" "${XP_ARGS[3]}"
 }
 
 # shellcheck source=/dev/null

@@ -1243,6 +1243,9 @@ xpns_set_args_per_pane() {
       _line=""
     fi
   done
+  if [[ -n "$_line" ]]; then
+    _filtered_args+=("${_line}")
+  fi
   XP_ARGS=("${_filtered_args[@]}")
 }
 
