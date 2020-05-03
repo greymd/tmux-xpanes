@@ -603,6 +603,7 @@ setUp(){
   export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/cache"
   cd "${BIN_DIR}" || exit
   mkdir -p "${TEST_TMP}"
+  ## This part is related to unresolved bug: https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
   set_tmux_exec_randomly
   echo ">>>>>>>>>>" >&2
   echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
@@ -617,6 +618,7 @@ tearDown(){
 oneTimeTearDown() {
   echo "in oneTimeTearDown"
 }
+
 
 ###:-:-:INSERT_TESTING:-:-:###
 # @case: 4
@@ -649,6 +651,7 @@ test_window_name_having_special_chars() {
     echo "Actual name:$_actual_name Expected name:$_expected_name"
     assertEquals "$_expected_name" "$_actual_name"
   }
+  return 0
 }
 # @case: 10
 # @skip:
@@ -684,6 +687,7 @@ test_keep_allow_rename_opt() {
     assertEquals "off" "$_allow_rename_status"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 # @case: 30
 # @skip:
@@ -725,6 +729,7 @@ test_hyphen_and_option1() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir:?}"/*.result
   }
+  return 0
 }
 # @case: 40
 # @skip:
@@ -747,6 +752,7 @@ test_divide_two_panes() {
     assert_horizontal_two_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 # @case: 44
 # @skip:
@@ -770,6 +776,7 @@ test_divide_four_panes_pipe() {
     assert_tiled_four_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 # @case: 45
 # @skip:
@@ -792,6 +799,7 @@ test_divide_five_panes() {
     assert_tiled_five_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 readonly TMUX_EXEC=$(get_tmux_full_path)

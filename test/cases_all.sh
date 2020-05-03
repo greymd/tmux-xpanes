@@ -630,6 +630,7 @@ test_tmux_path_invalid() {
   else
     echo "Skip test"
   fi
+  return 0
 }
 
 # @case: 2
@@ -720,6 +721,7 @@ test_normalize_log_directory() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 3
@@ -740,6 +742,7 @@ test_maximum_window_name() {
   assertEquals "0" "$?"
 
   close_tmux_session "${_socket_file}"
+  return 0
 }
 
 # @case: 4
@@ -772,6 +775,7 @@ test_window_name_having_special_chars() {
     echo "Actual name:$_actual_name Expected name:$_expected_name"
     assertEquals "$_expected_name" "$_actual_name"
   }
+  return 0
 }
 
 # @case: 5
@@ -811,6 +815,7 @@ test_divide_five_panes_special_chars() {
     assert_tiled_five_panes "$_socket_file" '\.'
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 6
@@ -911,6 +916,7 @@ test_log_and_empty_arg() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 7
@@ -965,6 +971,7 @@ test_n_option() {
     assertEquals "$(seq 10)" "$(cat "${TEST_TMP}"/10)"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 8
@@ -1017,6 +1024,7 @@ test_n_option_pipe() {
     assertEquals "$(seq 10)" "$(cat "${TEST_TMP}"/10)"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 9
@@ -1063,6 +1071,7 @@ test_no_args_option() {
   printf "%s" "$_cmd"
   eval "${EXEC}" > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 10
@@ -1099,6 +1108,7 @@ test_keep_allow_rename_opt() {
     assertEquals "off" "$_allow_rename_status"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 11
@@ -1142,6 +1152,7 @@ test_no_more_options() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir:?}"/*.result
   }
+  return 0
 }
 
 # @case: 12
@@ -1157,6 +1168,7 @@ test_invalid_layout() {
 
   ${EXEC} --bulk-cols=1,2,3 A B C D E
   assertEquals "6" "$?"
+  return 0
 }
 
 # @case: 13
@@ -1177,6 +1189,7 @@ test_invalid_layout_tmux() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}/status"
   }
+  return 0
 }
 
 # @case: 14
@@ -1189,6 +1202,7 @@ test_invalid_layout_pipe() {
   # Option and arguments are separated.
   echo 1 2 3 | ${EXEC} -lmem
   assertEquals "6" "$?"
+  return 0
 }
 
 
@@ -1232,6 +1246,7 @@ test_divide_two_panes_ev() {
     assert_vertical_two_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 16
@@ -1275,6 +1290,7 @@ test_divide_two_panes_eh() {
     assert_horizontal_two_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 17
@@ -1314,6 +1330,7 @@ test_divide_three_panes_ev() {
     assert_vertical_three_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 18
@@ -1354,6 +1371,7 @@ test_divide_three_panes_eh() {
     assert_horizontal_three_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 19
@@ -1399,6 +1417,7 @@ test_append_arg_to_utility_pipe() {
 
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 20
@@ -1438,6 +1457,7 @@ test_execute_option() {
     assertEquals "$(printf "%s\\n" Testing)" "$(cat "${TEST_TMP}"/4)"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 21
@@ -1480,6 +1500,7 @@ test_execute_option_pipe() {
     assertEquals "$(yes | head -n 3)" "$(cat "${TEST_TMP}"/6)"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 22
@@ -1487,6 +1508,7 @@ test_execute_option_pipe() {
 test_argument_and_utility_pipe() {
   echo 10 | ${EXEC} -c 'seq {}' factor {}
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 23
@@ -1494,6 +1516,7 @@ test_argument_and_utility_pipe() {
 test_unsupported_version() {
   TMUX_XPANES_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
   assertEquals "0" "$?"
+  return 0
 }
 
 # @case: 24
@@ -1511,6 +1534,7 @@ test_invalid_args() {
   # execute
   $_cmd > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 25
@@ -1521,6 +1545,7 @@ test_valid_and_invalid_args() {
   # execute
   $_cmd > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 26
@@ -1531,6 +1556,7 @@ test_invalid_long_args() {
   # execute
   $_cmd > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 27
@@ -1541,6 +1567,7 @@ test_no_args() {
   # execute
   $_cmd > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 28
@@ -1551,6 +1578,7 @@ test_hyphen_only() {
   # execute
   $_cmd > /dev/null
   assertEquals "4" "$?"
+  return 0
 }
 
 # @case: 29
@@ -1571,6 +1599,7 @@ test_pipe_without_repstr() {
     assert_tiled_three_panes "$_socket_file" "5"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 30
@@ -1613,6 +1642,7 @@ test_hyphen_and_option1() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir:?}"/*.result
   }
+  return 0
 }
 
 # @case: 31
@@ -1655,6 +1685,7 @@ test_hyphen_and_option2() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir:?}"/*.result
   }
+  return 0
 }
 
 # @case: 32
@@ -1721,6 +1752,7 @@ test_desync_option_1() {
     assertEquals 1 $?
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 33
@@ -1788,6 +1820,7 @@ test_desync_option_2() {
     assertEquals 1 $?
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 34
@@ -1799,6 +1832,7 @@ test_failed_creat_directory() {
   # execute
   $_cmd > /dev/null
   assertEquals "20" "$?"
+  return 0
 }
 
 # @case: 35
@@ -1818,6 +1852,7 @@ test_non_writable_directory() {
   # execute
   eval "${_cmd} > /dev/null"
   assertEquals "21" "$?"
+  return 0
 }
 
 # @case: 36
@@ -1825,6 +1860,7 @@ test_non_writable_directory() {
 test_insufficient_cmd() {
   XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
   assertEquals "127" "$?"
+  return 0
 }
 
 # @case: 37
@@ -1860,6 +1896,7 @@ test_version() {
     assertEquals "0" "$?"
     close_tmux_session "${_socket_file}"
   }
+  return 0
 }
 
 # @case: 38
@@ -1896,6 +1933,7 @@ test_help() {
     assertEquals "0" "$?"
     close_tmux_session "${_socket_file}"
   }
+  return 0
 }
 
 # @case: 39
@@ -1933,6 +1971,7 @@ test_start_separation() {
     assertEquals "2" "$(${TMUX_EXEC} -S "${_socket_file}" list-windows | grep -c .)"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 40
@@ -1956,6 +1995,7 @@ test_divide_two_panes() {
     assert_horizontal_two_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 41
@@ -1979,6 +2019,7 @@ test_divide_three_panes() {
     assert_tiled_three_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 42
@@ -2003,6 +2044,7 @@ test_divide_three_panes_tiled() {
     assert_tiled_three_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 43
@@ -2026,6 +2068,7 @@ test_divide_four_panes() {
     assert_tiled_four_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 44
@@ -2050,6 +2093,7 @@ test_divide_four_panes_pipe() {
     assert_tiled_four_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 45
@@ -2073,6 +2117,7 @@ test_divide_five_panes() {
     assert_tiled_five_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 46
@@ -2097,6 +2142,7 @@ test_divide_five_panes_pipe() {
     assert_tiled_five_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 47
@@ -2135,6 +2181,7 @@ test_command_option() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/*.result
   }
+  return 0
 }
 
 # @case: 48
@@ -2177,6 +2224,7 @@ test_repstr_command_option() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/*.result
   }
+  return 0
 }
 
 # @case: 49
@@ -2215,6 +2263,7 @@ test_repstr_command_option_pipe() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/*.result
   }
+  return 0
 }
 
 # @case: 50
@@ -2303,6 +2352,7 @@ test_log_option() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 51
@@ -2403,6 +2453,7 @@ test_log_format_option() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 52
@@ -2511,6 +2562,7 @@ test_log_format_env_var() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 53
@@ -2612,6 +2664,7 @@ test_log_format_option2() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 54
@@ -2723,6 +2776,7 @@ test_log_format_and_desync_option() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 55
@@ -2797,6 +2851,7 @@ test_log_format_and_desync_option_pipe() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 56
@@ -2830,6 +2885,7 @@ test_x_option_abort() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}/status"
   }
+  return 0
 }
 
 # @case: 57
@@ -2950,6 +3006,7 @@ test_x_option_with_log() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 58
@@ -3014,6 +3071,7 @@ test_x_option_with_pipe() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 59
@@ -3078,6 +3136,7 @@ test_x_option_with_cols_rows() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 60
@@ -3145,6 +3204,7 @@ test_t_and_x_option() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 61
@@ -3179,6 +3239,7 @@ test_t_option_pipe() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 62
@@ -3205,6 +3266,7 @@ test_t_option_warning() {
   close_tmux_session "$_socket_file"
   rm -f "${_tmpdir}"/fin/*
   rmdir "${_tmpdir}"/fin
+  return 0
 }
 
 # @case: 63
@@ -3316,6 +3378,7 @@ test_s_and_x_and_log() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 64
@@ -3421,6 +3484,7 @@ test_ss_and_x_and_log() {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 # @case: 65
@@ -3448,6 +3512,7 @@ test_ss_option_panes_not_found() {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}/exit_status"
   }
+  return 0
 }
 
 # @case: 66
@@ -3480,6 +3545,7 @@ test_ss_option() {
     done
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 67
@@ -3552,6 +3618,7 @@ test_s_and_t_option() {
     assertEquals "$expected" "$actual"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 68
@@ -3591,6 +3658,7 @@ test_ss_and_t_option() {
     assertEquals "$expected" "$actual"
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 69
@@ -3633,6 +3701,7 @@ test_cols_option1() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 2
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 70
@@ -3677,6 +3746,7 @@ test_cols_option2() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 3 1
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 71
@@ -3715,6 +3785,7 @@ test_rows_option1() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 2 4
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 72
@@ -3760,6 +3831,7 @@ test_rows_option2() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 73
@@ -3806,6 +3878,7 @@ test_rows_option3() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 4 1
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 74
@@ -3907,6 +3980,7 @@ test_cols_log_option() {
     rm -f "${_logdir}"/*
     rmdir "${_logdir}"
   }
+  return 0
 }
 
 # @case: 75
@@ -4021,6 +4095,7 @@ test_rows_log_t_option() {
     rm -f "${_logdir}"/*
     rmdir "${_logdir}"
   }
+  return 0
 }
 
 # @case: 76
@@ -4135,6 +4210,7 @@ test_rows_log_ss_t_option() {
     rm -f "${_logdir}"/*
     rmdir "${_logdir}"
   }
+  return 0
 }
 
 # @case: 77
@@ -4160,6 +4236,7 @@ test_too_small_panes() {
     close_tmux_session "${_socket_file}"
   }
   restore_terminal_size
+  return 0
 }
 
 # @case: 78
@@ -4189,6 +4266,7 @@ test_too_small_panes_cols() {
     close_tmux_session "${_socket_file}"
   }
   restore_terminal_size
+  return 0
 }
 
 
@@ -4234,6 +4312,7 @@ test_too_small_panes_avoided_by_n() {
     close_tmux_session "${_socket_file}"
   }
   restore_terminal_size
+  return 0
 }
 
 # @case: 80
@@ -4263,6 +4342,7 @@ test_too_small_panes_bulk_cols() {
     close_tmux_session "${_socket_file}"
   }
   restore_terminal_size
+  return 0
 }
 
 # @case: 81
@@ -4308,6 +4388,7 @@ test_bulk_cols() {
     assert_near_height_each_rows "$_socket_file" "AAAA" 1 1 5 1
     close_tmux_session "$_socket_file"
   }
+  return 0
 }
 
 # @case: 82
@@ -4353,6 +4434,7 @@ test_multiple_recovery_session() {
   ## Cleaning
   close_tmux_session "$_socket_file"
   close_tmux_session "$_recovery_socket"
+  return 0
 }
 
 # @case: 83
@@ -4408,6 +4490,7 @@ test_b_option () {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/*
   }
+  return 0
 }
 
 # @case: 84
@@ -4463,6 +4546,7 @@ test_multi_b_option () {
     close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/*
   }
+  return 0
 }
 
 # @case: 85
@@ -4585,6 +4669,7 @@ test_b_x_log_option () {
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
+  return 0
 }
 
 ###:-:-:END_TESTING:-:-:###
