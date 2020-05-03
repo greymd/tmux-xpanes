@@ -1166,9 +1166,8 @@ test_invalid_layout() {
   ${EXEC} -l mem 1 2 3
   assertEquals "6" "$?"
 
-  # TODO
-  # ${EXEC} --bulk-cols=1,2,3 A B C D E
-  # assertEquals "6" "$?"
+  bash -x ${EXEC} --debug --bulk-cols=1,2,3 A B C D E
+  assertEquals "6" "$?"
   return 0
 }
 
