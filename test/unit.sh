@@ -300,5 +300,22 @@ test_xpns_get_window_height_width () {
   fi
 }
 
+test_xpns_set_args_per_pane () {
+  XP_ARGS=(1 2 3 4 5 6)
+  # set -x
+  xpns_set_args_per_pane 3
+  # set +x
+  assertEquals "1 2 3" "${XP_ARGS[0]}"
+  assertEquals "4 5 6" "${XP_ARGS[1]}"
+}
+
+test_xpns_set_args_per_pane2 () {
+  XP_ARGS=(1 '' 2 '' 3 4)
+  xpns_set_args_per_pane 2
+  assertEquals "1 " "${XP_ARGS[0]}"
+  assertEquals "2 " "${XP_ARGS[1]}"
+  assertEquals "3 4" "${XP_ARGS[2]}"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"

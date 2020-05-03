@@ -1224,12 +1224,25 @@ xpns_pipe_filter() {
 }
 
 xpns_set_args_per_pane() {
+  local OFS=" "
+  local _line=""
   local _pane_num="$1"
   shift
   local _filtered_args=()
-  while read -r _line; do
-    _filtered_args+=("${_line}")
-  done < <(xargs -n "${_pane_num}" <<< "$(xpns_arr2args "${XP_ARGS[@]}")")
+  set "${XP_ARGS[@]}"
+  local _num="$#"
+  for (( i=1; i <= _num; i++ )) ;do
+    if [[ -z "$_line" ]]; then
+      _line="$1"
+    else
+      _line="${_line}${OFS}$1"
+    fi
+    shift
+    if (( i % _pane_num == 0 )); then
+      _filtered_args+=("${_line}")
+      _line=""
+    fi
+  done
   XP_ARGS=("${_filtered_args[@]}")
 }
 
