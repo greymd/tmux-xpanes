@@ -1231,14 +1231,14 @@ xpns_set_args_per_pane() {
   local _filtered_args=()
   set "${XP_ARGS[@]}"
   local _num="$#"
-  for (( i=1; i <= _num; i++ )) ;do
+  for ((i = 1; i <= _num; i++)); do
     if [[ -z "$_line" ]]; then
       _line="$1"
     else
       _line="${_line}${OFS}$1"
     fi
     shift
-    if (( i % _pane_num == 0 )); then
+    if ((i % _pane_num == 0)); then
       _filtered_args+=("${_line}")
       _line=""
     fi
