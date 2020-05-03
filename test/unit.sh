@@ -311,9 +311,7 @@ test_xpns_set_args_per_pane () {
 
 test_xpns_set_args_per_pane2 () {
   XP_ARGS=(2 '' 4 '' 6 8 10)
-  set -x
   xpns_set_args_per_pane 2
-  set +x
   assertEquals "2 " "${XP_ARGS[0]}"
   assertEquals "4 " "${XP_ARGS[1]}"
   assertEquals "6 8" "${XP_ARGS[2]}"
