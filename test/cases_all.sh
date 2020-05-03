@@ -1166,9 +1166,8 @@ test_invalid_layout() {
   ${EXEC} -l mem 1 2 3
   assertEquals "6" "$?"
 
-  # TODO
-  # ${EXEC} --bulk-cols=1,2,3 A B C D E
-  # assertEquals "6" "$?"
+  ${EXEC} --bulk-cols=1,2,3 A B C D E
+  assertEquals "6" "$?"
   return 0
 }
 
@@ -4228,16 +4227,15 @@ test_too_small_panes() {
   assertEquals 7 "$(<"${_tmpdir}/status")"
   rm -f "${_tmpdir}/status"
   close_tmux_session "$_socket_file"
-  # TODO
-  # : "In TMUX session" && {
-  #   printf "\\n%s\\n" "$ TMUX(${_cmd})"
-  #   create_tmux_session "${_socket_file}"
-  #   exec_tmux_session "${_socket_file}" "${_cmd}"
-  #   wait_all_non_empty_files "${_tmpdir}/status"
-  #   assertEquals 7 "$(<"${_tmpdir}/status")"
-  #   close_tmux_session "${_socket_file}"
-  # }
-  # restore_terminal_size
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_all_non_empty_files "${_tmpdir}/status"
+    assertEquals 7 "$(<"${_tmpdir}/status")"
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
   return 0
 }
 
@@ -4259,16 +4257,15 @@ test_too_small_panes_cols() {
   assertEquals 7 "$(<"${_tmpdir}/status")"
   rm -f "${_tmpdir}/status"
   close_tmux_session "$_socket_file"
-  # TODO
-  # : "In TMUX session" && {
-  #   printf "\\n%s\\n" "$ TMUX(${_cmd})"
-  #   create_tmux_session "${_socket_file}"
-  #   exec_tmux_session "${_socket_file}" "${_cmd}"
-  #   wait_all_non_empty_files "${_tmpdir}/status"
-  #   assertEquals 7 "$(<"${_tmpdir}/status")"
-  #   close_tmux_session "${_socket_file}"
-  # }
-  # restore_terminal_size
+  : "In TMUX session" && {
+    printf "\\n%s\\n" "$ TMUX(${_cmd})"
+    create_tmux_session "${_socket_file}"
+    exec_tmux_session "${_socket_file}" "${_cmd}"
+    wait_all_non_empty_files "${_tmpdir}/status"
+    assertEquals 7 "$(<"${_tmpdir}/status")"
+    close_tmux_session "${_socket_file}"
+  }
+  restore_terminal_size
   return 0
 }
 
