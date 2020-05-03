@@ -9,28 +9,6 @@ TTY_ROWS=${TTY_ROWS:-40}
 TTY_COLS=${TTY_COLS:-80}
 readonly TTY_ROWS TTY_COLS
 
-# func 0 -- Restore old PATH.
-# func 1 -- make PATH include tmux.
-switch_tmux_path () {
-  local _flag="${1:-0}"
-  local _tmux_path="${2:-${TRAVIS_BUILD_DIR}/tmp/bin}"
-
-  # --------------------
-  # Testing for TravisCI
-  # --------------------
-  if [[ "${_flag}" -eq 0 ]]; then
-    # Remove tmux from the PATH
-    export PATH="${OLD_PATH}"
-  elif [[ "${_flag}" -eq 1 ]]; then
-    if type tmux &> /dev/null;then
-      return 0
-    fi
-    # Make PATH include tmux
-    export PATH="${_tmux_path}:${PATH}"
-  fi
-  return 0
-}
-
 tmux_version_number() {
   local _tmux_version=""
   if ! ${TMUX_EXEC} -V &> /dev/null; then
@@ -128,7 +106,6 @@ window_layout_dump() {
 
 # !!Run this function at first!!
 check_version() {
-  switch_tmux_path 1
   local _exec="${BIN_DIR}${EXEC}"
   ${_exec} --dry-run A
   # If tmux version is less than 1.8, skip rest of the tests.
@@ -137,7 +114,6 @@ check_version() {
     echo "Because this version is out of support." >&2
     exit 0
   fi
-  switch_tmux_path 0
 }
 
 create_tmux_session() {
@@ -558,30 +534,20 @@ assert_horizontal_three_panes() {
   assert_near_width_each_cols "$_socket_file" "$_window_name" 1 1 1 3
 }
 
-get_tmux_full_path () {
-  switch_tmux_path 1
-  command -v tmux
-  switch_tmux_path 0
-}
-
 set_tmux_exec_randomly () {
   local _num
   local _exec
   _num=$((RANDOM % 4));
-  _exec="$(get_tmux_full_path)"
+  _exec="$(command -v tmux)"
 
   if [[ ${_num} -eq 0 ]];then
     export TMUX_XPANES_EXEC="${_exec} -2"
-    switch_tmux_path 0
   elif [[ ${_num} -eq 1 ]];then
     export TMUX_XPANES_EXEC="${_exec}"
-    switch_tmux_path 0
   elif [[ ${_num} -eq 2 ]];then
     unset TMUX_XPANES_EXEC
-    switch_tmux_path 1
   elif [[ ${_num} -eq 3 ]];then
     export TMUX_XPANES_EXEC="tmux -2"
-    switch_tmux_path 1
   fi
 }
 
@@ -620,20 +586,6 @@ oneTimeTearDown() {
 ###:-:-:START_TESTING:-:-:###
 
 # @case: 1
-# @skip:
-test_tmux_path_invalid() {
-  # Only for TravisCI
-  if [ -n "${TRAVIS_BUILD_DIR}" ]; then
-    switch_tmux_path 0
-    TMUX_XPANES_EXEC="tmux" ${EXEC} 1 2 3
-    assertEquals "127" "$?"
-  else
-    echo "Skip test"
-  fi
-  return 0
-}
-
-# @case: 2
 # @skip: 1.8,2.3
 test_normalize_log_directory() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -724,7 +676,7 @@ test_normalize_log_directory() {
   return 0
 }
 
-# @case: 3
+# @case: 2
 # @skip:
 test_maximum_window_name() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -745,7 +697,7 @@ test_maximum_window_name() {
   return 0
 }
 
-# @case: 4
+# @case: 3
 # @skip:
 test_window_name_having_special_chars() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -778,7 +730,7 @@ test_window_name_having_special_chars() {
   return 0
 }
 
-# @case: 5
+# @case: 4
 # @skip:
 test_divide_five_panes_special_chars() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -818,7 +770,7 @@ test_divide_five_panes_special_chars() {
   return 0
 }
 
-# @case: 6
+# @case: 5
 # @skip: 1.8,2.3
 test_log_and_empty_arg() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -919,7 +871,7 @@ test_log_and_empty_arg() {
   return 0
 }
 
-# @case: 7
+# @case: 6
 # @skip:
 test_n_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -974,7 +926,7 @@ test_n_option() {
   return 0
 }
 
-# @case: 8
+# @case: 7
 # @skip:
 test_n_option_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1027,7 +979,7 @@ test_n_option_pipe() {
   return 0
 }
 
-# @case: 9
+# @case: 8
 # @skip:
 test_no_args_option() {
   local _cmd=""
@@ -1074,7 +1026,7 @@ test_no_args_option() {
   return 0
 }
 
-# @case: 10
+# @case: 9
 # @skip:
 test_keep_allow_rename_opt() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1111,7 +1063,7 @@ test_keep_allow_rename_opt() {
   return 0
 }
 
-# @case: 11
+# @case: 10
 # @skip:
 test_no_more_options() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1155,7 +1107,7 @@ test_no_more_options() {
   return 0
 }
 
-# @case: 12
+# @case: 11
 # @skip:
 test_invalid_layout() {
   # Option and arguments are continuous.
@@ -1171,7 +1123,7 @@ test_invalid_layout() {
   return 0
 }
 
-# @case: 13
+# @case: 12
 # @skip:
 test_invalid_layout_tmux() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1192,7 +1144,7 @@ test_invalid_layout_tmux() {
   return 0
 }
 
-# @case: 14
+# @case: 13
 # @skip:
 test_invalid_layout_pipe() {
   # Option and arguments are continuous.
@@ -1206,7 +1158,7 @@ test_invalid_layout_pipe() {
 }
 
 
-# @case: 15
+# @case: 14
 # @skip:
 test_divide_two_panes_ev() {
   # divide window into two panes even-vertically
@@ -1249,7 +1201,7 @@ test_divide_two_panes_ev() {
   return 0
 }
 
-# @case: 16
+# @case: 15
 # @skip:
 test_divide_two_panes_eh() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1293,7 +1245,7 @@ test_divide_two_panes_eh() {
   return 0
 }
 
-# @case: 17
+# @case: 16
 # @skip:
 test_divide_three_panes_ev() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1333,7 +1285,7 @@ test_divide_three_panes_ev() {
   return 0
 }
 
-# @case: 18
+# @case: 17
 # @skip:
 test_divide_three_panes_eh() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1374,7 +1326,7 @@ test_divide_three_panes_eh() {
   return 0
 }
 
-# @case: 19
+# @case: 18
 # @skip:
 test_append_arg_to_utility_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1420,7 +1372,7 @@ test_append_arg_to_utility_pipe() {
   return 0
 }
 
-# @case: 20
+# @case: 19
 # @skip:
 test_execute_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1460,7 +1412,7 @@ test_execute_option() {
   return 0
 }
 
-# @case: 21
+# @case: 20
 # @skip:
 test_execute_option_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1503,7 +1455,7 @@ test_execute_option_pipe() {
   return 0
 }
 
-# @case: 22
+# @case: 21
 # @skip:
 test_argument_and_utility_pipe() {
   echo 10 | ${EXEC} -c 'seq {}' factor {}
@@ -1511,7 +1463,7 @@ test_argument_and_utility_pipe() {
   return 0
 }
 
-# @case: 23
+# @case: 22
 # @skip:
 test_unsupported_version() {
   TMUX_XPANES_TMUX_VERSION="1.1" ${EXEC} --dry-run A 2>&1 | grep "officially supported"
@@ -1519,7 +1471,7 @@ test_unsupported_version() {
   return 0
 }
 
-# @case: 24
+# @case: 23
 # @skip:
 test_invalid_args() {
   local _cmd="${EXEC} -Z"
@@ -1537,7 +1489,7 @@ test_invalid_args() {
   return 0
 }
 
-# @case: 25
+# @case: 24
 # @skip:
 test_valid_and_invalid_args() {
   local _cmd="${EXEC} -Zc @@@"
@@ -1548,7 +1500,7 @@ test_valid_and_invalid_args() {
   return 0
 }
 
-# @case: 26
+# @case: 25
 # @skip:
 test_invalid_long_args() {
   local _cmd="${EXEC} --hogehoge"
@@ -1559,7 +1511,7 @@ test_invalid_long_args() {
   return 0
 }
 
-# @case: 27
+# @case: 26
 # @skip:
 test_no_args() {
   local _cmd="${EXEC}"
@@ -1570,7 +1522,7 @@ test_no_args() {
   return 0
 }
 
-# @case: 28
+# @case: 27
 # @skip:
 test_hyphen_only() {
   local _cmd="${EXEC} --"
@@ -1581,7 +1533,7 @@ test_hyphen_only() {
   return 0
 }
 
-# @case: 29
+# @case: 28
 # @skip:
 test_pipe_without_repstr() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1602,7 +1554,7 @@ test_pipe_without_repstr() {
   return 0
 }
 
-# @case: 30
+# @case: 29
 # @skip:
 test_hyphen_and_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1645,7 +1597,7 @@ test_hyphen_and_option1() {
   return 0
 }
 
-# @case: 31
+# @case: 30
 # @skip:
 test_hyphen_and_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1688,7 +1640,7 @@ test_hyphen_and_option2() {
   return 0
 }
 
-# @case: 32
+# @case: 31
 # @skip: 1.8
 test_desync_option_1() {
   # If tmux version is less than 1.9, skip this test.
@@ -1755,7 +1707,7 @@ test_desync_option_1() {
   return 0
 }
 
-# @case: 33
+# @case: 32
 # @skip: 1.8
 test_desync_option_2() {
   # This test uses continuous options like '-dI@'
@@ -1823,7 +1775,7 @@ test_desync_option_2() {
   return 0
 }
 
-# @case: 34
+# @case: 33
 # @skip:
 test_failed_creat_directory() {
   local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
@@ -1835,7 +1787,7 @@ test_failed_creat_directory() {
   return 0
 }
 
-# @case: 35
+# @case: 34
 # @skip:
 test_non_writable_directory() {
   local _user=${USER:-$(whoami)}
@@ -1855,7 +1807,7 @@ test_non_writable_directory() {
   return 0
 }
 
-# @case: 36
+# @case: 35
 # @skip:
 test_insufficient_cmd() {
   XP_DEPENDENCIES="hogehoge123 cat" ${EXEC} 1 2 3
@@ -1863,7 +1815,7 @@ test_insufficient_cmd() {
   return 0
 }
 
-# @case: 37
+# @case: 36
 # @skip:
 test_version() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1899,7 +1851,7 @@ test_version() {
   return 0
 }
 
-# @case: 38
+# @case: 37
 # @skip:
 test_help() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1936,7 +1888,7 @@ test_help() {
   return 0
 }
 
-# @case: 39
+# @case: 38
 # @skip:
 test_start_separation() {
   local _window_name=""
@@ -1974,7 +1926,7 @@ test_start_separation() {
   return 0
 }
 
-# @case: 40
+# @case: 39
 # @skip:
 test_divide_two_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -1998,7 +1950,7 @@ test_divide_two_panes() {
   return 0
 }
 
-# @case: 41
+# @case: 40
 # @skip:
 test_divide_three_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2022,7 +1974,7 @@ test_divide_three_panes() {
   return 0
 }
 
-# @case: 42
+# @case: 41
 # @skip:
 test_divide_three_panes_tiled() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2047,7 +1999,7 @@ test_divide_three_panes_tiled() {
   return 0
 }
 
-# @case: 43
+# @case: 42
 # @skip:
 test_divide_four_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2071,7 +2023,7 @@ test_divide_four_panes() {
   return 0
 }
 
-# @case: 44
+# @case: 43
 # @skip:
 test_divide_four_panes_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2096,7 +2048,7 @@ test_divide_four_panes_pipe() {
   return 0
 }
 
-# @case: 45
+# @case: 44
 # @skip:
 test_divide_five_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2120,7 +2072,7 @@ test_divide_five_panes() {
   return 0
 }
 
-# @case: 46
+# @case: 45
 # @skip:
 test_divide_five_panes_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2145,7 +2097,7 @@ test_divide_five_panes_pipe() {
   return 0
 }
 
-# @case: 47
+# @case: 46
 # @skip:
 test_command_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2184,7 +2136,7 @@ test_command_option() {
   return 0
 }
 
-# @case: 48
+# @case: 47
 # @skip:
 test_repstr_command_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2227,7 +2179,7 @@ test_repstr_command_option() {
   return 0
 }
 
-# @case: 49
+# @case: 48
 # @skip:
 test_repstr_command_option_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2266,7 +2218,7 @@ test_repstr_command_option_pipe() {
   return 0
 }
 
-# @case: 50
+# @case: 49
 # @skip: 1.8,2.3
 test_log_option() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2355,7 +2307,7 @@ test_log_option() {
   return 0
 }
 
-# @case: 51
+# @case: 50
 # @skip: 1.8,2.3
 test_log_format_option() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2456,7 +2408,7 @@ test_log_format_option() {
   return 0
 }
 
-# @case: 52
+# @case: 51
 # @skip: 1.8,2.3
 test_log_format_env_var() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2565,7 +2517,7 @@ test_log_format_env_var() {
   return 0
 }
 
-# @case: 53
+# @case: 52
 # @skip: 1.8,2.3
 test_log_format_option2() {
   if [ "$(tmux_version_number)" == "1.8" ] ;then
@@ -2667,7 +2619,7 @@ test_log_format_option2() {
   return 0
 }
 
-# @case: 54
+# @case: 53
 # @skip: 1.8,2.3
 test_log_format_and_desync_option() {
   if (is_less_than "1.9");then
@@ -2779,7 +2731,7 @@ test_log_format_and_desync_option() {
   return 0
 }
 
-# @case: 55
+# @case: 54
 # @skip: 1.8,2.3
 test_log_format_and_desync_option_pipe() {
   if (is_less_than "1.9");then
@@ -2854,7 +2806,7 @@ test_log_format_and_desync_option_pipe() {
   return 0
 }
 
-# @case: 56
+# @case: 55
 # @skip:
 test_x_option_abort() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -2888,7 +2840,7 @@ test_x_option_abort() {
   return 0
 }
 
-# @case: 57
+# @case: 56
 # @skip: 1.8,2.3
 test_x_option_with_log() {
 
@@ -3009,7 +2961,7 @@ test_x_option_with_log() {
   return 0
 }
 
-# @case: 58
+# @case: 57
 # @skip:
 test_x_option_with_pipe() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3074,7 +3026,7 @@ test_x_option_with_pipe() {
   return 0
 }
 
-# @case: 59
+# @case: 58
 # @skip:
 test_x_option_with_cols_rows() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3139,7 +3091,7 @@ test_x_option_with_cols_rows() {
   return 0
 }
 
-# @case: 60
+# @case: 59
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_and_x_option() {
 
@@ -3207,7 +3159,7 @@ test_t_and_x_option() {
   return 0
 }
 
-# @case: 61
+# @case: 60
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_t_option_pipe() {
 
@@ -3242,7 +3194,7 @@ test_t_option_pipe() {
   return 0
 }
 
-# @case: 62
+# @case: 61
 # @skip: 2.3,2.4,2.5,2.6,2.7
 test_t_option_warning() {
   if ! (is_less_than "2.3");then
@@ -3269,7 +3221,7 @@ test_t_option_warning() {
   return 0
 }
 
-# @case: 63
+# @case: 62
 # @skip: 2.3
 test_s_and_x_and_log() {
 
@@ -3381,7 +3333,7 @@ test_s_and_x_and_log() {
   return 0
 }
 
-# @case: 64
+# @case: 63
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_ss_and_x_and_log() {
 
@@ -3487,7 +3439,7 @@ test_ss_and_x_and_log() {
   return 0
 }
 
-# @case: 65
+# @case: 64
 # @skip:
 test_ss_option_panes_not_found() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3515,7 +3467,7 @@ test_ss_option_panes_not_found() {
   return 0
 }
 
-# @case: 66
+# @case: 65
 # @skip:
 test_ss_option() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3548,7 +3500,7 @@ test_ss_option() {
   return 0
 }
 
-# @case: 67
+# @case: 66
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_s_and_t_option() {
   if (is_less_than "2.3");then
@@ -3621,7 +3573,7 @@ test_s_and_t_option() {
   return 0
 }
 
-# @case: 68
+# @case: 67
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2
 test_ss_and_t_option() {
   if (is_less_than "2.3");then
@@ -3661,7 +3613,7 @@ test_ss_and_t_option() {
   return 0
 }
 
-# @case: 69
+# @case: 68
 # @skip:
 test_cols_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3704,7 +3656,7 @@ test_cols_option1() {
   return 0
 }
 
-# @case: 70
+# @case: 69
 # @skip:
 test_cols_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3749,7 +3701,7 @@ test_cols_option2() {
   return 0
 }
 
-# @case: 71
+# @case: 70
 # @skip:
 test_rows_option1() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3788,7 +3740,7 @@ test_rows_option1() {
   return 0
 }
 
-# @case: 72
+# @case: 71
 # @skip:
 test_rows_option2() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3834,7 +3786,7 @@ test_rows_option2() {
   return 0
 }
 
-# @case: 73
+# @case: 72
 # @skip:
 test_rows_option3() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -3881,7 +3833,7 @@ test_rows_option3() {
   return 0
 }
 
-# @case: 74
+# @case: 73
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_cols_log_option() {
 
@@ -3983,7 +3935,7 @@ test_cols_log_option() {
   return 0
 }
 
-# @case: 75
+# @case: 74
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_t_option() {
 
@@ -4098,7 +4050,7 @@ test_rows_log_t_option() {
   return 0
 }
 
-# @case: 76
+# @case: 75
 # @skip: 1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5
 test_rows_log_ss_t_option() {
 
@@ -4213,7 +4165,7 @@ test_rows_log_ss_t_option() {
   return 0
 }
 
-# @case: 77
+# @case: 76
 # @skip:
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4240,7 +4192,7 @@ test_too_small_panes() {
   return 0
 }
 
-# @case: 78
+# @case: 77
 # @skip:
 test_too_small_panes_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4271,7 +4223,7 @@ test_too_small_panes_cols() {
 }
 
 
-# @case: 79
+# @case: 78
 # @skip:
 test_too_small_panes_avoided_by_n() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4316,7 +4268,7 @@ test_too_small_panes_avoided_by_n() {
   return 0
 }
 
-# @case: 80
+# @case: 79
 # @skip:
 test_too_small_panes_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4346,7 +4298,7 @@ test_too_small_panes_bulk_cols() {
   return 0
 }
 
-# @case: 81
+# @case: 80
 # @skip:
 test_bulk_cols() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4392,7 +4344,7 @@ test_bulk_cols() {
   return 0
 }
 
-# @case: 82
+# @case: 81
 # @skip:
 test_multiple_recovery_session() {
   local _socket_file="${XDG_CACHE_HOME}/xpanes/socket.test"
@@ -4438,7 +4390,7 @@ test_multiple_recovery_session() {
   return 0
 }
 
-# @case: 83
+# @case: 82
 # @skip:
 test_b_option () {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4494,7 +4446,7 @@ test_b_option () {
   return 0
 }
 
-# @case: 84
+# @case: 83
 # @skip:
 test_multi_b_option () {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
@@ -4550,7 +4502,7 @@ test_multi_b_option () {
   return 0
 }
 
-# @case: 85
+# @case: 84
 # @skip: 1.8,2.3
 test_b_x_log_option () {
 
