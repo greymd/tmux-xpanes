@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -4629,7 +4629,7 @@ test_b_x_log_option () {
 
 ###:-:-:INSERT_TESTING:-:-:###
 
-readonly TMUX_EXEC=$(get_tmux_full_path)
+readonly TMUX_EXEC=$(command -v tmux)
 if [ -n "$BASH_VERSION" ]; then
   # This is bash
   echo "Testing for bash $BASH_VERSION"
