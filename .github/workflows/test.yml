@@ -28,7 +28,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Run shfmt
-      run: shfmt -i 2 -ci -sr -kp -d ./bin/xpanes
+      run: shfmt -i 2 -ci -sr -kp -d ./bin/xpanes ./*.sh
 
   test:
     runs-on: ubuntu-latest
