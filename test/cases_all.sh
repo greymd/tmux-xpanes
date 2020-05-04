@@ -567,7 +567,6 @@ setUp(){
   export XDG_CACHE_HOME="${SHUNIT_TMPDIR}/cache"
   cd "${BIN_DIR}" || exit
   mkdir -p "${TEST_TMP}"
-  ## This part is related to unresolved bug: https://travis-ci.org/greymd/tmux-xpanes/jobs/504943987
   set_tmux_exec_randomly
   echo ">>>>>>>>>>" >&2
   echo "TMUX_XPANES_EXEC ... '${TMUX_XPANES_EXEC}'" >&2
@@ -1232,8 +1231,6 @@ test_divide_two_panes_eh() {
     assert_horizontal_two_panes "$_socket_file" "AAAA"
     close_tmux_session "$_socket_file"
 
-    # Somehow it fails at https://travis-ci.org/greymd/tmux-xpanes/jobs/497121894
-    ## SH=bash SH_VERSION=4.0 TMUX_VERSION=2.8
     _cmd="echo AAAA BBBB | xargs -n 1 | ${EXEC} -S $_socket_file -leh"
     printf "\\nTMUX(%s)\\n" "${_cmd}"
     create_tmux_session "$_socket_file"
