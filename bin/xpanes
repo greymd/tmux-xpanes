@@ -1488,11 +1488,19 @@ xpns_pre_execution() {
   # Run as best effort
   xpns_clean_session || true
 
+  cat << EOS > "${XP_CACHE_HOME}"/__xpns_spawn_$$
+"${XP_ABS_THIS_FILE_NAME}" ${_opts4args} ${_args4args} 2> "${XP_CACHE_HOME}"/__xpns_exit_output_$$
+echo \$? > "${XP_CACHE_HOME}"/__xpns_exit_status_$$
+echo 1 > "${XP_CACHE_HOME}"/__xpns_spawn_finish_$$
+EOS
+
   # Create new session.
   ${TMUX_XPANES_EXEC} -S "${XP_SOCKET_PATH}" new-session \
-    -s "${XP_SESSION_NAME}" \
-    -n "${XP_TMP_WIN_NAME}" \
-    -d "${XP_ABS_THIS_FILE_NAME} ${_opts4args} ${_args4args}"
+    -s   "${XP_SESSION_NAME}" \
+    -n   "${XP_TMP_WIN_NAME}" \
+    -d   "$XP_SHELL \"${XP_CACHE_HOME}/__xpns_spawn_$$\""
+
+  xpns_msg_debug "Execute: $XP_SHELL \"${XP_CACHE_HOME}\"/__xpns_spawn_$$"
 
   # Avoid attaching (for unit testing).
   if [[ ${XP_OPT_ATTACH} -eq 1 ]]; then
@@ -1510,6 +1518,13 @@ ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
       exit ${XP_ETTY}
     fi
   fi
+  until grep -q 1 "${XP_CACHE_HOME}"/__xpns_spawn_finish_$$ > /dev/null 2>&1; do
+    sleep 1
+  done
+  xpns_msg_debug "Output from tmux session (START) >>>>>>>>>>>"
+  cat "${XP_CACHE_HOME}"/__xpns_exit_output_$$
+  xpns_msg_debug "<<<<<<<<<< Output from tmux session (END)"
+  exit "$(cat "${XP_CACHE_HOME}"/__xpns_exit_status_$$)"
 }
 
 # Execute from inside of tmux session
