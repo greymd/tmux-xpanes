@@ -300,22 +300,39 @@ test_xpns_get_window_height_width () {
   fi
 }
 
-test_xpns_set_args_per_pane () {
-  XP_ARGS=(1 2 3 4 5 6)
+test_xpns_merge_array_elements () {
+  TEST_ARR=(1 2 3 4 5 6)
   # set -x
-  xpns_set_args_per_pane 3
+  xpns_merge_array_elements 3 'TEST_ARR'
   # set +x
-  assertEquals "1 2 3" "${XP_ARGS[0]}"
-  assertEquals "4 5 6" "${XP_ARGS[1]}"
+  assertEquals "1 2 3" "${TEST_ARR[0]}"
+  assertEquals "4 5 6" "${TEST_ARR[1]}"
 }
 
-test_xpns_set_args_per_pane2 () {
-  XP_ARGS=(2 '' 4 '' 6 8 10)
-  xpns_set_args_per_pane 2
-  assertEquals "2 " "${XP_ARGS[0]}"
-  assertEquals "4 " "${XP_ARGS[1]}"
-  assertEquals "6 8" "${XP_ARGS[2]}"
-  assertEquals "10" "${XP_ARGS[3]}"
+test_xpns_merge_array_elements2 () {
+  TEST_ARR=(2 '' 4 '' 6 8 10)
+  xpns_merge_array_elements 2 'TEST_ARR'
+  assertEquals "2 " "${TEST_ARR[0]}"
+  assertEquals "4 " "${TEST_ARR[1]}"
+  assertEquals "6 8" "${TEST_ARR[2]}"
+  assertEquals "10" "${TEST_ARR[3]}"
+}
+
+test_xpns_newline2space () {
+  actual=$(echo 1 | xpns_newline2space)
+  assertEquals "1" "${actual}"
+
+  actual=$(seq 2 | xpns_newline2space)
+  assertEquals "1 2" "${actual}"
+
+  actual=$(seq 3 | xpns_newline2space)
+  assertEquals "1 2 3" "${actual}"
+
+  actual=$(seq 4 | sed 's/[24]//' | xpns_newline2space)
+  assertEquals "1  3 " "${actual}"
+
+  actual=$(echo | xpns_newline2space)
+  assertEquals "" "${actual}"
 }
 
 # shellcheck source=/dev/null

@@ -94,6 +94,7 @@ readonly XP_DEFAULT_LAYOUT="tiled"
 readonly XP_DEFAULT_REPSTR="{}"
 readonly XP_DEFAULT_CMD_UTILITY="echo {} "
 readonly XP_SSH_CMD_UTILITY="ssh -o StrictHostKeyChecking=no {} "
+readonly XP_OFS="${XP_OFS:- }"
 XP_OPTIONS=()
 XP_ARGS=()
 XP_STDIN=()
@@ -392,7 +393,7 @@ xpns_nums_transpose()  {
     ## $ echo 1234 | cut -c 5
     ## => result is supposed to be empty
     printf "%s\\n" "$_spaces" | cut -c "$i" | grep -c ' '
-  done < <(xpns_seq 1 "${_colnum}") | xargs)"
+  done < <(xpns_seq 1 "${_colnum}") | xpns_newline2space)"
   xpns_msg_debug "result = $_result"
   printf "%s\\n" "$_result"
 }
@@ -1223,19 +1224,25 @@ xpns_pipe_filter() {
   fi
 }
 
-xpns_set_args_per_pane() {
-  local OFS=" "
+# Merge array's element by combining with space.
+#   i.e
+#   array=(1 2 3 4 5)
+#   func 3 "array"
+#   => array is going to be ("1 2 3" "4 5")
+xpns_merge_array_elements() {
   local _line=""
   local _pane_num="$1"
   shift
+  local _arr_name="$1"
+  shift
   local _filtered_args=()
-  set "${XP_ARGS[@]}"
+  eval 'set -- "${'"$_arr_name"'[@]}"'
   local _num="$#"
   for ((i = 1; i <= _num; i++)); do
     if [[ -z "$_line" ]]; then
       _line="$1"
     else
-      _line="${_line}${OFS}$1"
+      _line="${_line}${XP_OFS}$1"
     fi
     shift
     if ((i % _pane_num == 0)); then
@@ -1246,7 +1253,19 @@ xpns_set_args_per_pane() {
   if [[ -n "$_line" ]]; then
     _filtered_args+=("${_line}")
   fi
-  XP_ARGS=("${_filtered_args[@]}")
+  eval "$_arr_name"'=("${_filtered_args[@]}")'
+}
+
+xpns_newline2space() {
+  local _result=""
+  while read -r _line; do
+    if [[ -z "$_result" ]]; then
+      _result="$_line"
+    else
+      _result="${_result}${XP_OFS}${_line}"
+    fi
+  done
+  printf "%s\\n" "${_result}"
 }
 
 xpns_get_window_height_width() {
@@ -1283,7 +1302,7 @@ xpns_get_window_height_width() {
     {
       read -r       # Remove first line
       read -r _dev
-    } < <(ps -o tty -p $$)
+    } < <(ps -o tty -p $$ 2> /dev/null)
     ## If it's Linux, -F option is used
     if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
@@ -1502,7 +1521,7 @@ xpns_execution() {
   local _pane_count=0
 
   if [[ ${XP_IS_PIPE_MODE} -eq 0 ]] && [[ -n "${XP_MAX_PANE_ARGS-}" ]]; then
-    xpns_set_args_per_pane "${XP_MAX_PANE_ARGS}"
+    xpns_merge_array_elements "${XP_MAX_PANE_ARGS}" 'XP_ARGS'
   fi
 
   ## Fix window size and define pane size
