@@ -1302,7 +1302,7 @@ xpns_get_window_height_width() {
     {
       read -r       # Remove first line
       read -r _dev
-    } < <(ps -o tty -p $$)
+    } < <(ps -o tty -p $$ 2> /dev/null)
     ## If it's Linux, -F option is used
     if _result=$(stty -F "/dev/${_dev}" size 2> /dev/null) && [[ "$_result" =~ $_pattern ]]; then
       _height="${BASH_REMATCH[1]}"
