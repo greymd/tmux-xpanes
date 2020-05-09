@@ -89,7 +89,7 @@ $ sudo dnf install xpanes
 ## With `yum` (For CentOS7, RHEL7 users)
 
 ```sh
-$ sudo yum install https://github.com/greymd/tmux-xpanes/releases/download/v4.1.1/tmux-xpanes_v4.1.1.rpm
+$ sudo yum install https://github.com/greymd/tmux-xpanes/releases/download/v4.1.2/tmux-xpanes_v4.1.2.rpm
 ```
 
 ## With `apt` (For Ubuntu users)
@@ -120,7 +120,7 @@ zplug "greymd/tmux-xpanes"
 
 ```sh
 # Download with wget
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.1/bin/xpanes -O ./xpanes
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.2/bin/xpanes -O ./xpanes
 
 # Put it under PATH and make it executable.
 $ sudo install -m 0755 xpanes /usr/local/bin/xpanes
