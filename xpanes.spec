@@ -7,7 +7,7 @@ Release:    %(date '+%'s)
 URL:        https://github.com/greymd/tmux-xpanes
 Source:     https://github.com/greymd/tmux-xpanes/archive/v%{version}.tar.gz
 BuildArch:  noarch
-Vendor:     Yamada, Yasuhiro <greengregson at gmail dot com>
+Vendor:     Yamada, Yasuhiro <yamadagrep at gmail dot com>
 Requires:   tmux
 Provides:   tmux-xpanes = %{version}-%{release}
 

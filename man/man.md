@@ -497,7 +497,7 @@ tmux(1)
 AUTHOR AND COPYRIGHT
 ------
 
-Copyright (c) 2019 Yamada, Yasuhiro <greengregson@gmail.com> Released under the MIT License.
+Copyright (c) 2019 Yamada, Yasuhiro <yamadagrep@gmail.com> Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 
 
