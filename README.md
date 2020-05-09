@@ -438,31 +438,29 @@ Please refer to [FORMAT](#format) for more information.
 
 **Attention:** Logging feature does not work properly with particular tmux versions. Please refer to [wiki > Known Bugs](https://github.com/greymd/tmux-xpanes/wiki/Known-Bugs) in further details.
 
-#### Execute the same sudo command on multiple hosts via SSH, entering your password once
+#### Execute bash alias on multiple hosts via SSH
 
 ```
-$ xpanes -c "ssh -t {} 'sudo some command'" host-{1,2} some-third-host.example.com
+$ xpanes -c "ssh -t {} bash -ci 'll'" host-{1,2,3}
 ```
 
 ```
     +------------------------------------+-------------------------------------+
-    │$ ssh -t host-1 'sudo some command' │$ ssh -t host-2 'sudo some command'  │
-    │                                    │                                     │
-    │                                    │                                     │
-    │                                    │                                     │
-    │                                    │                                     │
-    │                                    │                                     │
-    │                                    │                                     │
+    │$ ssh -t host-1 bash -ci ll         │$ ssh -t host-2 bash -ci ll          │
+    │total 1234                          │total 1234                           │
+    │drwxr-xr-x 38 user user ... ./      │drwxr-xr-x 38 user user ... ./       │
+    │drwxr-xr-x  6 root root ... ../     │drwxr-xr-x  6 root root ... ../      │
+    │...                                 │...                                  │
     │                                    │                                     │
     │                                    │                                     │
     │                                    │                                     │
     │                                    │                                     │
     │------------------------------------+-------------------------------------│
-    │$ ssh -t some-third-host.example.com 'sudo some command'                  │
-    │                                                                          │
-    │                                                                          │
-    │                                                                          │
-    │                                                                          │
+    │$ ssh -t host-3  bash -ci ll                                              │
+    │total 1234                                                                │
+    │drwxr-xr-x 38 user user ... ./                                            │
+    │drwxr-xr-x  6 root root ... ../                                           │
+    │...                                                                       │
     │                                                                          │
     │                                                                          │
     │                                                                          │
