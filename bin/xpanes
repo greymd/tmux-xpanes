@@ -1488,6 +1488,7 @@ xpns_pre_execution() {
   # Run as best effort
   xpns_clean_session || true
 
+  # TODO: Escape double quotation
   cat << EOS > "${XP_CACHE_HOME}"/__xpns_spawn_$$
 "${XP_ABS_THIS_FILE_NAME}" ${_opts4args} ${_args4args} 2> "${XP_CACHE_HOME}"/__xpns_exit_output_$$
 echo \$? > "${XP_CACHE_HOME}"/__xpns_exit_status_$$
