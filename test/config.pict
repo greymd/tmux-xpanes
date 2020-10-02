@@ -6,7 +6,7 @@
 # $ sed -i '/include:/ r tmp' ../.github/workflows/test.yml
 # $ rm tmp
 bash:3.2,4.0,4.1,4.2,4.3,4.4,5.0
-tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,2.9a,3.0a,3.1,3.1a
+tmux:1.8,1.9,1.9a,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,2.9a,3.0a,3.1,3.1a,3.1b
 
 ## Create test cases
 # cat cases_all.sh | grep '@case:' | awk '{print $NF}' | xargs | tr ' ' ',' | awk '{print "case:"$0}'
