@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Test cases given by this file is not executed on the CI server.
 # This file is just used for brief behavior checking during the development.

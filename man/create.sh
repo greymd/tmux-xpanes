@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # In bash,
 # Use md2man (https://github.com/sunaku/md2man) to generate man file like this.

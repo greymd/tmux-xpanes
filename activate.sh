@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Let PATH include 'xpanes' and 'tmux-xpanes'.
 if ! (type xpanes > /dev/null 2>&1 &&
