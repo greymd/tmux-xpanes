@@ -235,7 +235,9 @@ xpns_get_tmux_version() {
     _tmux_version="$( ${TMUX_XPANES_EXEC} -V)"
   fi
   read -r _ _ver <<< "${_tmux_version}"
-  echo "${_ver}"
+  # Strip the leading "next-" part that is present in tmux versions that are
+  # in development. Eg: next-3.3
+  echo "${_ver//next-}"
 }
 
 # Check whether the prefered tmux version is greater than host's tmux version.
