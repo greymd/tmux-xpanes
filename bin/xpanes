@@ -2049,6 +2049,10 @@ xpns_parse_options() {
   while (($# > 0)); do
     opt="$1"
     shift
+    if [[ ${XP_NO_OPT} -eq 1 ]]; then
+      XP_ARGS+=("$opt")
+      continue
+    fi
     ## -ovalue → -o value
     if [[ -z "${opt##-${XP_ARG_OPTIONS}?*}" ]]; then
       set -- "${opt#??}" ${1+"$@"}
@@ -2064,10 +2068,7 @@ xpns_parse_options() {
     fi
     # printf '$opt = %s\n' "$opt"
     # printf '$@ = %s\n' "$@"
-    if [[ ${XP_NO_OPT} -eq 1 ]]; then
-      XP_ARGS+=("$opt")
-      continue
-    fi
+
     case "$opt" in
       --)
         # Disable any more options
@@ -2085,20 +2086,24 @@ xpns_parse_options() {
         exit 0
         ;;
       --desync)
+        XP_OPTIONS+=("$opt")
         XP_OPT_IS_SYNC=0
         ;;
       --log-format)
+        XP_OPTIONS+=("$opt")
         XP_OPT_LOG_STORE=1
         TMUX_XPANES_LOG_FORMAT="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --log)
+        XP_OPTIONS+=("$opt")
         TMUX_XPANES_LOG_DIRECTORY="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --ssh)
+        XP_OPTIONS+=("$opt")
         XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
         # Enable -t option as well
         XP_OPT_SET_TITLE=1
@@ -2108,30 +2113,37 @@ xpns_parse_options() {
         XP_OPT_SPEEDY_AWAIT=1
         ;;
       --stay)
+        XP_OPTIONS+=("$opt")
         XP_OPT_ATTACH=0
         ;;
       --cols)
+        XP_OPTIONS+=("$opt")
         XP_OPT_CUSTOM_SIZE_COLS="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --rows)
+        XP_OPTIONS+=("$opt")
         XP_OPT_CUSTOM_SIZE_ROWS="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --bulk-cols)
+        XP_OPTIONS+=("$opt")
         XP_OPT_BULK_COLS="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --debug)
+        XP_OPTIONS+=("$opt")
         XP_OPT_DEBUG=1
         ;;
       --dry-run)
+        XP_OPTIONS+=("$opt")
         XP_OPT_DRY_RUN=1
         ;;
       --ignore-size-limit)
+        XP_OPTIONS+=("$opt")
         XP_OPT_IGNORE_SIZE_LIMIT=1
         ;;
       ## ----------------
@@ -2146,6 +2158,7 @@ xpns_parse_options() {
         exit 0
         ;;
       -x)
+        XP_OPTIONS+=("$opt")
         XP_OPT_EXTRA=1
         XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
         if ! xpns_warning_before_extra; then
@@ -2153,13 +2166,16 @@ xpns_parse_options() {
         fi
         ;;
       -d)
+        XP_OPTIONS+=("$opt")
         XP_OPT_IS_SYNC=0
         ;;
       -e)
+        XP_OPTIONS+=("$opt")
         XP_REPSTR="{}"
         XP_CMD_UTILITY="{}"
         ;;
       -t)
+        XP_OPTIONS+=("$opt")
         if ( xpns_tmux_is_greater_equals 2.3 ); then
           XP_OPT_SET_TITLE=1
           XP_OPT_CHANGE_BORDER=1
@@ -2169,6 +2185,7 @@ xpns_parse_options() {
         fi
         ;;
       -s)
+        XP_OPTIONS+=("$opt")
         XP_OPT_SPEEDY=1
         XP_OPT_SPEEDY_AWAIT=1
         if [[ "$1" =~ ^-s$ ]]; then
@@ -2181,11 +2198,13 @@ xpns_parse_options() {
       # Short options with argument
       ## ----------------
       -I)
+        XP_OPTIONS+=("$opt")
         XP_REPSTR="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       -l)
+        XP_OPTIONS+=("$opt")
         XP_OPT_USE_PRESET_LAYOUT=1
         XP_LAYOUT="$(printf '%s\n' "$1" | xpns_layout_short2long)"
         XP_OPTIONS+=("$1")
@@ -2193,12 +2212,14 @@ xpns_parse_options() {
         xpns_is_valid_layout "${XP_LAYOUT}"
         ;;
       -c)
+        XP_OPTIONS+=("$opt")
         XP_CMD_UTILITY="$1"
         XP_OPT_CMD_UTILITY=1
         XP_OPTIONS+=("$1")
         shift
         ;;
       -n)
+        XP_OPTIONS+=("$opt")
         if [[ "$1" =~ ^[0-9]+$ ]]; then
           XP_MAX_PANE_ARGS="$1"
           XP_OPTIONS+=("$1")
@@ -2209,11 +2230,13 @@ xpns_parse_options() {
         fi
         ;;
       -S)
+        XP_OPTIONS+=("$opt")
         XP_SOCKET_PATH="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       -C)
+        XP_OPTIONS+=("$opt")
         if [[ "$1" =~ ^[0-9]+$ ]]; then
           XP_OPT_CUSTOM_SIZE_COLS="$1"
           XP_OPTIONS+=("$1")
@@ -2224,6 +2247,7 @@ xpns_parse_options() {
         fi
         ;;
       -R)
+        XP_OPTIONS+=("$opt")
         if [[ "$1" =~ ^[0-9]+$ ]]; then
           XP_OPT_CUSTOM_SIZE_ROWS="$1"
           XP_OPTIONS+=("$1")
@@ -2234,6 +2258,7 @@ xpns_parse_options() {
         fi
         ;;
       -B)
+        XP_OPTIONS+=("$opt")
         XP_BEGIN_ARGS+=("$1")
         XP_OPTIONS+=("$1")
         shift
