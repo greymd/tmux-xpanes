@@ -2096,12 +2096,14 @@ xpns_parse_options() {
         XP_OPTIONS+=("$1")
         shift
         ;;
+      --log=*)
+        XP_OPT_LOG_STORE=1
+        XP_OPTIONS+=("$opt")
+        TMUX_XPANES_LOG_DIRECTORY="${opt#--log=}"
+        ;;
       --log)
         XP_OPT_LOG_STORE=1
         XP_OPTIONS+=("$opt")
-        if [[ -z "${opt##--log=*}"  ]]; then
-          TMUX_XPANES_LOG_DIRECTORY="${opt#--log=}"
-        fi
         ;;
       --ssh)
         XP_OPTIONS+=("$opt")
@@ -2265,7 +2267,7 @@ xpns_parse_options() {
         shift
         ;;
       -*)
-        xpns_msg_error "Invalid option -- '${opt#-}'"
+        xpns_msg_error "Invalid option -- '${opt}'"
         xpns_usage_warn
         exit ${XP_EINVAL}
         ;;
