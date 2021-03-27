@@ -2055,7 +2055,6 @@ xpns_parse_options() {
       opt="${opt%$1}"
     ## -abc → -a -bc
     elif [[ -z "${opt##-[!-]?*}" ]]; then
-    # elif [[ -z "${opt##-${XP_FLAG_OPTIONS}?*}" ]]; then
       set -- "-${opt#??}" ${1+"$@"}
       opt="${opt%${1#-}}"
     ## --option=value → --option value
