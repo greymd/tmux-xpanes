@@ -2061,8 +2061,8 @@ xpns_parse_options() {
     elif [[ -z "${opt##-[!-]?*}" ]]; then
       set -- "-${opt#??}" ${1+"$@"}
       opt="${opt%${1#-}}"
-    ## --option=value → --option value
-    elif [[ -z "${opt##--*=*}" ]]; then
+    ## --option=value → --option value (except for --log= option)
+    elif [[ -z "${opt##--*=*}" ]] && [[ -n "${opt##--log=*}" ]]; then
       set -- "${opt#--*=}" ${1+"$@"}
       opt="${opt%%=*}"
     fi
@@ -2097,15 +2097,16 @@ xpns_parse_options() {
         shift
         ;;
       --log)
+        XP_OPT_LOG_STORE=1
         XP_OPTIONS+=("$opt")
-        TMUX_XPANES_LOG_DIRECTORY="$1"
-        XP_OPTIONS+=("$1")
-        shift
+        if [[ -z "${opt##--log=*}"  ]]; then
+          TMUX_XPANES_LOG_DIRECTORY="${opt#--log=}"
+        fi
         ;;
       --ssh)
         XP_OPTIONS+=("$opt")
         XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
-        # Enable -t option as well
+        # Enable -t option
         XP_OPT_SET_TITLE=1
         XP_OPT_CHANGE_BORDER=1
         # Enable -s option
