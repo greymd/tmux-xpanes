@@ -2040,7 +2040,256 @@ xpns_load_long_options() {
   fi
 }
 
+# options which work individually.
+# readonly XP_FLAG_OPTIONS="[hVdetxs]"
+# options which need arguments.
+# readonly XP_ARG_OPTIONS="[ISclnCRB]"
+
 xpns_parse_options() {
+  while (($# > 0)); do
+    opt="$1"
+    shift
+    ## -ovalue → -o value
+    if [[ -z "${opt##-${XP_ARG_OPTIONS}?*}" ]]; then
+      set -- "${opt#??}" ${1+"$@"}
+      opt="${opt%$1}"
+    ## -abc → -a -bc
+    elif [[ -z "${opt##-[!-]?*}" ]]; then
+    # elif [[ -z "${opt##-${XP_FLAG_OPTIONS}?*}" ]]; then
+      set -- "-${opt#??}" ${1+"$@"}
+      opt="${opt%${1#-}}"
+    ## --option=value → --option value
+    elif [[ -z "${opt##--*=*}" ]]; then
+      set -- "${opt#--*=}" ${1+"$@"}
+      opt="${opt%%=*}"
+    fi
+    # printf '$opt = %s\n' "$opt"
+    # printf '$@ = %s\n' "$@"
+    if [[ ${XP_NO_OPT} -eq 1 ]]; then
+      XP_ARGS+=("$opt")
+      continue
+    fi
+    case "$opt" in
+      --)
+        # Disable any more options
+        XP_NO_OPT=1
+        shift
+        ;;
+      ## ----------------
+      # Long options
+      ## ----------------
+      --help)
+        xpns_usage
+        exit 0
+        ;;
+      --version)
+        xpns_version
+        exit 0
+        ;;
+      --desync)
+        XP_OPT_IS_SYNC=0
+        ;;
+      --log-format)
+        XP_OPT_LOG_STORE=1
+        TMUX_XPANES_LOG_FORMAT="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      --log)
+        TMUX_XPANES_LOG_DIRECTORY="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      --ssh)
+        XP_CMD_UTILITY="${XP_SSH_CMD_UTILITY}"
+        # Enable -t option as well
+        XP_OPT_SET_TITLE=1
+        XP_OPT_CHANGE_BORDER=1
+        # Enable -s option
+        XP_OPT_SPEEDY=1
+        XP_OPT_SPEEDY_AWAIT=1
+        ;;
+      --stay)
+        XP_OPT_ATTACH=0
+        ;;
+      --cols)
+        XP_OPT_CUSTOM_SIZE_COLS="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      --rows)
+        XP_OPT_CUSTOM_SIZE_ROWS="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      --bulk-cols)
+        XP_OPT_BULK_COLS="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      --debug)
+        XP_OPT_DEBUG=1
+        ;;
+      --dry-run)
+        XP_OPT_DRY_RUN=1
+        ;;
+      --ignore-size-limit)
+        XP_OPT_IGNORE_SIZE_LIMIT=1
+        ;;
+      ## ----------------
+      # Short options without argument
+      ## ----------------
+      -h)
+        xpns_usage
+        exit 0
+        ;;
+      -V)
+        xpns_version
+        exit 0
+        ;;
+      -x)
+        XP_OPT_EXTRA=1
+        XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
+        if ! xpns_warning_before_extra; then
+          exit ${XP_EINTENT}
+        fi
+        ;;
+      -d)
+        XP_OPT_IS_SYNC=0
+        ;;
+      -e)
+        XP_REPSTR="{}"
+        XP_CMD_UTILITY="{}"
+        ;;
+      -t)
+        if ( xpns_tmux_is_greater_equals 2.3 ); then
+          XP_OPT_SET_TITLE=1
+          XP_OPT_CHANGE_BORDER=1
+        else
+          xpns_msg_warning "-t option cannot be used by tmux version less than 2.3. Disabled."
+          sleep 1
+        fi
+        ;;
+      -s)
+        XP_OPT_SPEEDY=1
+        XP_OPT_SPEEDY_AWAIT=1
+        if [[ "$1" =~ ^-s$ ]]; then
+          XP_OPT_SPEEDY_AWAIT=0
+          XP_OPTIONS+=("$1")
+          shift
+        fi
+        ;;
+      ## ----------------
+      # Short options with argument
+      ## ----------------
+      -I)
+        XP_REPSTR="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      -l)
+        XP_OPT_USE_PRESET_LAYOUT=1
+        XP_LAYOUT="$(printf '%s\n' "$1" | xpns_layout_short2long)"
+        XP_OPTIONS+=("$1")
+        shift
+        xpns_is_valid_layout "${XP_LAYOUT}"
+        ;;
+      -c)
+        XP_CMD_UTILITY="$1"
+        XP_OPT_CMD_UTILITY=1
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      -n)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+          XP_MAX_PANE_ARGS="$1"
+          XP_OPTIONS+=("$1")
+          shift
+        else
+          xpns_msg_error "invalid argument '$2' for -n option"
+          exit ${XP_EINVAL}
+        fi
+        ;;
+      -S)
+        XP_SOCKET_PATH="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      -C)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+          XP_OPT_CUSTOM_SIZE_COLS="$1"
+          XP_OPTIONS+=("$1")
+          shift
+        else
+          xpns_msg_error "invalid argument '$1' for -C option"
+          exit ${XP_EINVAL}
+        fi
+        ;;
+      -R)
+        if [[ "$1" =~ ^[0-9]+$ ]]; then
+          XP_OPT_CUSTOM_SIZE_ROWS="$1"
+          XP_OPTIONS+=("$1")
+          shift
+        else
+          xpns_msg_error "invalid argument '$2' for -R option"
+          exit ${XP_EINVAL}
+        fi
+        ;;
+      -B)
+        XP_BEGIN_ARGS+=("$1")
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
+      -*)
+        xpns_msg_error "Invalid option -- '${1#-}'"
+        xpns_usage_warn
+        exit ${XP_EINVAL}
+        ;;
+      ## ----------------
+      # Other arguments
+      ## ----------------
+      *)
+        XP_ARGS+=("$opt")
+        XP_NO_OPT=1
+        ;;
+    esac
+  done
+  # If there is any standard input from pipe,
+  # 1 line handled as 1 argument.
+  if [[ ! -t 0 ]]; then
+    XP_IS_PIPE_MODE=1
+    xpns_switch_pipe_mode
+  fi
+
+  # When no argument arr given, exit.
+  if [[ -z "${XP_ARGS[*]-}" ]]; then
+    xpns_msg_error "No arguments."
+    xpns_usage_warn
+    exit ${XP_EINVAL}
+  fi
+
+  if [[ -n "${XP_OPT_CUSTOM_SIZE_COLS-}" ]] || [[ -n "${XP_OPT_CUSTOM_SIZE_ROWS-}" ]]; then
+    if [[ "$XP_OPT_EXTRA" -eq 1 ]]; then
+      xpns_msg_warning "The columns/rows options (-C, --cols, -R, --rows) cannot be used with -x option. Ignored."
+    elif [[ "$XP_OPT_EXTRA" -eq 0 ]] && [[ "${XP_OPT_USE_PRESET_LAYOUT}" -eq 1 ]]; then
+      # This part is required to keep backward compatibility.
+      ## Users can simulate xpanes v3.x to set : alias xpanes="xpanes -lt"
+      xpns_msg_info "Columns/rows option (-C, --cols, -R, --rows) and -l option are provided. Disable -l. "
+      XP_OPT_USE_PRESET_LAYOUT=0
+    fi
+  fi
+
+  # Set default value in case of empty.
+  XP_CMD_UTILITY="${XP_CMD_UTILITY:-${XP_DEFAULT_CMD_UTILITY}}"
+  XP_REPSTR="${XP_REPSTR:-${XP_DEFAULT_REPSTR}}"
+
+  # To set command on pre_execution, set -c option manually.
+  if [[ ${XP_OPT_CMD_UTILITY} -eq 0 ]]; then
+    XP_OPTIONS+=("-c" "${XP_CMD_UTILITY}")
+  fi
+}
+
+_xpns_parse_options() {
   while (($# > 0)); do
     case "$1" in
       --)
