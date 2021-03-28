@@ -2040,10 +2040,25 @@ xpns_load_long_options() {
   fi
 }
 
-# options which work individually.
-# readonly XP_FLAG_OPTIONS="[hVdetxs]"
-# options which need arguments.
-# readonly XP_ARG_OPTIONS="[ISclnCRB]"
+xpns_opt_check_num() {
+  local _option="$1" ;shift
+  local _arg="$1"
+  if [[ -n "$_arg" ]] && [[ -z "${_arg//[0-9]/}" ]]; then
+    return 0
+  fi
+  xpns_msg_error "Invalid argument '$_arg' for $_option option"
+  exit ${XP_EINVAL}
+}
+
+xpns_opt_check_str() {
+  local _option="$1" ;shift
+  local _arg="$1"
+  if [[ -n "$_arg" ]]; then
+    return 0
+  fi
+  xpns_msg_error "Invalid argument '$_arg' for $_option option"
+  exit ${XP_EINVAL}
+}
 
 xpns_parse_options() {
   while (($# > 0)); do
@@ -2070,8 +2085,6 @@ xpns_parse_options() {
         opt="${opt%%=*}"
       fi
     fi
-    # printf '$opt = %s\n' "$opt"
-    # printf '$@ = %s\n' "$@"
 
     case "$opt" in
       --)
@@ -2094,6 +2107,7 @@ xpns_parse_options() {
         XP_OPT_IS_SYNC=0
         ;;
       --log-format)
+        xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_LOG_STORE=1
         TMUX_XPANES_LOG_FORMAT="$1"
@@ -2104,6 +2118,7 @@ xpns_parse_options() {
         XP_OPT_LOG_STORE=1
         XP_OPTIONS+=("$opt")
         TMUX_XPANES_LOG_DIRECTORY="${opt#--log=}"
+        xpns_opt_check_str "${opt%=}" "$TMUX_XPANES_LOG_DIRECTORY"
         ;;
       --log)
         XP_OPT_LOG_STORE=1
@@ -2124,18 +2139,21 @@ xpns_parse_options() {
         XP_OPT_ATTACH=0
         ;;
       --cols)
+        xpns_opt_check_num "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_CUSTOM_SIZE_COLS="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --rows)
+        xpns_opt_check_num "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_CUSTOM_SIZE_ROWS="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       --bulk-cols)
+        xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_BULK_COLS="$1"
         XP_OPTIONS+=("$1")
@@ -2195,7 +2213,7 @@ xpns_parse_options() {
         XP_OPTIONS+=("$opt")
         XP_OPT_SPEEDY=1
         XP_OPT_SPEEDY_AWAIT=1
-        if [[ "$1" =~ ^-s$ ]]; then
+        if [[ -z "${1#-s}" ]]; then
           XP_OPT_SPEEDY_AWAIT=0
           XP_OPTIONS+=("$1")
           shift
@@ -2205,21 +2223,24 @@ xpns_parse_options() {
       # Short options with argument
       ## ----------------
       -I)
+        xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_REPSTR="$1"
-        ## TODO: Check REPSTR is empty or not
         XP_OPTIONS+=("$1")
         shift
         ;;
       -l)
+        xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_USE_PRESET_LAYOUT=1
         XP_LAYOUT="$(printf '%s\n' "$1" | xpns_layout_short2long)"
+        xpns_is_valid_layout "${XP_LAYOUT}"
         XP_OPTIONS+=("$1")
         shift
-        xpns_is_valid_layout "${XP_LAYOUT}"
         ;;
       -c)
+        # -c allows empty
+        # xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_CMD_UTILITY="$1"
         XP_OPT_CMD_UTILITY=1
@@ -2227,45 +2248,35 @@ xpns_parse_options() {
         shift
         ;;
       -n)
+        xpns_opt_check_num "$opt" "$1"
         XP_OPTIONS+=("$opt")
-        if [[ "$1" =~ ^[0-9]+$ ]]; then
-          XP_MAX_PANE_ARGS="$1"
-          XP_OPTIONS+=("$1")
-          shift
-        else
-          xpns_msg_error "invalid argument '$1' for -n option"
-          exit ${XP_EINVAL}
-        fi
+        XP_MAX_PANE_ARGS="$1"
+        XP_OPTIONS+=("$1")
         ;;
       -S)
+        xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_SOCKET_PATH="$1"
         XP_OPTIONS+=("$1")
         shift
         ;;
       -C)
+        xpns_opt_check_num "$opt" "$1"
         XP_OPTIONS+=("$opt")
-        if [[ "$1" =~ ^[0-9]+$ ]]; then
-          XP_OPT_CUSTOM_SIZE_COLS="$1"
-          XP_OPTIONS+=("$1")
-          shift
-        else
-          xpns_msg_error "invalid argument '$1' for -C option"
-          exit ${XP_EINVAL}
-        fi
+        XP_OPT_CUSTOM_SIZE_COLS="$1"
+        XP_OPTIONS+=("$1")
+        shift
         ;;
       -R)
+        xpns_opt_check_num "$opt" "$1"
         XP_OPTIONS+=("$opt")
-        if [[ "$1" =~ ^[0-9]+$ ]]; then
-          XP_OPT_CUSTOM_SIZE_ROWS="$1"
-          XP_OPTIONS+=("$1")
-          shift
-        else
-          xpns_msg_error "invalid argument '$1' for -R option"
-          exit ${XP_EINVAL}
-        fi
+        XP_OPT_CUSTOM_SIZE_ROWS="$1"
+        XP_OPTIONS+=("$1")
+        shift
         ;;
       -B)
+        # -B allows empty
+        # xpns_opt_check_str "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_BEGIN_ARGS+=("$1")
         XP_OPTIONS+=("$1")

@@ -363,5 +363,74 @@ test_xpns_parse_options2 () {
   assertEquals "echo HOGE_@_ | sed s/HOGE/GEGE/" "${XP_OPTIONS[4]}"
 }
 
+test_xpns_parse_options3 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -c '' -B '' -B '' '' '' '' )
+  assertEquals "0" "$?"
+}
+
+test_xpns_parse_options_error1 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -I '' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -n '' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -n ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols '' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -C ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -R ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -S '' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -C 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -C 2 -x _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -x -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+}
+
+test_xpns_parse_options_error2 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --log-format='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --log='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --cols='' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --cols=ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --rows='' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --rows=ABC _ _ _ )
+  assertEquals "4" "$?"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"
