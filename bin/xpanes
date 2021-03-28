@@ -2053,18 +2053,22 @@ xpns_parse_options() {
       XP_ARGS+=("$opt")
       continue
     fi
-    ## -ovalue → -o value
-    if [[ -z "${opt##-${XP_ARG_OPTIONS}?*}" ]]; then
-      set -- "${opt#??}" ${1+"$@"}
-      opt="${opt%$1}"
-    ## -abc → -a -bc
-    elif [[ -z "${opt##-[!-]?*}" ]]; then
-      set -- "-${opt#??}" ${1+"$@"}
-      opt="${opt%${1#-}}"
-    ## --option=value → --option value (except for --log= option)
-    elif [[ -z "${opt##--*=*}" ]] && [[ -n "${opt##--log=*}" ]]; then
-      set -- "${opt#--*=}" ${1+"$@"}
-      opt="${opt%%=*}"
+
+    ## Skip regularization if the arg is empty argument or --log= option
+    if [[ -n "$opt" ]] && [[ -n "${opt##--log=*}" ]]; then
+      ## -ovalue → -o value
+      if [[ -z "${opt##-${XP_ARG_OPTIONS}?*}" ]]; then
+        set -- "${opt#??}" ${1+"$@"}
+        opt="${opt%$1}"
+      ## -abc → -a -bc
+      elif [[ -z "${opt##-[!-]?*}" ]]; then
+        set -- "-${opt#??}" ${1+"$@"}
+        opt="${opt%${1#-}}"
+      ## --option=value → --option value
+      elif [[ -z "${opt##--*=*}" ]]; then
+        set -- "${opt#--*=}" ${1+"$@"}
+        opt="${opt%%=*}"
+      fi
     fi
     # printf '$opt = %s\n' "$opt"
     # printf '$@ = %s\n' "$@"
@@ -2203,6 +2207,7 @@ xpns_parse_options() {
       -I)
         XP_OPTIONS+=("$opt")
         XP_REPSTR="$1"
+        ## TODO: Check REPSTR is empty or not
         XP_OPTIONS+=("$1")
         shift
         ;;

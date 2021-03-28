@@ -335,5 +335,33 @@ test_xpns_newline2space () {
   assertEquals "" "${actual}"
 }
 
+test_xpns_parse_options1 () {
+  export XP_ARGS=()
+  export XP_OPTIONS=()
+  export XP_NO_OPT=0
+  xpns_parse_options A B C
+  assertEquals "A" "${XP_ARGS[0]}"
+  assertEquals "B" "${XP_ARGS[1]}"
+  assertEquals "C" "${XP_ARGS[2]}"
+  assertEquals "-c" "${XP_OPTIONS[0]}"
+  assertEquals "echo {} " "${XP_OPTIONS[1]}"
+}
+
+test_xpns_parse_options2 () {
+  export XP_ARGS=()
+  export XP_OPTIONS=()
+  export XP_NO_OPT=0
+  xpns_parse_options --log -I@ -c'echo HOGE_@_ | sed s/HOGE/GEGE/' '' AA '' BB
+  assertEquals "" "${XP_ARGS[0]}"
+  assertEquals "AA" "${XP_ARGS[1]}"
+  assertEquals "" "${XP_ARGS[2]}"
+  assertEquals "BB" "${XP_ARGS[3]}"
+  assertEquals "--log" "${XP_OPTIONS[0]}"
+  assertEquals "-I" "${XP_OPTIONS[1]}"
+  assertEquals "@" "${XP_OPTIONS[2]}"
+  assertEquals "-c" "${XP_OPTIONS[3]}"
+  assertEquals "echo HOGE_@_ | sed s/HOGE/GEGE/" "${XP_OPTIONS[4]}"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"
