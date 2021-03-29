@@ -367,6 +367,61 @@ test_xpns_parse_options3 () {
   export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
   ( xpns_parse_options -c '' -B '' -B '' '' '' '' )
   assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -C 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -C 2 -x _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -x -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+}
+
+test_xpns_parse_options4 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  xpns_parse_options -I@ -x -c'echo @ hoge' -- -h -V -d -e -t -x -s
+  (( i = 0 ))
+  assertEquals "-h" "${XP_ARGS[i++]}"
+  assertEquals "-V" "${XP_ARGS[i++]}"
+  assertEquals "-d" "${XP_ARGS[i++]}"
+  assertEquals "-e" "${XP_ARGS[i++]}"
+  assertEquals "-t" "${XP_ARGS[i++]}"
+  assertEquals "-x" "${XP_ARGS[i++]}"
+  assertEquals "-s" "${XP_ARGS[i++]}"
+  (( i = 0 ))
+  assertEquals "-I" "${XP_OPTIONS[i++]}"
+  assertEquals "@" "${XP_OPTIONS[i++]}"
+  assertEquals "-x" "${XP_OPTIONS[i++]}"
+  assertEquals "-c" "${XP_OPTIONS[i++]}"
+  assertEquals "echo @ hoge" "${XP_OPTIONS[i++]}"
+}
+
+test_xpns_parse_options5 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  xpns_parse_options -I@ -x -d -c'echo @ hoge' a -h -V -d -e -t -x -s
+  (( i = 0 ))
+  assertEquals "a" "${XP_ARGS[i++]}"
+  assertEquals "-h" "${XP_ARGS[i++]}"
+  assertEquals "-V" "${XP_ARGS[i++]}"
+  assertEquals "-d" "${XP_ARGS[i++]}"
+  assertEquals "-e" "${XP_ARGS[i++]}"
+  assertEquals "-t" "${XP_ARGS[i++]}"
+  assertEquals "-x" "${XP_ARGS[i++]}"
+  assertEquals "-s" "${XP_ARGS[i++]}"
+  (( i = 0 ))
+  assertEquals "-I" "${XP_OPTIONS[i++]}"
+  assertEquals "@" "${XP_OPTIONS[i++]}"
+  assertEquals "-x" "${XP_OPTIONS[i++]}"
+  assertEquals "-d" "${XP_OPTIONS[i++]}"
+  assertEquals "-c" "${XP_OPTIONS[i++]}"
+  assertEquals "echo @ hoge" "${XP_OPTIONS[i++]}"
 }
 
 test_xpns_parse_options_error1 () {
@@ -391,21 +446,6 @@ test_xpns_parse_options_error1 () {
   export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
   ( xpns_parse_options -S '' _ _ _ )
   assertEquals "4" "$?"
-  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
-  ( xpns_parse_options -l tiled _ _ _ )
-  assertEquals "0" "$?"
-  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
-  ( xpns_parse_options -l tiled -C 2 _ _ _ )
-  assertEquals "0" "$?"
-  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
-  ( xpns_parse_options -l tiled -R 2 _ _ _ )
-  assertEquals "0" "$?"
-  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
-  ( xpns_parse_options -C 2 -x _ _ _ )
-  assertEquals "0" "$?"
-  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
-  ( xpns_parse_options -x -l tiled -R 2 _ _ _ )
-  assertEquals "0" "$?"
 }
 
 test_xpns_parse_options_error2 () {
