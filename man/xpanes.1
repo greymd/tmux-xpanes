@@ -1,4 +1,4 @@
-.TH XPANES 1 "FEB 2019" "User Commands" ""
+.TH XPANES 1 "MAR 2021" "User Commands" ""
 .SH NAME
 .PP
 xpanes, tmux\-xpanes \- Ultimate terminal divider powered by tmux
@@ -157,6 +157,11 @@ It defines the message that displayed when a process exits with \fB\fC\-s\fR opt
 .IP
 Default value is
 \fB\fC\\033[41m\\033[4m\\033[30m Pane is dead: Press [Enter] to exit... \\033[0m\\033[39m\\033[49m\fR\&.
+.TP
+\fB\fCTMUX_XPANES_TMUX_VERSION\fR
+It forces the tmux version recognized by \fB\fCxpanes\fR\&.
+It is mainly used for testing purposes.
+Default value is empty.
 .SH MODES
 .SS [Normal mode1] Outside of tmux session.
 .PP
@@ -537,7 +542,7 @@ Each line provided by standard input is corresponding to the each pane's command
 .BR tmux (1)
 .SH AUTHOR AND COPYRIGHT
 .PP
-Copyright (c) 2019 Yamada, Yasuhiro \[la]yamadagrep@gmail.com\[ra] Released under the MIT License.
+Copyright (c) 2021 Yamada, Yasuhiro \[la]yamadagrep@gmail.com\[ra] Released under the MIT License.
 \[la]https://github.com/greymd/tmux-xpanes\[ra]
 .SH ACKNOWLEDGEMENTS
 .PP

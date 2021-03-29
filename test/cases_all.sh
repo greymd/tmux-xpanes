@@ -1774,7 +1774,7 @@ test_desync_option_2() {
 
 # @case: 33
 # @skip:
-test_failed_creat_directory() {
+test_failed_create_directory() {
   local _log_dir="${SHUNIT_TMPDIR}/dirA/dirB"
   local _cmd="${EXEC} --log=$_log_dir 1 2 3"
   printf "\\n$ %s\\n" "${_cmd}"

@@ -1,4 +1,4 @@
-XPANES 1 "FEB 2019" "User Commands" ""
+XPANES 1 "MAR 2021" "User Commands" ""
 =======================================
 
 NAME
@@ -152,6 +152,11 @@ SHELL VARIABLES
 
   Default value is
   `\033[41m\033[4m\033[30m Pane is dead: Press [Enter] to exit... \033[0m\033[39m\033[49m`.
+
+`TMUX_XPANES_TMUX_VERSION`
+  It forces the tmux version recognized by `xpanes`.
+  It is mainly used for testing purposes.
+  Default value is empty.
 
 MODES
 ------
@@ -497,7 +502,7 @@ tmux(1)
 AUTHOR AND COPYRIGHT
 ------
 
-Copyright (c) 2019 Yamada, Yasuhiro <yamadagrep@gmail.com> Released under the MIT License.
+Copyright (c) 2021 Yamada, Yasuhiro <yamadagrep@gmail.com> Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 
 

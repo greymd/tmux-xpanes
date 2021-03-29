@@ -120,12 +120,6 @@ test_xpns_rm_empty_line() {
   assertEquals "$expected" "$actual"
 }
 
-test_xpns_extract_matched() {
-  actual="$(xpns_extract_matched "aaa123bbb" "[0-9]{3}")"
-  expected="123"
-  assertEquals "$expected" "$actual"
-}
-
 test_xpns_seq() {
   actual="$(xpns_seq 0 3)"
   expected="0
@@ -333,6 +327,149 @@ test_xpns_newline2space () {
 
   actual=$(echo | xpns_newline2space)
   assertEquals "" "${actual}"
+}
+
+test_xpns_parse_options1 () {
+  export XP_ARGS=()
+  export XP_OPTIONS=()
+  export XP_NO_OPT=0
+  xpns_parse_options A B C
+  assertEquals "A" "${XP_ARGS[0]}"
+  assertEquals "B" "${XP_ARGS[1]}"
+  assertEquals "C" "${XP_ARGS[2]}"
+  assertEquals "-c" "${XP_OPTIONS[0]}"
+  assertEquals "echo {} " "${XP_OPTIONS[1]}"
+}
+
+test_xpns_parse_options2 () {
+  export XP_ARGS=()
+  export XP_OPTIONS=()
+  export XP_NO_OPT=0
+  xpns_parse_options --log -I@ -c'echo HOGE_@_ | sed s/HOGE/GEGE/' '' AA '' BB
+  assertEquals "" "${XP_ARGS[0]}"
+  assertEquals "AA" "${XP_ARGS[1]}"
+  assertEquals "" "${XP_ARGS[2]}"
+  assertEquals "BB" "${XP_ARGS[3]}"
+  assertEquals "--log" "${XP_OPTIONS[0]}"
+  assertEquals "-I" "${XP_OPTIONS[1]}"
+  assertEquals "@" "${XP_OPTIONS[2]}"
+  assertEquals "-c" "${XP_OPTIONS[3]}"
+  assertEquals "echo HOGE_@_ | sed s/HOGE/GEGE/" "${XP_OPTIONS[4]}"
+}
+
+test_xpns_parse_options3 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -c '' -B '' -B '' '' '' '' )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -C 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -C 2 -x _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -x -l tiled -R 2 _ _ _ )
+  assertEquals "0" "$?"
+}
+
+test_xpns_parse_options4 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  xpns_parse_options -I@ -x -c'echo @ hoge' -- -h -V -d -e -t -x -s
+  (( i = 0 ))
+  assertEquals "-h" "${XP_ARGS[i++]}"
+  assertEquals "-V" "${XP_ARGS[i++]}"
+  assertEquals "-d" "${XP_ARGS[i++]}"
+  assertEquals "-e" "${XP_ARGS[i++]}"
+  assertEquals "-t" "${XP_ARGS[i++]}"
+  assertEquals "-x" "${XP_ARGS[i++]}"
+  assertEquals "-s" "${XP_ARGS[i++]}"
+  (( i = 0 ))
+  assertEquals "-I" "${XP_OPTIONS[i++]}"
+  assertEquals "@" "${XP_OPTIONS[i++]}"
+  assertEquals "-x" "${XP_OPTIONS[i++]}"
+  assertEquals "-c" "${XP_OPTIONS[i++]}"
+  assertEquals "echo @ hoge" "${XP_OPTIONS[i++]}"
+}
+
+test_xpns_parse_options5 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  xpns_parse_options -I@ -x -d -c'echo @ hoge' a -h -V -d -e -t -x -s
+  (( i = 0 ))
+  assertEquals "a" "${XP_ARGS[i++]}"
+  assertEquals "-h" "${XP_ARGS[i++]}"
+  assertEquals "-V" "${XP_ARGS[i++]}"
+  assertEquals "-d" "${XP_ARGS[i++]}"
+  assertEquals "-e" "${XP_ARGS[i++]}"
+  assertEquals "-t" "${XP_ARGS[i++]}"
+  assertEquals "-x" "${XP_ARGS[i++]}"
+  assertEquals "-s" "${XP_ARGS[i++]}"
+  (( i = 0 ))
+  assertEquals "-I" "${XP_OPTIONS[i++]}"
+  assertEquals "@" "${XP_OPTIONS[i++]}"
+  assertEquals "-x" "${XP_OPTIONS[i++]}"
+  assertEquals "-d" "${XP_OPTIONS[i++]}"
+  assertEquals "-c" "${XP_OPTIONS[i++]}"
+  assertEquals "echo @ hoge" "${XP_OPTIONS[i++]}"
+}
+
+test_xpns_parse_options_error1 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -I '' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -n '' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -n ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols '' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -C ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -R ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options -S '' _ _ _ )
+  assertEquals "4" "$?"
+}
+
+test_xpns_parse_options_error2 () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --log-format='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --log='' -c 'ssh {}' a b c )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --cols='' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --cols=ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --rows='' _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --rows=ABC _ _ _ )
+  assertEquals "4" "$?"
+}
+
+test_xpns_parse_options_pipe () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( echo 2 4 6 8 | xpns_parse_options -n 2 -c 'seq {}')
+  assertEquals "0" "$?"
 }
 
 # shellcheck source=/dev/null
