@@ -1158,6 +1158,28 @@ Example:
 export TMUX_XPANES_PANE_DEAD_MESSAGE='\033[32m=== EXIT ==='
 ```
 
+### `TMUX_XPANES_TMUX_VERSION`
+
+**DEFAULT VALUE:** empty
+
+It forces the tmux version recognized by `xpanes`.
+It is mainly used for testing purposes.
+It is also useful if you are using a newer tmux that has not been released yet, or if you have customized the tmux itself and want to suppress unwanted warning messages from xpanes.
+
+Example:
+```sh
+$ tmux -V
+tmux customized-3.3
+$ xpanes 1 2 3
+xpanes:Warning: 'xpanes' may not work correctly! ...
+```
+
+```sh
+$ export TMUX_XPANES_TMUX_VERSION=1.8
+$ xpanes 1 2 3
+```
+=> It works without warning messages.
+
 ## ... and [let's play!](https://github.com/greymd/tmux-xpanes/wiki/Let's-play!)
 
 # Contributing

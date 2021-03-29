@@ -153,6 +153,11 @@ SHELL VARIABLES
   Default value is
   `\033[41m\033[4m\033[30m Pane is dead: Press [Enter] to exit... \033[0m\033[39m\033[49m`.
 
+`TMUX_XPANES_TMUX_VERSION`
+  It forces the tmux version recognized by `xpanes`.
+  It is mainly used for testing purposes.
+  Default value is empty.
+
 MODES
 ------
 
