@@ -2027,6 +2027,7 @@ xpns_parse_options() {
         XP_OPTIONS+=("$opt")
         XP_MAX_PANE_ARGS="$1"
         XP_OPTIONS+=("$1")
+        shift
         ;;
       -S)
         xpns_opt_check_str "$opt" "$1"

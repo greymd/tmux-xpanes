@@ -466,5 +466,11 @@ test_xpns_parse_options_error2 () {
   assertEquals "4" "$?"
 }
 
+test_xpns_parse_options_pipe () {
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( echo 2 4 6 8 | xpns_parse_options -n 2 -c 'seq {}')
+  assertEquals "0" "$?"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"
