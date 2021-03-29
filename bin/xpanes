@@ -1814,7 +1814,8 @@ xpns_warning_before_extra() {
 }
 
 xpns_opt_check_num() {
-  local _option="$1" ;shift
+  local _option="$1"
+  shift
   local _arg="$1"
   if [[ -n "$_arg" ]] && [[ -z "${_arg//[0-9]/}" ]]; then
     return 0
@@ -1824,7 +1825,8 @@ xpns_opt_check_num() {
 }
 
 xpns_opt_check_str() {
-  local _option="$1" ;shift
+  local _option="$1"
+  shift
   local _arg="$1"
   if [[ -n "$_arg" ]]; then
     return 0
