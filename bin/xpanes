@@ -1835,6 +1835,17 @@ xpns_opt_check_str() {
   exit ${XP_EINVAL}
 }
 
+xpns_opt_check_num_csv() {
+  local _option="$1"
+  shift
+  local _arg="$1"
+  if [[ "$1" =~ ^([0-9][0-9]*,?)+$ ]] ;then
+    return 0
+  fi
+  xpns_msg_error "Invalid argument '$_arg' for $_option option"
+  exit ${XP_EINVAL}
+}
+
 xpns_parse_options() {
   while (($# > 0)); do
     opt="$1"
@@ -1928,7 +1939,7 @@ xpns_parse_options() {
         shift
         ;;
       --bulk-cols)
-        xpns_opt_check_str "$opt" "$1"
+        xpns_opt_check_num_csv "$opt" "$1"
         XP_OPTIONS+=("$opt")
         XP_OPT_BULK_COLS="$1"
         XP_OPTIONS+=("$1")
