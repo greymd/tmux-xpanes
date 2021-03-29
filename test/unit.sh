@@ -120,12 +120,6 @@ test_xpns_rm_empty_line() {
   assertEquals "$expected" "$actual"
 }
 
-test_xpns_extract_matched() {
-  actual="$(xpns_extract_matched "aaa123bbb" "[0-9]{3}")"
-  expected="123"
-  assertEquals "$expected" "$actual"
-}
-
 test_xpns_seq() {
   actual="$(xpns_seq 0 3)"
   expected="0
