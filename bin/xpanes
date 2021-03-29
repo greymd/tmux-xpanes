@@ -611,18 +611,6 @@ xpns_rm_empty_line() {
   done
 }
 
-# Extract matched patterns from string
-# $ xpns_extract_matched "aaa123bbb" "[0-9]{3}"
-# => "123"
-xpns_extract_matched() {
-  local _args="$1"
-  shift
-  local _regex="($1)"
-  if [[ $_args =~ $_regex ]]; then
-    printf "%s" "${BASH_REMATCH[0]}"
-  fi
-}
-
 # Enable logging feature to the all the panes in the target window.
 xpns_enable_logging() {
   local _window_name="$1"
