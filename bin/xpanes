@@ -1839,7 +1839,7 @@ xpns_opt_check_num_csv() {
   local _option="$1"
   shift
   local _arg="$1"
-  if [[ "$1" =~ ^([0-9][0-9]*,?)+$ ]] ;then
+  if [[ "$1" =~ ^([0-9][0-9]*,?)+$ ]]; then
     return 0
   fi
   xpns_msg_error "Invalid argument '$_arg' for $_option option"
