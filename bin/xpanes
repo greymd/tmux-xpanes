@@ -214,7 +214,7 @@ OPTIONS:
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --debug                      Print debug message.
 
-Copyright (c) 2019 Yamada, Yasuhiro
+Copyright (c) 2021 Yamada, Yasuhiro
 Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 USAGE
