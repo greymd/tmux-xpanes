@@ -1172,9 +1172,7 @@ $ tmux -V
 tmux customized-3.3
 $ xpanes 1 2 3
 xpanes:Warning: 'xpanes' may not work correctly! ...
-```
-
-```sh
+...
 $ export TMUX_XPANES_TMUX_VERSION=1.8
 $ xpanes 1 2 3
 ```
