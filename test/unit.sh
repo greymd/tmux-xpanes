@@ -376,6 +376,12 @@ test_xpns_parse_options3 () {
   export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
   ( xpns_parse_options -x -l tiled -R 2 _ _ _ )
   assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols=1,2,3  _ _ _ _ _ _ )
+  assertEquals "0" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols=6  _ _ _ _ _ _ )
+  assertEquals "0" "$?"
 }
 
 test_xpns_parse_options4 () {
@@ -463,6 +469,15 @@ test_xpns_parse_options_error2 () {
   assertEquals "4" "$?"
   export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
   ( xpns_parse_options --rows=ABC _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols=2,a,2  _ _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols=,  _ _ _ _ )
+  assertEquals "4" "$?"
+  export XP_ARGS=(); export XP_OPTIONS=(); export XP_NO_OPT=0
+  ( xpns_parse_options --bulk-cols=a  _ _ _ _ )
   assertEquals "4" "$?"
 }
 
