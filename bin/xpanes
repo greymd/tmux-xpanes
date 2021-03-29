@@ -779,7 +779,7 @@ xpns_organize_panes() {
 #
 # Generate sequential number descending order.
 # seq is not used because old version of
-# seq does not generate descending oorder.
+# seq does not generate descending order.
 # $ xpns_seq 3 0
 # 3
 # 2
@@ -1095,7 +1095,7 @@ xpns_is_session_running() {
 }
 
 # Remove unnecessary session files as much as possible
-# to let xpanes avoids to load old .tmux.conf.
+# to make xpanes avoid loading old .tmux.conf.
 xpns_clean_session() {
   if [[ "${XP_SOCKET_PATH}" != "${XP_DEFAULT_SOCKET_PATH}" ]]; then
     return
@@ -1610,7 +1610,7 @@ xpns_execution() {
   fi
 
   ## With -ss option, it is possible to close all the panes as of here.
-  ## Check status of the window. If no window exists, there is nothing to do execpt to exit.
+  ## Check status of the window. If no window exists, there is nothing to do any more and just exit.
   xpns_msg_debug "xpns_is_window_alive:1: After window separation"
   xpns_is_window_alive "${_window_name}" "${XP_OPT_SPEEDY_AWAIT}" "${_def_allow_rename-}"
 
@@ -2076,7 +2076,7 @@ xpns_parse_options() {
     xpns_switch_pipe_mode
   fi
 
-  # When no argument arr given, exit.
+  # When no argument is given, exit.
   if [[ -z "${XP_ARGS[*]-}" ]]; then
     xpns_msg_error "No arguments."
     xpns_usage_warn
