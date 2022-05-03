@@ -6,7 +6,6 @@
   <a href="https://github.com/greymd/tmux-xpanes/releases/latest"><img src="https://img.shields.io/github/release/greymd/tmux-xpanes.svg" alt="Latest version" /></a>
   <a href="https://github.com/greymd/tmux-xpanes/actions?query=workflow%3Atest"><img src="https://github.com/greymd/tmux-xpanes/workflows/test/badge.svg?branch=master" alt="Test Status" /></a>
   <a href="LICENSE" alt="MIT License"><img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" /></a>
-  <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A7ZRLWLDKHK36&source=url"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donation" /></a>
 </p>
 
 
@@ -1215,9 +1214,3 @@ The scripts is available as open source under the terms of the [MIT License](htt
 
 ## Logo
 <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />The logo of tmux-xpanes is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
-
-# Donation
-
-If this project help you reduce time, you can give me a cup of coffee :)
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A7ZRLWLDKHK36&source=url" target="_blank" rel="noopener"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" alt="Donation" /></a>
