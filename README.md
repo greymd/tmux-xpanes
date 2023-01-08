@@ -107,6 +107,17 @@ $ sudo apt update
 $ sudo apt install tmux-xpanes
 ```
 
+## With `dpkg` (For Debian users)
+
+Please install tmux manually.
+After that, download deb file from [release page](https://github.com/greymd/tmux-xpanes/releases) and install.
+
+```
+$ wget https://github.com/greymd/tmux-xpanes/releases/download/v4.1.3/tmux-xpanes_v4.1.3.deb
+$ sudo dpkg -i tmux-xpanes*.deb
+$ rm tmux-xpanes*.deb
+```
+
 ## With Zsh plugin managers
 
 **Attention:** With this way, please install tmux manually.
