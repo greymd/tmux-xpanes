@@ -677,7 +677,13 @@ xpns_is_window_alive() {
   shift
   local _def_allow_rename="$1"
   shift
-  if ! ${TMUX_XPANES_EXEC} display-message -t "$_window_name" -p > /dev/null 2>&1; then
+  local _window_name_on_tmux _exit_status
+  # Check not only exit status but also the if the window id is empty,
+  # because the exit status of display-message is
+  # no longer available from tmux version 3.2 (GitHub Issue #175)
+  _window_name_on_tmux=$(${TMUX_XPANES_EXEC} display-message -t "$_window_name" -p '#{window_id}')
+  _exit_status=$?
+  if [[ $_exit_status -ne 0 ]] || [[ -z "$_window_name_on_tmux" ]] ; then
     xpns_msg_info "All the panes are closed before displaying the result."
     if [[ "${_speedy_await_flag}" -eq 0 ]]; then
       xpns_msg_info "Use '-s' option instead of '-ss' option to avoid this behavior."
