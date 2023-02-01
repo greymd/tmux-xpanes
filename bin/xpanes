@@ -1525,7 +1525,7 @@ xpns_execution() {
   {
     local  _tmp_col_row_cols _tmp_cols
     IFS=" " read -r XP_WINDOW_HEIGHT XP_WINDOW_WIDTH < <(
-        ${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}'
+      ${TMUX_XPANES_EXEC} display-message -p '#{window_height} #{window_width}'
     )
     if [[ -n "${XP_OPT_BULK_COLS}" ]]; then
       _tmp_col_row_cols="$(xpns_check_cell_size_bulk \
