@@ -488,21 +488,21 @@ test_xpns_parse_options_pipe () {
 }
 
 test_xpns_parse_options_interval () {
-  ( xpns_parse_options --interval 1)
+  ( xpns_parse_options --interval 1 _ _ _)
   assertEquals "0" "$?"
-  ( xpns_parse_options --interval 101)
+  ( xpns_parse_options --interval 101 _ _ _)
   assertEquals "0" "$?"
-  ( xpns_parse_options --interval 0.1)
+  ( xpns_parse_options --interval 0.1 _ _ _)
   assertEquals "0" "$?"
-  ( xpns_parse_options --interval 0.001)
+  ( xpns_parse_options --interval 0.001 _ _ _)
   assertEquals "0" "$?"
-  ( xpns_parse_options --interval 0.99)
+  ( xpns_parse_options --interval 0.99 _ _ _)
   assertEquals "0" "$?"
-  ( xpns_parse_options --interval -0.99)
+  ( xpns_parse_options --interval -0.99 _ _ _)
   assertEquals "4" "$?"
-  ( xpns_parse_options --interval a)
+  ( xpns_parse_options --interval a _ _ _)
   assertEquals "4" "$?"
-  ( xpns_parse_options --interval --hoge)
+  ( xpns_parse_options --interval --hoge _ _ _)
   assertEquals "4" "$?"
 }
 
