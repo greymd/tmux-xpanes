@@ -105,6 +105,9 @@ OPTIONS
 `--bulk-cols=`*NUM1*[,*NUM2* ...]
   Number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
 
+`--interval=<*seconds*>`
+  Set interval between each pane creation and each command execution.
+
 `--debug`
   Print debug message.
 
