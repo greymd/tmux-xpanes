@@ -490,6 +490,8 @@ test_xpns_parse_options_pipe () {
 test_xpns_parse_options_interval () {
   ( xpns_parse_options --interval 1 _ _ _)
   assertEquals "0" "$?"
+  ( xpns_parse_options --interval=1 _ _ _)
+  assertEquals "0" "$?"
   ( xpns_parse_options --interval 101 _ _ _)
   assertEquals "0" "$?"
   ( xpns_parse_options --interval 0.1 _ _ _)
@@ -498,7 +500,11 @@ test_xpns_parse_options_interval () {
   assertEquals "0" "$?"
   ( xpns_parse_options --interval 0.99 _ _ _)
   assertEquals "0" "$?"
+  ( xpns_parse_options --interval=0.99 _ _ _)
+  assertEquals "0" "$?"
   ( xpns_parse_options --interval -0.99 _ _ _)
+  assertEquals "4" "$?"
+  ( xpns_parse_options --interval=-0.99 _ _ _)
   assertEquals "4" "$?"
   ( xpns_parse_options --interval a _ _ _)
   assertEquals "4" "$?"
