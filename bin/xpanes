@@ -214,6 +214,7 @@ OPTIONS:
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --interval <seconds>         Set interval between each pane creation and each command execution.
+                               sleep(1) is used for the interval.
   --debug                      Print debug message.
 
 Copyright (c) 2021 Yamada, Yasuhiro
@@ -328,6 +329,13 @@ xpns_restore_allow_rename()  {
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
     fi
+  fi
+}
+
+xpns_interval() {
+  local _interval="$1"
+  if [[ -n "${_interval-}" ]] && [[ "${_interval}" != "0" ]]; then
+    sleep "${_interval}"
   fi
 }
 
@@ -670,9 +678,7 @@ xpns_notify_sync() {
   shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
-    if [[ "$_interval" != "0" ]]; then
-      sleep "${_interval}"
-    fi
+    xpns_interval "${_interval}"
     xpns_notify "sync_${_window_name}-${i}-$$" &
   done
 }
@@ -763,9 +769,7 @@ xpns_send_commands() {
   local _pane_index=
   local _exec_cmd=
   for arg in "$@"; do
-    if [[ "$_interval" != "0" ]]; then
-      sleep "${_interval}"
-    fi
+    xpns_interval "${_interval}"
     _exec_cmd="${_cmd//${_repstr}/${arg}}"
     _pane_index=$((_index + _index_offset))
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
@@ -852,9 +856,7 @@ xpns_split_window() {
     xpns_msg_debug "Index:${i} Argument:${args[i]}"
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
-    if [[ "$_interval" != "0" ]]; then
-      sleep "${_interval}"
-    fi
+    xpns_interval "${_interval}"
     ## Speedy mode
     if [[ $_speedy_flag -eq 1 ]]; then
       _exec_cmd=$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flag}" "${_await_flag}" "$i" "${_exec_cmd}")
@@ -1071,9 +1073,7 @@ xpns_prepare_window()  {
     xpns_msg_debug "_col=$_col"
     ((_offset = _cols_offset[i]))
     for ((j = 0; j < _col; j++)); do
-      if [[ "$_interval" != "0" ]]; then
-        sleep "${_interval}"
-      fi
+      xpns_interval "${_interval}"
       if ((j == 0)); then
         ((idx = _offset - _col))
         # Create new row
@@ -1106,9 +1106,7 @@ xpns_prepare_window()  {
   _col="${_cols[0]}"
   _cell_width=$(((_window_width - _col + 1) / _col))
   for ((j = 1; j < _col; j++)); do
-    if [[ "$_interval" != "0" ]]; then
-      sleep "${_interval}"
-    fi
+    xpns_interval "${_interval}"
     idx=$((_cols_offset[0] - j))
     # Adjust width
     _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_first_pane_id" -p '#{pane_width}' | head -n 1)
@@ -2012,7 +2010,7 @@ xpns_parse_options() {
         XP_OPTIONS+=("$opt")
         XP_OPT_DRY_RUN=1
         ;;
-      --ignore-size-limit)
+      --ignore-size-limit)   # Hidden for testing
         XP_OPTIONS+=("$opt")
         XP_OPT_IGNORE_SIZE_LIMIT=1
         ;;

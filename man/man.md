@@ -107,6 +107,7 @@ OPTIONS
 
 `--interval=<*seconds*>`
   Set interval between each pane creation and each command execution.
+  sleep(1) is used for the interval.
 
 `--debug`
   Print debug message.

@@ -180,6 +180,7 @@ OPTIONS:
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
   --interval <seconds>         Set interval between each pane creation and each command execution.
+                               sleep(1) is used for the interval.
   --debug                      Print debug message.
 ```
 
