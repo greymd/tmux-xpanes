@@ -113,7 +113,7 @@ Please install tmux manually.
 After that, download deb file from [release page](https://github.com/greymd/tmux-xpanes/releases) and install.
 
 ```
-$ wget https://github.com/greymd/tmux-xpanes/releases/download/v4.1.3/tmux-xpanes_v4.1.3.deb
+$ wget https://github.com/greymd/tmux-xpanes/releases/download/v4.1.4/tmux-xpanes_v4.1.4.deb
 $ sudo dpkg -i tmux-xpanes*.deb
 $ rm tmux-xpanes*.deb
 ```
@@ -135,7 +135,7 @@ zplug "greymd/tmux-xpanes"
 
 ```sh
 # Download with wget
-$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.3/bin/xpanes -O ./xpanes
+$ wget https://raw.githubusercontent.com/greymd/tmux-xpanes/v4.1.4/bin/xpanes -O ./xpanes
 
 # Put it under PATH and make it executable.
 $ sudo install -m 0755 xpanes /usr/local/bin/xpanes

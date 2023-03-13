@@ -1,6 +1,6 @@
 Name:       xpanes
 Summary:    Awesome tmux-based terminal divider
-Version:    4.1.3
+Version:    4.1.4
 Group:      Applications
 License:    MIT
 Release:    %(date '+%'s)
