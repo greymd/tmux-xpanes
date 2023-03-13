@@ -28,6 +28,7 @@ _xpanes () {
       "($opts_omit --log-format)--log-format=[Make name of log files follow <FORMAT>.]:_log_format:" \
       "($opts_omit --ssh -I -c -e -t -s)--ssh[Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.]:hosts:__xpanes-ssh_hosts" \
       "($opts_omit --stay)--stay[Do not switch to new window.]" \
+      "($opts_omit --interval)--interval[Set interval between each pane creation and each command execution.]:num:" \
       "($opts_omit --debug)--debug[Print debug message.]"
   fi
 }

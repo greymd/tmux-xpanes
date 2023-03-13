@@ -487,5 +487,30 @@ test_xpns_parse_options_pipe () {
   assertEquals "0" "$?"
 }
 
+test_xpns_parse_options_interval () {
+  ( xpns_parse_options --interval 1 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval=1 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval 101 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval 0.1 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval 0.001 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval 0.99 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval=0.99 _ _ _)
+  assertEquals "0" "$?"
+  ( xpns_parse_options --interval -0.99 _ _ _)
+  assertEquals "4" "$?"
+  ( xpns_parse_options --interval=-0.99 _ _ _)
+  assertEquals "4" "$?"
+  ( xpns_parse_options --interval a _ _ _)
+  assertEquals "4" "$?"
+  ( xpns_parse_options --interval --hoge _ _ _)
+  assertEquals "4" "$?"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"

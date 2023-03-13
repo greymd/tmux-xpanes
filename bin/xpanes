@@ -126,6 +126,7 @@ XP_WINDOW_WIDTH=
 XP_WINDOW_HEIGHT=
 XP_COLS=
 XP_COLS_OFFSETS=
+XP_OPT_INTERVAL=0
 XP_OPT_DEBUG=0
 XP_OPT_IGNORE_SIZE_LIMIT=0
 
@@ -212,6 +213,8 @@ OPTIONS:
   --ssh                        Same as \`-t -s -c 'ssh -o StrictHostKeyChecking=no {}'\`.
   --stay                       Do not switch to new window.
   --bulk-cols=NUM1[,NUM2 ...]  Set number of columns on multiple rows (i.e, "2,2,2" represents 2 cols x 3 rows).
+  --interval=<seconds>         Set interval between each pane creation and each command execution.
+                               sleep(1) is used for the interval.
   --debug                      Print debug message.
 
 Copyright (c) 2021 Yamada, Yasuhiro
@@ -326,6 +329,13 @@ xpns_restore_allow_rename()  {
     else
       ${TMUX_XPANES_EXEC} -S "${_session}" set-window-option -g allow-rename on
     fi
+  fi
+}
+
+xpns_interval() {
+  local _interval="$1"
+  if [[ -n "${_interval-}" ]] && [[ "${_interval}" != "0" ]]; then
+    sleep "${_interval}"
   fi
 }
 
@@ -664,9 +674,12 @@ xpns_notify_logging() {
 xpns_notify_sync() {
   local _window_name="$1"
   shift
+  local _interval="$1"
+  shift
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
-    xpns_notify "sync_${_window_name}-${i}-$$" &
+    xpns_interval "${_interval}"
+    xpns_notify "sync_${_window_name}-${i}-$$"
   done
 }
 
@@ -746,6 +759,8 @@ xpns_send_commands() {
   shift
   local _index_offset="$1"
   shift
+  local _interval="$1"
+  shift
   local _repstr="$1"
   shift
   local _cmd="$1"
@@ -754,6 +769,7 @@ xpns_send_commands() {
   local _pane_index=
   local _exec_cmd=
   for arg in "$@"; do
+    xpns_interval "${_interval}"
     _exec_cmd="${_cmd//${_repstr}/${arg}}"
     _pane_index=$((_index + _index_offset))
     ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
@@ -823,6 +839,8 @@ xpns_split_window() {
   shift
   local _await_flag="$1"
   shift
+  local _interval="$1"
+  shift
   local _pane_base_index="$1"
   shift
   local _repstr="$1"
@@ -838,10 +856,9 @@ xpns_split_window() {
     xpns_msg_debug "Index:${i} Argument:${args[i]}"
     _sep_count=$((_sep_count + 1))
     _exec_cmd="${_cmd_template//${_repstr}/${args[i]}}"
-
+    xpns_interval "${_interval}"
     ## Speedy mode
     if [[ $_speedy_flag -eq 1 ]]; then
-
       _exec_cmd=$(xpns_inject_wait_command "${_log_flag}" "${_title_flag}" "${_speedy_flag}" "${_await_flag}" "$i" "${_exec_cmd}")
       # Execute command as a child process of default-shell.
       ${TMUX_XPANES_EXEC} split-window -t "${_window_name}" -h -d "${_exec_cmd}"
@@ -875,6 +892,8 @@ xpns_prepare_extra_panes() {
   shift
   local _await_flg="$1"
   shift
+  local _interval="$1"
+  shift
   # specify a pane which has the biggest index number.
   #   Because pane_id may not be immutable.
   #   If the small number of index is specified here, correspondance between pane_title and command can be slip off.
@@ -887,6 +906,7 @@ xpns_prepare_extra_panes() {
     "${_title_flag}" \
     "${_speedy_flg}" \
     "${_await_flg}" \
+    "${_interval}" \
     "${_pane_base_index}" \
     "$@"
 }
@@ -1012,6 +1032,8 @@ xpns_prepare_window()  {
   shift
   local _await_flg="$1"
   shift
+  local _interval="$1"
+  shift
   local _repstr="$1"
   shift
   local _cmd_template="$1"
@@ -1051,6 +1073,7 @@ xpns_prepare_window()  {
     xpns_msg_debug "_col=$_col"
     ((_offset = _cols_offset[i]))
     for ((j = 0; j < _col; j++)); do
+      xpns_interval "${_interval}"
       if ((j == 0)); then
         ((idx = _offset - _col))
         # Create new row
@@ -1083,6 +1106,7 @@ xpns_prepare_window()  {
   _col="${_cols[0]}"
   _cell_width=$(((_window_width - _col + 1) / _col))
   for ((j = 1; j < _col; j++)); do
+    xpns_interval "${_interval}"
     idx=$((_cols_offset[0] - j))
     # Adjust width
     _current_pane_width=$(${TMUX_XPANES_EXEC} display-message -t "$_first_pane_id" -p '#{pane_width}' | head -n 1)
@@ -1144,6 +1168,8 @@ xpns_prepare_preset_layout_window() {
   shift
   local _await_flg="$1"
   shift
+  local _interval="$1"
+  shift
   # Create new window.
   if [[ "${_attach_flg}" -eq 1 ]]; then
     ${TMUX_XPANES_EXEC} new-window -n "${_window_name}"
@@ -1162,6 +1188,7 @@ xpns_prepare_preset_layout_window() {
     "${_title_flag}" \
     "${_speedy_flg}" \
     "${_await_flg}" \
+    "${_interval}" \
     "${_pane_base_index}" \
     "$@"
 
@@ -1588,6 +1615,7 @@ xpns_execution() {
       "${XP_OPT_SET_TITLE}" \
       "${XP_OPT_SPEEDY}" \
       "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_OPT_INTERVAL}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -1600,6 +1628,7 @@ xpns_execution() {
       "${XP_OPT_ATTACH}" \
       "${XP_OPT_SPEEDY}" \
       "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_OPT_INTERVAL}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -1611,6 +1640,7 @@ xpns_execution() {
       "${XP_OPT_ATTACH}" \
       "${XP_OPT_SPEEDY}" \
       "${XP_OPT_SPEEDY_AWAIT}" \
+      "${XP_OPT_INTERVAL}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -1661,6 +1691,7 @@ xpns_execution() {
   if [[ $XP_OPT_SPEEDY -eq 1 ]]; then
     xpns_notify_sync \
       "${_window_name}" \
+      "${XP_OPT_INTERVAL}" \
       "${XP_ARGS[@]}"
   fi
 
@@ -1673,6 +1704,7 @@ xpns_execution() {
     xpns_send_commands \
       "${_window_name}" \
       "${_pane_base_index}" \
+      "${XP_OPT_INTERVAL}" \
       "${XP_REPSTR}" \
       "${XP_CMD_UTILITY}" \
       "${XP_ARGS[@]}"
@@ -1831,6 +1863,17 @@ xpns_opt_check_num() {
   exit ${XP_EINVAL}
 }
 
+xpns_opt_check_float() {
+  local _option="$1"
+  shift
+  local _arg="$1"
+  if [[ -n "$_arg" ]] && [[ -z "${_arg//[0-9.]/}" ]]; then
+    return 0
+  fi
+  xpns_msg_error "Invalid argument '$_arg' for $_option option"
+  exit ${XP_EINVAL}
+}
+
 xpns_opt_check_str() {
   local _option="$1"
   shift
@@ -1952,6 +1995,13 @@ xpns_parse_options() {
         XP_OPTIONS+=("$1")
         shift
         ;;
+      --interval)
+        xpns_opt_check_float "$opt" "$1"
+        XP_OPTIONS+=("$opt")
+        XP_OPT_INTERVAL="$1"
+        XP_OPTIONS+=("$1")
+        shift
+        ;;
       --debug)
         XP_OPTIONS+=("$opt")
         XP_OPT_DEBUG=1
@@ -1960,7 +2010,7 @@ xpns_parse_options() {
         XP_OPTIONS+=("$opt")
         XP_OPT_DRY_RUN=1
         ;;
-      --ignore-size-limit)
+      --ignore-size-limit)   # Hidden for testing
         XP_OPTIONS+=("$opt")
         XP_OPT_IGNORE_SIZE_LIMIT=1
         ;;
