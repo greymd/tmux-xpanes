@@ -679,7 +679,7 @@ xpns_notify_sync() {
   local _args_num=$(($# - 1))
   for i in $(xpns_seq 0 "${_args_num}"); do
     xpns_interval "${_interval}"
-    xpns_notify "sync_${_window_name}-${i}-$$" &
+    xpns_notify "sync_${_window_name}-${i}-$$"
   done
 }
 
