@@ -217,7 +217,7 @@ OPTIONS:
                                sleep(1) is used for the interval.
   --debug                      Print debug message.
 
-Copyright (c) 2021 Yamada, Yasuhiro
+Copyright (c) 2023 Yamada, Yasuhiro
 Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 USAGE

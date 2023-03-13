@@ -1,4 +1,4 @@
-XPANES 1 "MAR 2021" "User Commands" ""
+XPANES 1 "MAR 2023" "User Commands" ""
 =======================================
 
 NAME
@@ -506,7 +506,7 @@ tmux(1)
 AUTHOR AND COPYRIGHT
 ------
 
-Copyright (c) 2021 Yamada, Yasuhiro <yamadagrep@gmail.com> Released under the MIT License.
+Copyright (c) 2023 Yamada, Yasuhiro <yamada@gr3.ie> Released under the MIT License.
 https://github.com/greymd/tmux-xpanes
 
 
