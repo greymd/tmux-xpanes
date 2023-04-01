@@ -527,6 +527,7 @@ xpns_normalize_directory() {
 ## --------------------------------
 xpns_is_valid_directory() {
   local _dir="$1"
+  local _checkfile="${XP_THIS_FILE_NAME}.$$"
   # Check directory.
   if ! [[ -d "${_dir}" ]]; then
     # Create directory
