@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -ue
 
-readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly PREFIX="${1:-/usr/local}"
 readonly PREFIX_BIN="${PREFIX}/bin"
 readonly PREFIX_MAN="${PREFIX}/share/man/man1"
