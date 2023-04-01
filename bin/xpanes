@@ -564,7 +564,7 @@ xpns_arr2args() {
   if [[ $# -lt 1 ]]; then
     return 0
   fi
-for _arg in "$@"; do
+  for _arg in "$@"; do
     # Use 'cat <<<"input"' command instead of 'echo',
     # because such the command recognizes option like '-e'.
     cat <<< "${_arg}" |
