@@ -512,43 +512,35 @@ xpns_log_filenames()  {
 #        Normalized <dirname>
 ## --------------------------------
 xpns_normalize_directory() {
-  local _dir="$1"
-  # Remove end of slash '/'
-  _dir="${_dir%/}"
+  # Remove end of slash '/' for the first arguement
+  local _dir="${1%/}"
   # tilde expansion
-  _dir="${_dir/#~/${HOME}}"
-  printf "%s\\n" "${_dir}"
+  printf "%s\\n" "${_dir/#~/$HOME}"
 }
 
 ## --------------------------------
 # Ensure existence of given directory
 # Usage:
-#        xpns_is_valid_directory <direname>
+#        xpns_is_valid_directory <dirname>
 # Return:
 #        Absolute path of the <dirname>
 ## --------------------------------
 xpns_is_valid_directory() {
   local _dir="$1"
-  local _checkfile="${XP_THIS_FILE_NAME}.$$"
   # Check directory.
-  if [[ ! -d "${_dir}" ]]; then
+  if ! [[ -d "${_dir}" ]]; then
     # Create directory
-    if mkdir "${_dir}"; then
-      xpns_msg_info "${_dir} is created."
-    else
+    if ! mkdir "${_dir}"; then
       xpns_msg_error "Failed to create ${_dir}"
       exit ${XP_ELOGDIR}
     fi
+    xpns_msg_info "${_dir} is created."
   fi
-  # Try to create file.
-  #   Not only checking directory permission,
-  #   but also i-node and other misc situations.
-  if ! touch "${_dir}/${_checkfile}"; then
+  # Check directory permissions
+  if ! [[ -w "${_dir}" ]]; then
     xpns_msg_error "${_dir} is not writable."
-    rm -f "${_dir}/${_checkfile}"
     exit ${XP_ELOGWRITE}
   fi
-  rm -f "${_dir}/${_checkfile}"
 }
 
 # Convert array to string which is can be used as command line argument.
