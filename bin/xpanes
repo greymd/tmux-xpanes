@@ -498,9 +498,7 @@ xpns_log_filenames()  {
     # 1st argument + '-' + unique number (avoid same argument has same name)
     xpns_unique_line |
     while   read -r _arg; do
-      cat <<< "${_full_fmt}" |
-        sed   "s/\\[:ARG:\\]/${_arg}/g" |
-        sed   "s/\\[:PID:\\]/$$/g"
+      cat <<< "${_full_fmt}" | sed -e "s/\\[:ARG:\\]/${_arg}/g" -e "s/\\[:PID:\\]/$$/g"
     done
 }
 
@@ -562,20 +560,17 @@ xpns_is_valid_directory() {
 #       @returns "'aaa' 'bbb' 'ccc ddd' 'eee' 'f\'f'"
 # Result:
 xpns_arr2args() {
-  local _arg=""
   # If there is no argument, usage will be shown.
   if [[ $# -lt 1 ]]; then
     return 0
   fi
-  for i in "$@"; do
-    _arg="${i}"
+  for _arg in "$@"; do
     # Use 'cat <<<"input"' command instead of 'echo',
     # because such the command recognizes option like '-e'.
     cat <<< "${_arg}" |
-      # Escaping single quotations.
-      sed "s/'/'\"'\"'/g" |
+      # Escaping single quotes and
       # Surround argument with single quotations.
-      sed "s/^/'/;s/$/' /" |
+      sed "s/'/'\"'\"'/g; s/^/'/; s/$/' /" |
       # Remove new lines
       tr -d '\n'
   done
