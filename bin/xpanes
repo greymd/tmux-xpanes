@@ -774,20 +774,19 @@ xpns_organize_panes() {
   local _window_name="$1"
   shift
   local _args_num="$1"
-  ## ----------------
+
   # Default behavior
-  ## ----------------
-  if [[ "${_args_num}" -eq 1 ]]; then
-    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" even-horizontal
-  elif [[ "${_args_num}" -gt 1 ]]; then
-    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" tiled
+  local layout_command="select-layout -t ${_window_name} even-horizontal"
+  if (( _args_num > 1 )); then
+    layout_command="select-layout -t ${_window_name} tiled"
   fi
-  ## ----------------
+
   # Update layout
-  ## ----------------
   if [[ "${XP_LAYOUT}" != "${XP_DEFAULT_LAYOUT}" ]]; then
-    ${TMUX_XPANES_EXEC} select-layout -t "${_window_name}" "${XP_LAYOUT}"
+    layout_command="select-layout -t ${_window_name} ${XP_LAYOUT}"
   fi
+
+  ${TMUX_XPANES_EXEC} $layout_command
 }
 
 #
