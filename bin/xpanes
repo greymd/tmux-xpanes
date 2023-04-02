@@ -786,7 +786,7 @@ xpns_organize_panes() {
     layout_command="select-layout -t ${_window_name} ${XP_LAYOUT}"
   fi
 
-  ${TMUX_XPANES_EXEC} $layout_command
+  ${TMUX_XPANES_EXEC} "$layout_command"
 }
 
 #
