@@ -561,7 +561,7 @@ xpns_arr2args() {
   if [[ $# -lt 1 ]]; then
     return 0
   fi
-for _arg in "$@"; do
+  for _arg in "$@"; do
     # Use 'cat <<<"input"' command instead of 'echo',
     # because such the command recognizes option like '-e'.
     cat <<< "${_arg}" |
@@ -780,7 +780,6 @@ xpns_organize_panes() {
   if [[ "${_args_num}" -gt 1 ]]; then
     layout_command="select-layout -t ${_window_name} tiled"
   fi
-s
   # Update layout
   if [[ "${XP_LAYOUT}" != "${XP_DEFAULT_LAYOUT}" ]]; then
     layout_command=" select-layout -t ${_window_name} ${XP_LAYOUT}"
