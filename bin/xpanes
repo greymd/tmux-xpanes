@@ -46,6 +46,7 @@ readonly XP_ENOCMD=127
 
 # XP_THIS_FILE_NAME is supposed to be "xpanes".
 readonly XP_THIS_FILE_NAME="${0##*/}"
+# shellcheck disable=SC2155
 readonly XP_THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly XP_ABS_THIS_FILE_NAME="${XP_THIS_DIR}/${XP_THIS_FILE_NAME}"
 
@@ -1897,6 +1898,7 @@ xpns_parse_options() {
 
     ## Skip regularization if the arg is empty or --log= option
     if [[ -n "$opt" ]] && [[ -n "${opt##--log=*}" ]]; then
+      # shellcheck disable=SC2295
       ## -ovalue → -o value
       if [[ -z "${opt##-${XP_ARG_OPTIONS}?*}" ]]; then
         set -- "${opt#??}" ${1+"$@"}
