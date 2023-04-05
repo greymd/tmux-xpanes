@@ -14,9 +14,10 @@ $ sudo install -m 0755 pict /usr/local/bin/pict
 
 Example for shunit2: 
 ```bash
-$ git clone https://github.com/kward/shunit2.git
-$ cd shunit2/
-$ cp * /path_to_xpanes_project/test/shunit2/
+$ cd /path_to_xpanes_project/test/
+$ git submodule init
+$ git submodule update
+# => https://github.com/kward/shunit2.git is cloned into /path_to_xpanes_project/test/shunit2 directory
 ```
 
 3. Edit `config.pict` to add/remove/modify software versions.
