@@ -778,7 +778,7 @@ xpns_organize_panes() {
 
   # Default behavior
   local layout_command=" select-layout -t ${_window_name} even-horizontal"
-  if (( _args_num > 1 ));; then
+  if (( _args_num > 1 )); then
     layout_command=" select-layout -t ${_window_name} tiled"
   fi
   # Update layout
