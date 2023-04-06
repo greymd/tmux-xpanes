@@ -759,14 +759,11 @@ xpns_send_commands() {
   local _cmd="$1"
   shift
   local _index=0
-  local _pane_index=
-  local _exec_cmd=
   for arg in "$@"; do
     xpns_interval "${_interval}"
-    _exec_cmd="${_cmd//${_repstr}/${arg}}"
     _pane_index=$((_index + _index_offset))
-    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_exec_cmd}" C-m
-    _index=$((_index + 1))
+    ${TMUX_XPANES_EXEC} send-keys -t "${_window_name}.${_pane_index}" "${_cmd//${_repstr}/${arg}}" C-m
+    ((_index++))
   done
 }
 
