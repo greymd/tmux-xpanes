@@ -5,7 +5,6 @@
 # Directory name of this file
 readonly THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 readonly TEST_TMP="${THIS_DIR}/test_tmp"
-readonly OLD_PATH="${PATH}"
 IFS=" " read -r TTY_ROWS TTY_COLS < <(stty size)
 TTY_ROWS=${TTY_ROWS:-40}
 TTY_COLS=${TTY_COLS:-80}
