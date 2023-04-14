@@ -1840,77 +1840,17 @@ xpns_warning_before_extra() {
   fi
 }
 
-#xpns_opt_check_number() {
-#  local _option="$1"
-#  shift
-#  local _arg="$1"
-#  if [[ -n "$_arg" ]] && [[ -z "${_arg//[0-9]/}" ]]; then
-#    return 0
-#  fi
-#  xpns_msg_error "Invalid argument '$_arg' for $_option option"
-#  exit ${XP_EINVAL}
-#}
-
-#xpns_opt_check_float() {
-#  local _option="$1"
-#  shift
-#  local _arg="$1"
-#  if [[ -n "$_arg" ]] && [[ -z "${_arg//[0-9.]/}" ]]; then
-#    return 0
-#  fi
-#  xpns_msg_error "Invalid argument '$_arg' for $_option option"
-#  exit ${XP_EINVAL}
-#}
-#xpns_opt_check_number() {
-#  local _option="$1"
-#  shift
-#  local _arg="$1"
-#  local _check_float="$2"
-#  local _pattern="[0-9]"
-#  if [[ "$_check_float" == "float_true" ]]; then
-#    _pattern="[0-9.]"
-#  fi
-#  if [[ -n "$_arg" ]] && [[ -z "${_arg//$_pattern/}" ]]; then
-#    return 0
-#  fi
-#  xpns_msg_error "Invalid argument '$_arg' for $_option option"
-#  exit ${XP_EINVAL}
-#}
-#
-#xpns_opt_check_str() {
-#  local _option="$1"
-#  shift
-#  local _arg="$1"
-#  if [[ -n "$_arg" ]]; then
-#    return 0
-#  fi
-#  xpns_msg_error "Invalid argument '$_arg' for $_option option"
-#  exit ${XP_EINVAL}
-#}
-#
-#xpns_opt_check_num_csv() {
-#  local _option="$1"
-#  shift
-#  local _arg="$1"
-#  if [[ "$1" =~ ^([0-9][0-9]*,?)+$ ]]; then
-#    return 0
-#  fi
-#  xpns_msg_error "Invalid argument '$_arg' for $_option option"
-#  exit ${XP_EINVAL}
-#}
-
 xpns_opt_checker() {
   local _option="$1"
-  shift
-  local _arg="$1"
-  local _check_float="${2:-default}"
-  #if we do not define a positional parameter, we expect an integer
+  local _arg="$2"
+  local _check_value="${3:-default}"
+  # if we do not define a positional parameter in options, we expect an integer
   local _pattern="[0-9]"
-  if [[ "$_check_float" == "float" ]]; then
+  if [[ "$_check_value" == "float" ]]; then
     _pattern="[0-9.]"
-  elif [[ "$_check_float" == "csv" ]]; then
+  elif [[ "$_check_value" == "csv" ]]; then
     _pattern="^[0-9]+(,[0-9]+)*$"
-  elif [[ "$_check_float" == "string" ]]; then
+  elif [[ "$_check_value" == "string" ]]; then
     if [[ -n "$_arg" ]]; then
       return 0
     fi
