@@ -1847,7 +1847,7 @@ xpns_opt_checker() {
   # if we do not define a positional parameter in options, we expect an integer
   local _pattern="[0-9]"
   if [[ "$_check_value" == "float" ]]; then
-    _pattern="[0-9.]"
+    _pattern="^[0-9]*\.?[0-9]*$"
   elif [[ "$_check_value" == "csv" ]]; then
     _pattern="^[0-9]+(,[0-9]+)*$"
   elif [[ "$_check_value" == "string" ]]; then
