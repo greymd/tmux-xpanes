@@ -181,7 +181,7 @@ get_window_id_from_prefix() {
   local _socket_file="$1" ; shift
   local _window_name_prefix="$1" ; shift
   local _window_id=
-  ## tmux bug: tmux does not handle the window_name which has dot(.) at the begining of the name. Use window_id instead.
+  ## tmux bug: tmux does not handle the window_name which has dot(.) at the beginning of the name. Use window_id instead.
   _window_id=$(${TMUX_EXEC} -S "${_socket_file}" list-windows -F '#{window_name} #{window_id}' \
     | grep "^${_window_name_prefix}" \
     | head -n 1 \
@@ -211,7 +211,7 @@ wait_panes_separation() {
         ${TMUX_EXEC} -S "${_socket_file}" list-panes -t "${_window_id}" >&2
         # Wait several seconds to ensure the completion.
         # Even the number of panes equals to expected number,
-        # the separation is not complated sometimes.
+        # the separation is not completed sometimes.
         sleep 3
         break
       fi
@@ -1643,7 +1643,7 @@ test_desync_option_1() {
   if (is_less_than "1.9");then
     echo "Skip this test for $(tmux_version_number)." >&2
     echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-    echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+    echo '"#{pane_synchronized}" is not yet implemented.' >&2
     echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
     return 0
   fi
@@ -1711,7 +1711,7 @@ test_desync_option_2() {
   if (is_less_than "1.9");then
     echo "Skip this test for $(tmux_version_number)." >&2
     echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-    echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+    echo '"#{pane_synchronized}" is not yet implemented.' >&2
     echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
     return 0
   fi
@@ -2621,7 +2621,7 @@ test_log_format_and_desync_option() {
   if (is_less_than "1.9");then
     echo "Skip this test for $(tmux_version_number)." >&2
     echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-    echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+    echo '"#{pane_synchronized}" is not yet implemented.' >&2
     echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
     return 0
   fi
@@ -2733,7 +2733,7 @@ test_log_format_and_desync_option_pipe() {
   if (is_less_than "1.9");then
     echo "Skip this test for $(tmux_version_number)." >&2
     echo 'Because there is no way to check whether the window has synchronize-panes or not.' >&2
-    echo '"#{pane_synchronnized}" is not yet implemented.' >&2
+    echo '"#{pane_synchronized}" is not yet implemented.' >&2
     echo 'Ref (format.c): https://github.com/tmux/tmux/compare/1.8...1.9#diff-3acde89642f1d5cccab8319fac95e43fR557' >&2
     return 0
   fi
@@ -3453,7 +3453,7 @@ test_ss_option_panes_not_found() {
 
     actual=$( cat "${_tmpdir}/exit_status" )
     expected=31
-    ## This test might be failed if the host sufferes high load or particular conditions.
+    ## This test might be failed if the host sufferers high load or particular conditions.
     ## Retry the test if it fails.
     ### In that case, "actual" might be "0".
     assertEquals "$expected" "$actual"
@@ -4166,7 +4166,7 @@ test_rows_log_ss_t_option() {
 test_too_small_panes() {
   local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
   local _tmpdir="${SHUNIT_TMPDIR}"
-  ## Blace expansion does not work if default shell is not bash
+  ## Brace expansion does not work if default shell is not bash
   _cmd="${EXEC}  -S $_socket_file --stay \$(seq 1 500 | xargs); echo \$? > ${_tmpdir}/status"
   printf "\\n$ %s\\n" "${_cmd}"
 

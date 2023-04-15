@@ -485,7 +485,7 @@ $ xpanes -c "ssh -t {} bash -ci 'll'" host-{1,2,3}
     +------------------------------------+-------------------------------------+
 ```
 
-#### Run commands promtply
+#### Run commands promptly
 
 `-s` option is useful if you have following issues.
 
