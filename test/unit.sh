@@ -523,9 +523,15 @@ test_xpns_opt_checker () {
   assertEquals "0" "$?"
   ( xpns_opt_checker --bulk-cols "invalid" csv )
   assertEquals "4" "$?"
+  ( xpns_opt_checker --bulk-cols "1,2,a" csv )
+  assertEquals "4" "$?"
   ( xpns_opt_checker -n "invalid" )
   assertEquals "4" "$?"
+  ( xpns_opt_checker -n "1.1.1.1" )
+  assertEquals "4" "$?"
   ( xpns_opt_checker --interval "invalid" float )
+  assertEquals "4" "$?"
+  ( xpns_opt_checker --interval "1.1.1.1" float )
   assertEquals "4" "$?"
 }
 
