@@ -512,5 +512,22 @@ test_xpns_parse_options_interval () {
   assertEquals "4" "$?"
 }
 
+test_xpns_opt_checker () {
+  ( xpns_opt_checker --bulk-cols 1,2,3,4 csv )
+  assertEquals "0" "$?"
+  ( xpns_opt_checker -n 1 )
+  assertEquals "0" "$?"
+  ( xpns_opt_checker -S ~/dummy string )
+  assertEquals "0" "$?"
+  ( xpns_opt_checker --interval 1.1 float )
+  assertEquals "0" "$?"
+  ( xpns_opt_checker --bulk-cols "invalid" csv )
+  assertEquals "4" "$?"
+  ( xpns_opt_checker -n "invalid" )
+  assertEquals "4" "$?"
+  ( xpns_opt_checker --interval "invalid" float )
+  assertEquals "4" "$?"
+}
+
 # shellcheck source=/dev/null
 . "${THIS_DIR}/shunit2/shunit2"
