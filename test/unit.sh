@@ -50,6 +50,49 @@ test_xpns_tmux_is_greater_equals() {
   assertEquals "1" "$?"
 }
 
+test_xpns_log() {
+local tmpfile=$(mktemp)
+xpns_log "info" "This is an info message" > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+expected="unit.sh:info: This is an info message"
+assertEquals "$expected" "$actual"
+
+xpns_log "warning" "This is a warning message" > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+expected="unit.sh:warning: This is a warning message"
+assertEquals "$expected" "$actual"
+
+xpns_log "error" "This is an error message" > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+expected="unit.sh:error: This is an error message" 
+assertEquals "$expected" "$actual"
+
+#should not trigger without XP_OPT_DEBUG=1
+XP_OPT_DEBUG=0 xpns_log "debug" "This is a debug message"  > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+expected=""
+assertEquals "$expected" "$actual"
+
+xpns_log "nonlogleveltype" "string" > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+expected="unit.sh:internal error: invalid log type:nonlogleveltype"
+assertEquals "$expected" "$actual"
+}
+
+test_xpns_msg() {
+  # Test xpns_msg with valid log levels
+  local tmpfile=$(mktemp)
+  xpns_msg "info" "This is an info message" > "$tmpfile" 2>&1
+  local actual=$(cat "$tmpfile")
+  rm "$tmpfile"
+  assertEquals "unit.sh:info: This is an info message" "$actual"  
+}
+
 test_xpns_generate_window_name() {
   actual=$(xpns_generate_window_name 'EMPTY' 'aaa bbb ccc')
   expected="aaa-$$"
