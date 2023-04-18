@@ -150,7 +150,7 @@ xpns_log() {
       fi
     ;;
     *)
-      printf "[%s] %s %s\n" "${XP_THIS_FILE_NAME}:internal error" "invalid log type, if you get this error." "Please file an issue on github: https://github.com/greymd/tmux-xpanes/issues"
+      printf "[%s] %s %s\n" "${XP_THIS_FILE_NAME}:internal error" "invalid log type, if you get this error." "Please file an issue on github: https://github.com/greymd/tmux-xpanes/issues" >&2
         return
     ;;
     esac
