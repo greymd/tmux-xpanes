@@ -137,22 +137,22 @@ xpns_log() {
   if [[ "$#" -gt 1 ]]; then
     local _specifiedloglevel=${1,,}
     case ${_specifiedloglevel} in
-    info|warning|error)
-      loglevel=${_specifiedloglevel}
-    ;;
-    debug)
-      if [[ $XP_OPT_DEBUG -eq 1 ]]; then
-        debugoutput=$(date "+:%F_%T"):${FUNCNAME[1]}
+      info | warning | error)
         loglevel=${_specifiedloglevel}
+        ;;
+      debug)
+        if [[ $XP_OPT_DEBUG -eq 1 ]]; then
+          debugoutput=$(date "+:%F_%T"):${FUNCNAME[1]}
+          loglevel=${_specifiedloglevel}
 
-      else
+        else
+          return
+        fi
+        ;;
+      *)
+        printf "[%s] %s %s\n" "${XP_THIS_FILE_NAME}:internal error" "invalid log type, if you get this error." "Please file an issue on github: https://github.com/greymd/tmux-xpanes/issues" >&2
         return
-      fi
-    ;;
-    *)
-      printf "[%s] %s %s\n" "${XP_THIS_FILE_NAME}:internal error" "invalid log type, if you get this error." "Please file an issue on github: https://github.com/greymd/tmux-xpanes/issues" >&2
-        return
-    ;;
+        ;;
     esac
     shift
   fi
@@ -160,7 +160,6 @@ xpns_log() {
   # shellcheck disable=SC2183
   printf "[%s] %s %s %s\n" "${XP_THIS_FILE_NAME}"":${loglevel}""${debugoutput}" "$*" >&2
 }
-
 
 xpns_usage_warn() {
   xpns_usage_short >&2
@@ -1849,7 +1848,8 @@ xpns_opt_checker() {
       return 0
     fi
   fi
-  if [[ -n "$_arg" ]] && [[ "$_arg" =~ $_pattern ]]; then    return 0
+  if [[ -n "$_arg" ]] && [[ "$_arg" =~ $_pattern ]]; then
+                                                             return 0
   fi
   xpns_log "error" "Invalid argument '$_arg' for $_option option"
   exit ${XP_EINVAL}
