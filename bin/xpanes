@@ -133,7 +133,7 @@ XP_OPT_IGNORE_SIZE_LIMIT=0
 
 xpns_log() {
   local _loglevel="info"
-  local output=""
+  local debugoutput=""
   if [[ "$#" -gt 1 ]]; then
     local _specifiedloglevel=${1,,}
     case ${_specifiedloglevel} in
@@ -142,7 +142,7 @@ xpns_log() {
     ;;
     debug)
       if [[ $XP_OPT_DEBUG -eq 1 ]]; then
-        output=$(date "+:%F_%T"):${FUNCNAME[1]}
+        debugoutput=$(date "+:%F_%T"):${FUNCNAME[1]}
         loglevel=${_specifiedloglevel}
 
       else
@@ -156,8 +156,9 @@ xpns_log() {
     esac
     shift
   fi
+  # in this case we want empty arguments, as debugoutput is not populated at all times.
   # shellcheck disable=SC2183
-  printf "[%s] %s %s %s\n" "${XP_THIS_FILE_NAME}"":${loglevel}""${output}" "$*" >&2
+  printf "[%s] %s %s %s\n" "${XP_THIS_FILE_NAME}"":${loglevel}""${debugoutput}" "$*" >&2
 }
 
 
