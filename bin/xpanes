@@ -157,7 +157,7 @@ xpns_log() {
     shift
   fi
   # shellcheck disable=SC2183
-  printf "[%s] %s %s %s\n" "${XP_THIS_FILE_NAME}"":${loglevel}""${output}" "$*"
+  printf "[%s] %s %s %s\n" "${XP_THIS_FILE_NAME}"":${loglevel}""${output}" "$*" >&2
 }
 
 
