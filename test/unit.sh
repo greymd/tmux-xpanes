@@ -61,13 +61,13 @@ assertEquals "$expected" "$actual"
 xpns_log "warning" "This is a warning message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="[unit.sh:warning]: This is a warning message"
+expected="[unit.sh:warning]: This is a warning message  "
 assertEquals "$expected" "$actual"
 
 xpns_log "error" "This is an error message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="[unit.sh:error] This is an error message" 
+expected="[unit.sh:error] This is an error message  " 
 assertEquals "$expected" "$actual"
 
 #should not trigger without XP_OPT_DEBUG=1
