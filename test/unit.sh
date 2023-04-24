@@ -61,7 +61,7 @@ assertEquals "$expected" "$actual"
 xpns_log "warning" "This is a warning message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="[unit.sh:warning]: This is a warning message  "
+expected="[unit.sh:warning] This is a warning message  "
 assertEquals "$expected" "$actual"
 
 xpns_log "error" "This is an error message" > "$tmpfile" 2>&1
