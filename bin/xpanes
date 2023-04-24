@@ -135,7 +135,9 @@ xpns_log() {
   local _loglevel="info"
   local debugoutput=""
   if [[ "$#" -gt 1 ]]; then
-    local _specifiedloglevel=${1,,}
+    #we ignore the return value of this command, hence disabling shell check
+    #shellcheck disable=SC2155
+    local _specifiedloglevel=$(echo "$1" | tr '[:upper:]' '[:lower:]')
     case ${_specifiedloglevel} in
       info | warning | error)
         loglevel=${_specifiedloglevel}
