@@ -1509,7 +1509,7 @@ xpns_pre_execution() {
       ## In recovery case, overwrite trap to keep socket file
       trap 'rm -f "${XP_CACHE_HOME}"/__xpns_*$$;' EXIT
 
-      xpns_msg "Recovery" \
+      xpns_log "info" "Recovery" \
         "Execute below command line to re-attach the new session.
 
 ${TMUX_XPANES_EXEC} -S ${XP_SOCKET_PATH} attach-session -t ${XP_SESSION_NAME}
