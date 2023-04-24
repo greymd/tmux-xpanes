@@ -55,19 +55,19 @@ local tmpfile=$(mktemp)
 xpns_log "info" "This is an info message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="unit.sh:info: This is an info message"
+expected="[unit.sh:info] This is an info message  "
 assertEquals "$expected" "$actual"
 
 xpns_log "warning" "This is a warning message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="unit.sh:warning: This is a warning message"
+expected="[unit.sh:warning]: This is a warning message"
 assertEquals "$expected" "$actual"
 
 xpns_log "error" "This is an error message" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="unit.sh:error: This is an error message" 
+expected="[unit.sh:error] This is an error message" 
 assertEquals "$expected" "$actual"
 
 #should not trigger without XP_OPT_DEBUG=1
@@ -80,7 +80,7 @@ assertEquals "$expected" "$actual"
 xpns_log "nonlogleveltype" "string" > "$tmpfile" 2>&1
   local actual=$(cat "$tmpfile")
   rm "$tmpfile"
-expected="unit.sh:internal error: invalid log type:nonlogleveltype"
+expected="[unit.sh:internal error] invalid log type, if you get this error. Please file an issue on github: https://github.com/greymd/tmux-xpanes/issues"
 assertEquals "$expected" "$actual"
 }
 
