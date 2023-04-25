@@ -3205,7 +3205,7 @@ test_t_option_warning() {
 
   _cmd="${EXEC} -t -lev -I@ -S $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" -- --AA BBBB CCCC"
   echo $'\n'" $ $_cmd"$'\n'
-  eval "$_cmd" 2>&1 | grep 'Warning: -t option cannot be used by tmux version less than 2.3'
+  eval "$_cmd" 2>&1 | grep '\[xpanes:warning\] -t option cannot be used by tmux version less than 2.3'
   assertEquals 0 $?   # Error message is properly shown
 
   wait_panes_separation "$_socket_file" "--AA" "3"
