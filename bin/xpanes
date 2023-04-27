@@ -330,7 +330,7 @@ xpns_restore_allow_rename()  {
 
 xpns_interval() {
   local _interval="$1"
-  if [[ -n "${_interval-}" ]] && [[ "${_interval}" != "0" ]]; then
+  if [[ "${_interval}" != "0" ]]; then
     sleep "${_interval}"
   fi
 }
