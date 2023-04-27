@@ -1850,7 +1850,7 @@ xpns_opt_checker() {
     fi
   fi
   if [[ -n "$_arg" ]] && [[ "$_arg" =~ $_pattern ]]; then
-    return                                                          0
+    return 0
   fi
   xpns_log "error" "Invalid argument '$_arg' for $_option option"
   exit ${XP_EINVAL}
