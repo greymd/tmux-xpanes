@@ -92,8 +92,7 @@ window_layout_dump() {
   else
     printf "%s\\n" "${WINDOW_LAYOUT_PAYLOAD}" \
       | sed -r 's/([0-9]+) ([0-9]+)/| w:\1 h:\2/g' \
-      | sed 's/^/@/' \
-      | sed 's/$/@|/' \
+      | sed -e 's/^/@/' -e 's/$/@|/' \
       | awk 'BEGIN {s="@|---@|"; print s} {print}' \
       | column -t -s '@' \
       | sed '/---/s/ /-/g' \
@@ -633,10 +632,7 @@ test_normalize_log_directory() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "${_socket_file}"
-  rm -f "${_tmpdir}"/logs/*
-  rmdir "${_tmpdir}"/logs
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     printf "\\n%s\\n" "$ TMUX(${_cmd})"
@@ -665,11 +661,7 @@ test_normalize_log_directory() {
     assertEquals 1 "$( grep -ac 'GEGE_BBBB_' < "${_log_file}" )"
 
     close_tmux_session "${_socket_file}"
-
-    rm -f "${_tmpdir}"/logs/*
-    rmdir "${_tmpdir}"/logs
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_tmpdir}"/logs "${_tmpdir}"/fin
   }
   return 0
 }
@@ -822,10 +814,7 @@ test_log_and_empty_arg() {
   assertEquals 1 "$( grep -ac 'GEGE_BB_' < "${_log_file}" )"
 
   close_tmux_session "$_socket_file"
-  rm -f "${_tmpdir}"/logs/*
-  rmdir "${_tmpdir}"/logs
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     printf "\\n%s\\n" "$ TMUX(${_cmd})"
@@ -861,10 +850,7 @@ test_log_and_empty_arg() {
 
     close_tmux_session "$_socket_file"
 
-    rm -f "${_tmpdir}"/logs/*
-    rmdir "${_tmpdir}"/logs
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_tmpdir}"/logs "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2262,10 +2248,7 @@ test_log_option() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "$_socket_file"
-  rm -f "${_tmpdir}"/logs/*
-  rmdir "${_tmpdir}"/logs
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     printf "\\nTMUX(%s)\\n" "${_cmd}"
@@ -2295,10 +2278,7 @@ test_log_option() {
 
     close_tmux_session "$_socket_file"
 
-    rm -f "${_tmpdir}"/logs/*
-    rmdir "${_tmpdir}"/logs
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2359,10 +2339,7 @@ test_log_format_option() {
   assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
 
   close_tmux_session "$_socket_file"
-  rm -f "${_logdir}"/*
-  rmdir "${_logdir}"
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     echo $'\n'" $ TMUX($_cmd)"$'\n'
@@ -2396,10 +2373,7 @@ test_log_format_option() {
     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2505,10 +2479,7 @@ test_log_format_env_var() {
     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2607,10 +2578,7 @@ test_log_format_option2() {
     assertEquals 1 "$(grep -ac 'GEGE_CCCC_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2719,10 +2687,7 @@ test_log_format_and_desync_option() {
     assertEquals 1 $?
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2794,10 +2759,7 @@ test_log_format_and_desync_option_pipe() {
     assertEquals 1 $?
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2903,10 +2865,7 @@ test_x_option_with_log() {
   assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
 
   close_tmux_session "$_socket_file"
-  rm -f "${_logdir}"/*
-  rmdir "${_logdir}"
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     _cmd="TMUX_XPANES_LOG_DIRECTORY=\"${_logdir}\" ${EXEC} --log-format=\"[:ARG:]_%Y_[:ARG:]\" -I@ -dS $_socket_file -c \"echo HOGE_@_ | sed s/HOGE/GEGE/ && touch ${_tmpdir}/fin/@ && ${TMUX_EXEC} detach-client\" AAAA BBBB"
@@ -2949,10 +2908,7 @@ test_x_option_with_log() {
     assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -2989,8 +2945,7 @@ test_x_option_with_pipe() {
   assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
 
   close_tmux_session "$_socket_file"
-  rm -f "${_tmpdir}"/fin/*
-  rmdir "${_tmpdir}"/fin
+  rm -rf "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     _cmd="echo AAAA | ${EXEC} -d -S $_socket_file -c \"echo {} > ${_tmpdir}/fin/{}\""
@@ -3016,8 +2971,7 @@ test_x_option_with_pipe() {
     assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3081,8 +3035,7 @@ test_x_option_with_cols_rows() {
     assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3149,8 +3102,7 @@ test_t_and_x_option() {
     assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3184,8 +3136,7 @@ test_t_option_pipe() {
     assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3321,10 +3272,7 @@ test_s_and_x_and_log() {
     assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3427,10 +3375,8 @@ test_ss_and_x_and_log() {
     assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
+
   }
   return 0
 }
@@ -4613,10 +4559,7 @@ test_b_x_log_option () {
     assertEquals 1 "$(grep -ac 'GEGE_DDDD_' < "${_log_file}")"
 
     close_tmux_session "$_socket_file"
-    rm -f "${_logdir}"/*
-    rmdir "${_logdir}"
-    rm -f "${_tmpdir}"/fin/*
-    rmdir "${_tmpdir}"/fin
+    rm -rf "${_logdir}" "${_tmpdir}"/fin
   }
   return 0
 }
