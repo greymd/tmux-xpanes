@@ -2248,7 +2248,7 @@ test_log_option() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "$_socket_file"
-  rm -rf "${_logdir}" "${_tmpdir}"/fin
+  rm -rf "${_tmpdir}"/{fin,logs}
 
   : "In TMUX session" && {
     printf "\\nTMUX(%s)\\n" "${_cmd}"
