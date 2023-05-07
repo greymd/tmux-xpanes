@@ -632,7 +632,7 @@ test_normalize_log_directory() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "${_socket_file}"
-  rm -rf "${_tmpdir}"/{fin,logs}
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     printf "\\n%s\\n" "$ TMUX(${_cmd})"
@@ -2248,7 +2248,7 @@ test_log_option() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "$_socket_file"
-  rm -rf "${_tmpdir}"/{fin,logs}
+  rm -rf "${_logdir}" "${_tmpdir}"/fin
 
   : "In TMUX session" && {
     printf "\\nTMUX(%s)\\n" "${_cmd}"
@@ -2278,7 +2278,7 @@ test_log_option() {
 
     close_tmux_session "$_socket_file"
 
-    rm -rf "${_logdir}" "${_tmpdir}"/fin
+    rm -rf "${_tmpdir}"/{fin,logs}
   }
   return 0
 }
@@ -2971,7 +2971,7 @@ test_x_option_with_pipe() {
     assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
 
     close_tmux_session "$_socket_file"
-rm -rf  "${_tmpdir}"/fin
+    rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3035,7 +3035,7 @@ test_x_option_with_cols_rows() {
     assertEquals "CCCC" "$(cat "${_tmpdir}/fin/CCCC")"
 
     close_tmux_session "$_socket_file"
-rm -rf  "${_tmpdir}"/fin
+    rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3102,7 +3102,7 @@ test_t_and_x_option() {
     assertEquals "AAAA@BBBB@CCCC@DDDD@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
     close_tmux_session "$_socket_file"
-rm -rf  "${_tmpdir}"/fin
+    rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
@@ -3136,7 +3136,7 @@ test_t_option_pipe() {
     assertEquals "AAAA@BBBB@" "$(eval "${TMUX_EXEC} -S ${_socket_file} list-panes -F '#{pane_title}'" | tr '\n' '@')"
 
     close_tmux_session "$_socket_file"
-rm -rf  "${_tmpdir}"/fin
+    rm -rf  "${_tmpdir}"/fin
   }
   return 0
 }
