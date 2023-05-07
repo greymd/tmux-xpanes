@@ -632,7 +632,7 @@ test_normalize_log_directory() {
   assertEquals 1 "$(grep -ac 'GEGE_BBBB_' < "${_log_file}")"
 
   close_tmux_session "${_socket_file}"
-  rm -rf "${_logdir}" "${_tmpdir}"/fin
+  rm -rf "${_tmpdir}"/{fin,logs}
 
   : "In TMUX session" && {
     printf "\\n%s\\n" "$ TMUX(${_cmd})"
