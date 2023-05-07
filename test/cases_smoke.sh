@@ -816,4 +816,4 @@ check_version
 
 # Test start
 # shellcheck source=/dev/null
-. "${THIS_DIR}/shunit3/shunit3"
+. "${THIS_DIR}/shunit2/shunit2"
