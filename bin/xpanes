@@ -117,6 +117,7 @@ XP_MAX_PANE_ARGS=""
 XP_OPT_SET_TITLE=0
 XP_OPT_CHANGE_BORDER=0
 XP_OPT_EXTRA=0
+XP_OPT_REUSE=0
 XP_OPT_SPEEDY=0
 XP_OPT_SPEEDY_AWAIT=0
 XP_OPT_USE_PRESET_LAYOUT=0
@@ -199,6 +200,7 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -r                           Reuse the existing panes, or create then in the current active window.
   -s                           Speedy mode: Run command without opening an interactive shell.
   -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
   -S <socket-path>             Set a full alternative path to the server socket.
@@ -1571,6 +1573,21 @@ xpns_execution() {
   xpns_suppress_allow_rename "${_def_allow_rename-}"
   XP_CMD_UTILITY="$(xpns_get_joined_begin_commands "${XP_CMD_UTILITY}")"
 
+  if [[ ${XP_OPT_REUSE} -eq 1 ]]; then
+    _window_name="$( ${TMUX_XPANES_EXEC} display -p -F "#{window_id}")"
+    _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c .)"
+    _pane_base_index=$(($(${TMUX_XPANES_EXEC} display -p -F "#{pane_index}") + 1))
+    _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
+
+    # Reusing the panes: if there's only 1 pane, behave like -x otherwise
+    # make sure there are enough panes of higher index than the current one.
+    # This allows to run -r to create the panes and then repeatedly to reuse
+    # those panes.
+    if [[ $((${_pane_count} - ${_pane_base_index})) -lt ${#XP_ARGS[@]} ]]; then
+      xpns_log "error" "Not enough panes ($((${_pane_count} - 1))) after this one to run the ${#XP_ARGS[@]} commands."
+      exit ${XP_EINVAL}
+    fi
+  fi
   if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
     # Reuse existing window name
     # tmux 1.6 does not support -F option
@@ -1578,7 +1595,7 @@ xpns_execution() {
     _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c .)"
     _pane_base_index=$((_pane_base_index + _pane_count - 1))
     _pane_active_pane_id=$(${TMUX_XPANES_EXEC} display -p -F "#{pane_id}")
-  else
+  elif [[ ${XP_OPT_REUSE} -eq 0 ]]; then
     _window_name=$(
       xpns_generate_window_name \
         "${XP_EMPTY_STR}" \
@@ -1590,43 +1607,45 @@ xpns_execution() {
   ## --------------------
   # Prepare window and panes
   ## --------------------
-  if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
-    xpns_prepare_extra_panes \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_OPT_INTERVAL}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]]; then
-    xpns_prepare_preset_layout_window \
-      "${_window_name}" \
-      "${_pane_base_index}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_ATTACH}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_OPT_INTERVAL}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
-  elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]]; then
-    xpns_prepare_window \
-      "${_window_name}" \
-      "${XP_OPT_LOG_STORE}" \
-      "${XP_OPT_SET_TITLE}" \
-      "${XP_OPT_ATTACH}" \
-      "${XP_OPT_SPEEDY}" \
-      "${XP_OPT_SPEEDY_AWAIT}" \
-      "${XP_OPT_INTERVAL}" \
-      "${XP_REPSTR}" \
-      "${XP_CMD_UTILITY}" \
-      "${XP_ARGS[@]}"
+  if [[ ${XP_OPT_REUSE} -eq 0 ]]; then
+    if [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
+      xpns_prepare_extra_panes \
+        "${_window_name}" \
+        "${_pane_base_index}" \
+        "${XP_OPT_LOG_STORE}" \
+        "${XP_OPT_SET_TITLE}" \
+        "${XP_OPT_SPEEDY}" \
+        "${XP_OPT_SPEEDY_AWAIT}" \
+        "${XP_OPT_INTERVAL}" \
+        "${XP_REPSTR}" \
+        "${XP_CMD_UTILITY}" \
+        "${XP_ARGS[@]}"
+    elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 1 ]]; then
+      xpns_prepare_preset_layout_window \
+        "${_window_name}" \
+        "${_pane_base_index}" \
+        "${XP_OPT_LOG_STORE}" \
+        "${XP_OPT_SET_TITLE}" \
+        "${XP_OPT_ATTACH}" \
+        "${XP_OPT_SPEEDY}" \
+        "${XP_OPT_SPEEDY_AWAIT}" \
+        "${XP_OPT_INTERVAL}" \
+        "${XP_REPSTR}" \
+        "${XP_CMD_UTILITY}" \
+        "${XP_ARGS[@]}"
+    elif [[ ${XP_OPT_USE_PRESET_LAYOUT} -eq 0 ]]; then
+      xpns_prepare_window \
+        "${_window_name}" \
+        "${XP_OPT_LOG_STORE}" \
+        "${XP_OPT_SET_TITLE}" \
+        "${XP_OPT_ATTACH}" \
+        "${XP_OPT_SPEEDY}" \
+        "${XP_OPT_SPEEDY_AWAIT}" \
+        "${XP_OPT_INTERVAL}" \
+        "${XP_REPSTR}" \
+        "${XP_CMD_UTILITY}" \
+        "${XP_ARGS[@]}"
+    fi
   fi
 
   ## With -ss option, it is possible to close all the panes as of here.
@@ -1698,10 +1717,10 @@ xpns_execution() {
 
   ## With -l <layout>, panes are organized.
   ## As well as -x, they are re-organized.
-  if [[ $XP_OPT_USE_PRESET_LAYOUT -eq 1 ]] || [[ ${XP_OPT_EXTRA} -eq 1 ]]; then
-    xpns_organize_panes \
-      "${_window_name}" \
-      "${_last_args_idx}"
+  if [[ (${XP_OPT_USE_PRESET_LAYOUT} -eq 1 || ${XP_OPT_EXTRA} -eq 1) && ${XP_OPT_REUSE} -eq 0 ]]; then
+      xpns_organize_panes \
+        "${_window_name}" \
+        "${_last_args_idx}"
   fi
 
   # Enable broadcasting
@@ -1723,8 +1742,8 @@ xpns_execution() {
       pane-border-status "${TMUX_XPANES_PANE_BORDER_STATUS}"
   fi
 
-  # In case of -x, this statement is skipped to keep the original window name
-  if [[ ${XP_OPT_EXTRA} -eq 0 ]]; then
+  # In case of -x or -r, this statement is skipped to keep the original window name
+  if [[ ${XP_OPT_EXTRA} -eq 0 ]] && [[ ${XP_OPT_REUSE} -eq 0 ]]; then
     # Restore original window name.
     ${TMUX_XPANES_EXEC} \
       rename-window -t "${_window_name}" \
@@ -1987,6 +2006,7 @@ xpns_parse_options() {
         exit 0
         ;;
       -x)
+        # If you modify those, make similar changes to -r
         XP_OPTIONS+=("$opt")
         XP_OPT_EXTRA=1
         XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
@@ -2011,6 +2031,24 @@ xpns_parse_options() {
         else
           xpns_log "warning" "-t option cannot be used by tmux version less than 2.3. Disabled."
           sleep 1
+        fi
+        ;;
+      -r)
+        XP_OPTIONS+=("$opt")
+        # Reusing the panes: if there's only 1 pane, behave like -x
+        # This allows to run -r to create the panes and then repeatedly to reuse
+        # those panes.
+        _pane_count="$( ${TMUX_XPANES_EXEC} list-panes | grep -c .)"
+        if [[ ${_pane_count} -eq 1 ]]; then
+          XP_OPT_EXTRA=1
+          XP_OPT_USE_PRESET_LAYOUT=1 ## Layout presets must be used with -x
+          if ! xpns_warning_before_extra; then
+            exit ${XP_EINTENT}
+          fi
+        else
+          XP_OPT_REUSE=1
+          XP_OPT_EXTRA=0
+          XP_OPT_IS_SYNC=0
         fi
         ;;
       -s)

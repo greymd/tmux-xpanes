@@ -169,6 +169,7 @@ OPTIONS:
                                mh   main-horizontal
                                mv   main-vertical
   -n <number>                  Set the maximum number of <argument> taken for each pane.
+  -r                           Reuse the existing panes.
   -s                           Speedy mode: Run command without opening an interactive shell.
   -ss                          Speedy mode AND close a pane automatically at the same time as process exiting.
   -S <socket-path>             Set a full alternative path to the server socket.
@@ -325,6 +326,12 @@ When the tmux is already open and `xpanes` is executed on the existing tmux sess
  - It newly creates a window **on the existing active session**.
  - In addition, it separates the window into multiple panes.
  - Finally, the window will be active.
+
+You can use the -x option to create the panes in the current window.
+
+You can use the -r option to reuse the existing panes in the current window.  It
+is useful if you want to rerun commands in an existing layout previously created
+by -x.
 
 ### [Pipe mode] Inside of tmux session & Accepting standard input
 
