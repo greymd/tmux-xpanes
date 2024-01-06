@@ -1718,9 +1718,9 @@ xpns_execution() {
   ## With -l <layout>, panes are organized.
   ## As well as -x, they are re-organized.
   if [[ (${XP_OPT_USE_PRESET_LAYOUT} -eq 1 || ${XP_OPT_EXTRA} -eq 1) && ${XP_OPT_REUSE} -eq 0 ]]; then
-      xpns_organize_panes \
-        "${_window_name}" \
-        "${_last_args_idx}"
+    xpns_organize_panes \
+      "${_window_name}" \
+      "${_last_args_idx}"
   fi
 
   # Enable broadcasting
