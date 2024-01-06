@@ -1583,8 +1583,8 @@ xpns_execution() {
     # make sure there are enough panes of higher index than the current one.
     # This allows to run -r to create the panes and then repeatedly to reuse
     # those panes.
-    if [[ $((${_pane_count} - ${_pane_base_index})) -lt ${#XP_ARGS[@]} ]]; then
-      xpns_log "error" "Not enough panes ($((${_pane_count} - 1))) after this one to run the ${#XP_ARGS[@]} commands."
+    if [[ $(( _pane_count - _pane_base_index)) -lt ${#XP_ARGS[@]} ]]; then
+      xpns_log "error" "Not enough panes ($((_pane_count - 1))) after this one to run the ${#XP_ARGS[@]} commands."
       exit ${XP_EINVAL}
     fi
   fi
