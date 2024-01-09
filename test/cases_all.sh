@@ -2813,7 +2813,7 @@ test_x_option_abort() {
 
   _cmd="${EXEC} -S $_socket_file -x AAAA AAAA BBBB CCCC"
   eval "${_cmd}"
-  # Run -a option with Normal mode1
+  # Run -x option with Normal mode1
   assertEquals 4 $?
 
   : "In TMUX session" && {
@@ -4615,6 +4615,84 @@ test_b_x_log_option () {
     close_tmux_session "$_socket_file"
     rm -f "${_logdir}"/*
     rmdir "${_logdir}"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+  }
+  return 0
+}
+
+# @case: 85
+# @skip:
+test_r_option_error () {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd="${EXEC} -d -S $_socket_file -r AAA BBB CCC"
+  echo $'\n'" $ $_cmd"$'\n'
+  eval "$_cmd"
+  assertEquals 4 $?
+  close_tmux_session "$_socket_file"
+  return 0
+}
+
+# @case: 86
+# @skip:
+test_r_option_same_as_x() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _cmd
+  : "In TMUX session" && {
+    _cmd="${EXEC} -S $_socket_file -r -c 'echo {}' AAA BBB CCC"
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    # If there is only one  pane, -r acts like -x
+    # There must be 4 pane though.
+    wait_panes_separation "$_socket_file" ".*" "4"
+    assert_tiled_four_panes "$_socket_file" ".*"
+    close_tmux_session "$_socket_file"
+  }
+  return 0
+}
+
+# @case: 87
+# @skip:
+test_x_r_option() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  mkdir -p "${_tmpdir}/fin"
+  local _cmd
+  : "In TMUX session" && {
+    _cmd="${EXEC} -S $_socket_file -x -c 'echo {}' AAA BBB CCC"
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    # If there is only one  pane, -r acts like -x
+    # There must be 4 pane though.
+    wait_panes_separation "$_socket_file" ".*" "4"
+    _cmd="${EXEC} -S $_socket_file -r -c 'echo {} > ${_tmpdir}/fin/{}' DDD EEE FFF"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    wait_existing_file_number "${_tmpdir}/fin" "3" # DDD EEE FFF files should exist
+    close_tmux_session "$_socket_file"
+    rm -f "${_tmpdir}"/fin/*
+    rmdir "${_tmpdir}"/fin
+  }
+  return 0
+}
+
+# @case: 88
+# @skip:
+test_x_r_option_invalid_pane_count() {
+  local _socket_file="${SHUNIT_TMPDIR}/.xpanes-shunit"
+  local _tmpdir="${SHUNIT_TMPDIR}"
+  mkdir -p "${_tmpdir}/fin"
+  local _cmd
+  : "In TMUX session" && {
+    _cmd="${EXEC} -S $_socket_file -x -c 'echo {}' AAA BBB CCC"
+    create_tmux_session "$_socket_file"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    # If there is only one  pane, -r acts like -x
+    # There must be 4 pane though.
+    wait_panes_separation "$_socket_file" ".*" "4"
+    _cmd="${EXEC} -S $_socket_file -r -c 'echo {}' DDD EEE FFF GGG; echo \$? > ${_tmpdir}/fin/status"
+    exec_tmux_session "$_socket_file" "$_cmd"
+    assertEquals 4 "$(<"${_tmpdir}"/fin/status)"
+    close_tmux_session "$_socket_file"
     rm -f "${_tmpdir}"/fin/*
     rmdir "${_tmpdir}"/fin
   }
