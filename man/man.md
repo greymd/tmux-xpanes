@@ -81,6 +81,9 @@ OPTIONS
 `-n` <*number*>
   Set the maximum number of <*argument*> taken for each pane.
 
+`-r`
+  Reuse the existing panes, or create then in the current active window.
+
 `-S` <*socket-path*>
   Set a full alternative path to the server socket.
 

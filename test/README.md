@@ -24,3 +24,12 @@ $ git submodule update
 
 4. Run `bash ./update_yaml.sh`
 
+## How to run specific test
+
+Execute `test_generator.sh <number>` and execute the generated result as a script.
+For the test case 85, run like below.
+
+```bash
+$ bash test_generator.sh 85 > test_85.sh
+$ bash ./test_85.sh
+```
