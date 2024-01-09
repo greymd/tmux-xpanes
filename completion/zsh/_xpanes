@@ -21,6 +21,7 @@ _xpanes () {
       "($opts_omit -s -ss --ssh)-s[Speedy mode: Run command without opening an interactive shell.]" \
       "($opts_omit -ss -s)-ss[Speedy mode AND close a pane automatically at the same time as process exiting.]" \
       "($opts_omit -n)-n[Set the maximum number of <argument> taken for each pane.]:num:" \
+      "($opts_omit -r)-r[Reuse the existing panes, or create then in the current active window.]" \
       "($opts_omit -S)-S[Specify a full alternative path to the server socket.]:filename:_files" \
       "($opts_omit -t)-t[Display each argument on the each pane's border as their title.]" \
       "($opts_omit -x --stay)-x[Create extra panes in the current active window.]" \
