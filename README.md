@@ -906,7 +906,7 @@ The result will be like this.
     +-------------------------------+------------------------------+
 ```
 
-Off-course, `-c` and `-I` options are available.
+Of course, `-c` and `-I` options are available.
 
 ```sh
 $ seq 4 | xpanes -c 'seq {}'
